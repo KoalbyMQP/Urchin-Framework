@@ -1,0 +1,23 @@
+pi: Load
+esp: Load:fail
+--------------------
+
+pi:  Load
+esp: ok
+pi:  1f|A
+esp: 1f|A|ok
+pi:  mot:1|led;
+esp: ok 
+pi:  255
+esp: ok 
+pi:  255
+esp: ok 
+pi:  255
+esp: ok 
+pi:  255
+esp: ok
+pi:  END
+esp: END
+esp: Ticket Close
+
+
