@@ -3,13 +3,16 @@
 //
 
 #include "shipping.h"
-
+#include "Ticket.h"
 // cppcheck-suppress unusedFunction
 void Shipping(void *pvParameters) {
     //(void) printf("\n\n\nstarted shipping\n"); //remove later as printf is not thread safe
 
     QueueHandle_t MSGQueue = (QueueHandle_t) pvParameters;
     if (MSGQueue==NULL) {return;}
+
+    TapeRoll TicketTape;
+    RollINIT(&TicketTape);
 
     //Setup inits
     int side = false;
