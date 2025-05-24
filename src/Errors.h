@@ -6,6 +6,7 @@
 #define ERRORS_H
 
 #define NoFreeTicket 1
+#define CommandNotFound 2
 #define OK 0
 
 #endif //ERRORS_H

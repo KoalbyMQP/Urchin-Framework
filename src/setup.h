@@ -11,6 +11,9 @@
 #include "coms.h"
 #include "GLOBAL.h"
 
+#define AsyncSize 64
+#define SequentialSize 64
+
 #ifdef __cplusplus
 extern "C" {
 #endif

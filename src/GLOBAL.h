@@ -8,11 +8,9 @@
 #define DEBUG
 
 
-#define ButtonPin 35
-#define LED_BUT 32
+#define CherpPin 32
 
-#define SLAP_PIN 34
-#define LED_Working 33
+
 
 
 

@@ -4,6 +4,7 @@
 
 #include "shipping.h"
 #include "Ticket.h"
+#include "UnPacker.h"
 // cppcheck-suppress unusedFunction
 void Shipping(void *pvParameters) {
     //(void) printf("\n\n\nstarted shipping\n"); //remove later as printf is not thread safe
@@ -26,27 +27,17 @@ void Shipping(void *pvParameters) {
     uint8_t data[COMS_SIZE];
 
 
+
+    Context * Basic[NumOfActions];
+    InitProcessRequestBasic(Basic);
+
+
+
     //running loop
     while (1) {
         //(void) printf("\n\n\nstarted shipping loop\n"); //remove later as printf is not thread safe
         vTaskDelay(100 / portTICK_PERIOD_MS);  // Delay for 0.1 second
 
-        //Heart Beat timers
-        //-----------------------------------------------------------------
-        if (true == born) {
-        	if (((xTaskGetTickCount()-heard)>pdMS_TO_TICKS(BeatMinfrequnacy))&&side) {
-           		side=false;
-            	heard=xTaskGetTickCount();
-            	(void) PrintfToPI(MSGQueue,"Beat\n");
-        	}
-
-        	if (((xTaskGetTickCount()-heard)>pdMS_TO_TICKS(BeatMaxfrequnacy))&&!side) {
-            	(void) PrintfToPI(MSGQueue,"You missed a heart beat  %d/%d\n",BeatMinfrequnacy,BeatMaxfrequnacy);
-            	MissHeartbeat();
-        	}
-
-		}
-		//----------------------------------------------------------------
 
 
 
@@ -57,15 +48,10 @@ void Shipping(void *pvParameters) {
 
             data[len] = '\0';
 
-            //first check if the message is a Heart Beat
-            if(strncmp((const char *)data,"Heart",6) == 0) {
-                 born=true;
-                heard = xTaskGetTickCount();
-                side = true;
-            }else {
-                (void) PrintfToPI(MSGQueue,"ESP-32 Received: %s\n", data);
-                //prosses data
-            }
+
+            (void) PrintfToPI(MSGQueue,"ESP-32 Received: %s\n", data);
+            //prosses data
+            ProcessRequest(Basic,data);
         } else {
             // no message is receved so do nothing
         }
@@ -80,9 +66,4 @@ void Shipping(void *pvParameters) {
         }
 
     }
-}
-
-void MissHeartbeat(QueueHandle_t MSGQueue){
-    (void) PrintfToPI(MSGQueue,"Heart attack\n");
-    (void) gpio_set_level((gpio_num_t)(MissBeatPin), 0);
 }

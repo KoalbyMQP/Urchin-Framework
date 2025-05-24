@@ -36,8 +36,19 @@ typedef struct {
 extern "C" {
 #endif
 
+    void InitProcessRequestBasic(Context * Basic[]);
     int LED_Action();
     const char* SkipFoward(const char buffer[],unsigned int distance);
+    int ProcessRequest(Context Commands[],const char buffer[]);
+    int ReqTicket();
+    int PunchTicket();
+    int CloseTicket();
+    int TicketInfo();
+    int GetHealth();
+
+
+
+
 
 #ifdef __cplusplus
 }
