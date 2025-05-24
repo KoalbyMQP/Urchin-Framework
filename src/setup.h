@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 
-    void SetUpPins();
+    void SetUpUart();
 
 
 #ifdef __cplusplus

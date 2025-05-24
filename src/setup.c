@@ -7,7 +7,7 @@
 
 
 
-void SetUpPins() {
+void SetUpUart() {
 
 
     uart_config_t uart_config = {
