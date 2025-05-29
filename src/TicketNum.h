@@ -20,7 +20,7 @@ extern "C" {
         long int strip[StripSize];
     }TapeRoll;
 
-    int FindFree(const TapeRoll *Roll);
+    int FindFree(TapeRoll *Roll);
     void checkOut(TapeRoll *Roll, int Ticket);
     void ReturnTicket(TapeRoll *Roll, int Ticket);
     void RollINIT(TapeRoll *Roll);

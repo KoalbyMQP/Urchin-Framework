@@ -6,7 +6,7 @@
 #define MOTORSERAL_H
 
 
-#define
+
 
 
 #ifdef __cplusplus

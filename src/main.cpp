@@ -18,17 +18,16 @@ uart_config_t uart_config;
 extern "C" [[noreturn]] void app_main() {
     //sets up the seral comuncation
     SetUpUart();
-    //esp_sleep_enable_ext0_wakeup(static_cast<gpio_num_t>(SLAP_PIN), 1);
 
-    //set up our message Que
-    QueueHandle_t MSGQueue = xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
+
+
     QueueHandle_t AsyncQueue = xQueueCreate(AsyncSize, sizeof(Ticket));
     QueueHandle_t SequentialQueue = xQueueCreate(SequentialSize, sizeof(Ticket));
 
 
     TaskHandle_t xHandle = nullptr;
     Shipping(nullptr);
-    BaseType_t xReturned = xTaskCreate(Shipping, "Shipping", 8048, MSGQueue, 3, &xHandle);
+    BaseType_t xReturned = xTaskCreate(Shipping, "Shipping", 8048, nullptr, 3, &xHandle);
     if( xReturned == pdPASS ){
         printf("Shipping Task creation worked!\n");
     }else {

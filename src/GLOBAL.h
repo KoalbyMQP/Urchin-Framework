@@ -9,8 +9,18 @@
 
 
 #define CherpPin 32
+#define PIDNUM 256
+#include "freertos/FreeRTOS.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+void DoSomething();
+
+#ifdef __cplusplus
+}
+#endif
 
 
 

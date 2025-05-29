@@ -10,7 +10,7 @@
 
 
 
-LinkedList* create_node(void* data,size_t data_size) {
+LinkedList* create_node(const void* data,const size_t data_size) {
     LinkedList* node = (LinkedList*) pvPortMalloc(sizeof(LinkedList));
     node->data = pvPortMalloc(data_size);
     memcpy(node->data,data,data_size);

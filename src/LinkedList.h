@@ -5,6 +5,9 @@
 #ifndef LINKEDLIST_H
 #define LINKEDLIST_H
 
+
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -21,14 +24,14 @@ extern "C" {
     * @param data void pointer to your data
     * @return A Node struct
     */
-    LinkedList* create_node(void* data);
+    LinkedList* create_node(const void* data, size_t data_size);
 
     /**
      * Added the node to start of list
      * @param head start of List
      * @param data void pointer to your data
      */
-    void append_node(LinkedList** head, void* data);
+    void append_node(LinkedList** head, void* data, size_t data_size);
 
 
     /**

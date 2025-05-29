@@ -6,8 +6,8 @@
 #define SHIPPING_H
 
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+
+
 #include "coms.h"
 
 #include <string.h>
@@ -15,6 +15,7 @@
 #include "driver/gpio.h"
 
 extern uart_config_t uart_config;
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,11 +31,17 @@ extern "C" {
 void Shipping(void *pvParameters);
 
 /**
- * @brief Called when the PI misses the Heart Beat
- * @date 2025-03024
- * @author Gabriel Weaver
+ * 
+ * @param Queue 
  */
-void MissHeartbeat();
+void SendQue(QueueHandle_t Queue);
+
+
+
+
+    void ThreadMessages();
+
+
 
 #ifdef __cplusplus
 }

@@ -4,7 +4,7 @@
 
 #include "TicketNum.h"
 
-
+TapeRoll TicketTape;
 
 int FindFree(TapeRoll *Roll){
 for(int i=0; i<StripSize; i++){

@@ -5,24 +5,12 @@
 #include "UnPacker.h"
 
 #include <coms.h>
-
+#include "shipping.h"
 #include "Errors.h"
-#include "Ticket.h"
+#include "TicketNum.h"
+#include "MSGQueue.h"
+#include "GLOBAL.h"
 
-Context * Basic[NumOfActions];
-Context *Load[NumOfActions];
-Context *Health[NumOfActions];
-Context *Get[NumOfActions];
-Context *Sleep[NumOfActions];
-
-void InitProcessRequestBasic(Context * Basic[]) {
-    Basic[0]=&Context{"ReqTicket",9,ReqTicket};
-    Basic[1]=&Context{"PunchTicket",11,PunchTicket};
-    Basic[2]=&Context{"CloseTicket",11,CloseTicket};
-    Basic[3]=&Context{"TicketInfo",10,TicketInfo};
-    Basic[4]=&Context{"GetHealth",9,GetHealth};
-
-}
 
 
 
@@ -35,15 +23,14 @@ void InitProcessRequestBasic(Context * Basic[]) {
  * @return An error code
  */
 int ReqTicket(const char* buffer){
-    extern TapeRoll TicketTape;
-    extern QueueHandle_t MSGQueue;
+
 
     //Get Ticket
     int Ticket = FindFree(&TicketTape);
 
     //send NoFreeTicket if non are found
     if (Ticket == -1) {
-        (void) PrintfToPI(MSGQueue,"Code:%d",NoFreeTicket);
+        (void) PrintfToPI(ExchangeQueue,"Code:%d",NoFreeTicket);
         return -1;
     }
 
@@ -51,7 +38,7 @@ int ReqTicket(const char* buffer){
     checkOut(&TicketTape,Ticket);
 
     //send OK with ticket
-    (void) PrintfToPI(MSGQueue,"Code:%d \n%d ",OK,Ticket);
+    (void) PrintfToPI(ExchangeQueue,"Code:%d \n%d ",OK,Ticket);
   return 0;
 }
 
@@ -62,8 +49,9 @@ int ReqTicket(const char* buffer){
  * @return An error
  */
 int PunchTicket(const char* buffer) {
-    extern QueueHandle_t MSGQueue;
-    (void) PrintfToPI(MSGQueue,"PunchTicket not added");
+
+    (void) PrintfToPI(ExchangeQueue,"PunchTicket not added");
+    return 0;
 }
 
 /**
@@ -72,9 +60,9 @@ int PunchTicket(const char* buffer) {
  * @return An error
  */
 int CloseTicket(const char* buffer) {
-    extern QueueHandle_t MSGQueue;
-    (void) PrintfToPI(MSGQueue,"CloseTicket not added");
 
+    (void) PrintfToPI(ExchangeQueue,"CloseTicket not added");
+return 0;
 }
 
 
@@ -84,8 +72,9 @@ int CloseTicket(const char* buffer) {
  * @return Error code
  */
 int TicketInfo(const char* buffer) {
-    extern QueueHandle_t MSGQueue;
-    (void) PrintfToPI(MSGQueue,"TicketInfo not added");
+
+    (void) PrintfToPI(ExchangeQueue,"TicketInfo not added");
+return 0;
 }
 
 
@@ -95,7 +84,9 @@ int TicketInfo(const char* buffer) {
  * @return An Error
  */
 int GetHealth(const char* buffer) {
-
+    (void) PrintfToPI(ExchangeQueue,"GetHealth is being added");
+    DoSomething();
+return 0;
 }
 
 //-----------------------------------------------------------------------
@@ -110,13 +101,15 @@ int GetHealth(const char* buffer) {
  * @param buffer The char buffer that was receved
  * @return An arror code
  */
-int ProcessRequest(Context Commands[],const char buffer[]) {
+int ProcessRequest(Context Commands[],const uint8_t buffer[]) {
         int i=0;
         int found=0;
         int error=0;
+
+    (void) PrintfToPI(DebugQueue,"ProcessRequest:%s",buffer);
         while (i < NumOfActions && !found){
-            if (0==strncmp(buffer,Commands[i].Name,Commands[i].depth)) {
-                error=Commands[i].function(SkipFoward(buffer,Commands[i].depth));
+            if (0==strncmp((char*)buffer,Commands[i].Name,Commands[i].depth)) {
+                error=Commands[i].function(SkipFoward((char*)buffer,Commands[i].depth));
                 found=1;
             }
             i++;
