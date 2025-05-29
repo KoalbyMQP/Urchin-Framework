@@ -1,3 +1,4 @@
+#include <sys/cdefs.h>
 //
 // Created by gabri on 3/23/2025.
 //
@@ -11,7 +12,7 @@ QueueHandle_t ExchangeQueue;
 QueueHandle_t RecationQueue;
 QueueHandle_t DebugQueue;
 // cppcheck-suppress unusedFunction
-void Shipping(void *pvParameters) {
+_Noreturn void Shipping(void *pvParameters) {
     //(void) printf("started shipping\n"); //remove later as printf is not thread safe
 
     ExchangeQueue= xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
@@ -24,68 +25,23 @@ void Shipping(void *pvParameters) {
     if (DebugQueue==NULL) {return;}
 
 
-    gpio_set_direction((gpio_num_t)CherpPin, GPIO_MODE_OUTPUT);
+    //gpio_set_direction((gpio_num_t)CherpPin, GPIO_MODE_OUTPUT);
 
 
 
 
-    TapeRoll TicketTape;
-    RollINIT(&TicketTape);
-
-
-
-
-    //setup massage buffer
-    uint8_t data[COMS_SIZE];
-
-
-
-    static Context Basic[]={
-        {"ReqTicket",9,ReqTicket},
-        {"PunchTicket",11,PunchTicket},
-        {"CloseTicket",11,CloseTicket},
-        {"TicketInfo",10,TicketInfo},
-        {"GetHealth",9,GetHealth}
-    };
-
-
-    //Context *CurrentConext[PIDNUM];
-    Context CurrentConext=*Basic;
 
 
 
     //running loop
     while (1) {
-        //(void) printf("started shipping loop\n");
-        (void) PrintfToPI(DebugQueue,"shipping loop");
-        (void) PrintfToPI(RecationQueue,"react");
-        (void) PrintfToPI(ExchangeQueue,"data");
+
 
         vTaskDelay(100 / portTICK_PERIOD_MS);  // Delay for 0.1 second
 
 
 
-
-        // Read data from UART
-        int len = uart_read_bytes(UART_NUM, data, COMS_SIZE - 1, 100 / portTICK_PERIOD_MS);
-
-        if (len > 0) {
-
-            data[len] = '\0';
-
-
-            //(void) PrintfToPI(DebugQueue,"ESP-32 Received:%s\n", data);
-            //(void) PrintfToPI(DebugQueue,"test");
-            //prosses data
-
-            //ProcessRequest(CurrentConext,data);
-            //(void) PrintfToPI(DebugQueue,"test2");
-        } else {
-            // no message is receved so do nothing
-        }
-
         //Handle the Outgoing massage Que
-        //printf("que:%d",uxQueueMessagesWaiting(MSGQueue));
         ThreadMessages();
 
     }

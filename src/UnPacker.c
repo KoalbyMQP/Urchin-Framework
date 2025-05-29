@@ -1,3 +1,4 @@
+#include <sys/cdefs.h>
 //
 // Created by gabri on 3/24/2025.
 //
@@ -12,16 +13,59 @@
 #include "GLOBAL.h"
 
 
+_Noreturn void receiving(void *pvParameters){
+
+
+    RollINIT(&TicketTape);
+
+
+    //setup massage buffer
+    uint8_t data[COMS_SIZE];
+
+
+
+    static Context Basic[]={
+            {"ReqTicket",9,ReqTicket},
+            {"PunchTicket",11,PunchTicket},
+            {"CloseTicket",11,CloseTicket},
+            {"TicketInfo",10,TicketInfo},
+            {"GetHealth",9,GetHealth}
+    };
+
+
+    Context *CurrentConext[PIDNUM];
+
+
+
+    while (1){
+        vTaskDelay(100 / portTICK_PERIOD_MS);  // Delay for 0.1 second
+
+        int len = uart_read_bytes(UART_NUM, data, COMS_SIZE - 1, 100 / portTICK_PERIOD_MS);
+
+        if (len > 0) {
+
+            data[len] = '\0';
+
+
+            //Processes data
+            ProcessRequest(CurrentConext[PID], data);
+
+        } else {
+            // no message is received so do nothing
+        }
+
+    }
+
+
+}
+
+
 
 
 //Basic statements
 //-----------------------------------------------------------------
 
-/**
- * To be called when the PI is asking for a ticket
- * @param buffer buffer after the "ReqTicket" command (Not Used)
- * @return An error code
- */
+
 int ReqTicket(const char* buffer){
 
 
@@ -43,22 +87,14 @@ int ReqTicket(const char* buffer){
 }
 
 
-/**
- * To be called when the PI is asking for a ticket to be punched(sending a command)
- * @param buffer the constance of the punch
- * @return An error
- */
+
 int PunchTicket(const char* buffer) {
 
     (void) PrintfToPI(ExchangeQueue,"PunchTicket not added");
     return 0;
 }
 
-/**
- * To be called when the Pi wants to close a ticket early
- * @param buffer buffer after the "ReqTicket" command (Not Used)
- * @return An error
- */
+
 int CloseTicket(const char* buffer) {
 
     (void) PrintfToPI(ExchangeQueue,"CloseTicket not added");
@@ -66,11 +102,7 @@ return 0;
 }
 
 
-/**
- * To be called when the Pi wants to know the status of a Ticket
- * @param buffer Ticket number
- * @return Error code
- */
+
 int TicketInfo(const char* buffer) {
 
     (void) PrintfToPI(ExchangeQueue,"TicketInfo not added");
@@ -78,11 +110,7 @@ return 0;
 }
 
 
-/**
- * To be called when the Pi wants a health update from the esp32
- * @param buffer the Type of health
- * @return An Error
- */
+
 int GetHealth(const char* buffer) {
     (void) PrintfToPI(ExchangeQueue,"GetHealth is being added");
     DoSomething();
@@ -95,12 +123,7 @@ return 0;
 
 //Helppers
 //------------------------------------------------------------------------
-/**
- * This goes through a set of Commands calling its fucntion on the buffer
- * @param Commands Array of Contexts
- * @param buffer The char buffer that was receved
- * @return An arror code
- */
+
 int ProcessRequest(Context Commands[],const uint8_t buffer[]) {
         int i=0;
         int found=0;
@@ -117,17 +140,9 @@ int ProcessRequest(Context Commands[],const uint8_t buffer[]) {
     if (!found) {return CommandNotFound;}
     return error;
 
-
-
-
 }
 
-/**
- * Skips the reader forward by the distace
- * @param buffer Char buffer
- * @param distance Distance to truncate
- * @return New begging of string
- */
+
 const char* SkipFoward(const char buffer[],unsigned int distance) {
     return &buffer[distance];
 }

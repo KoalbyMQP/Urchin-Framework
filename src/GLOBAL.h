@@ -5,7 +5,7 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-#define DEBUG
+
 
 
 #define CherpPin 32
