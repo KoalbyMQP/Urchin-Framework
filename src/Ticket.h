@@ -12,10 +12,22 @@
 extern "C" {
 #endif
 
-
+/**
+     * @brief Ticket for the processes ques
+     * @date 2025-05-29
+     * @author Gabriel Weaver
+     */
 typedef struct{
-  int TicketNum;
-  LinkedList *packets;
+    /**
+     * Ticket number
+     */
+     int TicketNum;
+
+     /**
+      *The commands that will be sent
+      */
+     //to be added
+
 }Ticket;
 
 

@@ -16,13 +16,10 @@ _Noreturn void Shipping(void *pvParameters) {
     //(void) printf("started shipping\n"); //remove later as printf is not thread safe
 
     ExchangeQueue= xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
-    if (ExchangeQueue==NULL) {return;}
 
     RecationQueue = xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
-    if (RecationQueue==NULL) {return;}
 
     DebugQueue = xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
-    if (DebugQueue==NULL) {return;}
 
 
     //gpio_set_direction((gpio_num_t)CherpPin, GPIO_MODE_OUTPUT);

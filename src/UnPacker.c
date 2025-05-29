@@ -34,6 +34,7 @@ _Noreturn void receiving(void *pvParameters){
 
 
     Context *CurrentConext[PIDNUM];
+    CurrentConext[0]=Basic;
 
 
 
