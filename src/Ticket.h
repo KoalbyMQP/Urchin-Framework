@@ -26,7 +26,7 @@ typedef struct{
      /**
       *The commands that will be sent
       */
-     //to be added
+     Packet *Packets;
 
 }Ticket;
 

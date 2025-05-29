@@ -10,8 +10,28 @@ extern "C" {
 #endif
 
 typedef struct {
-  char contance[233];
+    /**
+     * What output connect the data will take and thus what type of command (I2C, UART... )
+     */
+    int dest;
+
+    /**
+     * What motor is being used
+     */
+    int motor;
+
+    /**
+     * If this will check out the motor
+     */
+    char Check;
+
+    /**
+     * The packet it self
+     */
+    char contance[233];
 }Packet;
+
+
 
 #ifdef __cplusplus
 }

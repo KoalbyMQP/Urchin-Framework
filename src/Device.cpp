@@ -2,4 +2,6 @@
 // Created by gabri on 5/23/2025.
 //
 
-#include "Motor.h"
+#include "Device.h"
+
+
