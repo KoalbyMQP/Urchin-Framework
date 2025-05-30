@@ -50,7 +50,7 @@ void SendQue(QueueHandle_t Queue);
 
 
 
-#define MSG_QUEUE_LENGTH 30
-#define MSG_ITEM_SIZE (1024*sizeof(char))
+#define MSG_QUEUE_LENGTH 16
+#define MSG_ITEM_SIZE (COMS_SIZE*sizeof(char))
 #define MissBeatPin 25
 #endif //SHIPPING_H

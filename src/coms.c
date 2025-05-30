@@ -22,7 +22,7 @@ int PrintfToPI(QueueHandle_t MsgQueue,const char *format, ...){
 
   va_start(args, format);
 
-  vsprintf(buff,format, args);
+  vsnprintf(buff,COMS_SIZE,format, args);
   ReturnValue = PackfToPI(MsgQueue,buff,(strlen(buff)+1));
 
   va_end(args);

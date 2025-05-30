@@ -4,12 +4,14 @@
 
 #include "TicketNum.h"
 
+#include "coms.h"
+
 TapeRoll TicketTape;
 
 int FindFree(TapeRoll *Roll){
 for(int i=0; i<StripSize; i++){
   for(int j=0; j<Width ; j++){
-    if (!(Roll->strip[i] & (1<<i))){
+    if (!(Roll->strip[i] & (1U<<j))){
       return i*Width+j;
     }
   }
@@ -17,17 +19,21 @@ for(int i=0; i<StripSize; i++){
 return -1;
 }
 
-void checkOut(TapeRoll *Roll, const int Ticket){
-  const int Mod = Ticket%Width;
-  const int Chunk=(Ticket-Mod)/Width;
-  (Roll->strip[Chunk]) |= (1<<Mod);
+void checkOut(TapeRoll *Roll, unsigned int Ticket) {
+  unsigned int Mod = Ticket%Width;
+  unsigned int Chunk=Ticket/Width;
+  if (Chunk<StripSize){
+    (Roll->strip[Chunk]) |= (1U<<Mod);
   }
+}
 
-void ReturnTicket(TapeRoll *Roll, int Ticket){
-int Mod = Ticket%Width;
-int Chunk=(Ticket-Mod)/Width;
- (Roll->strip[Chunk]) &= ~(1<<Mod);
 
+void ReturnTicket(TapeRoll *Roll, unsigned int Ticket){
+  unsigned int  Mod = Ticket%Width;
+  unsigned int  Chunk=Ticket/Width;
+  if (Chunk<StripSize) {
+    (Roll->strip[Chunk]) &= ~(1U<<Mod);
+  }
 }
 
 void RollINIT(TapeRoll *Roll){
@@ -35,4 +41,9 @@ void RollINIT(TapeRoll *Roll){
     Roll->strip[i]=0;
   }
 }
+
+
+
+
+
 

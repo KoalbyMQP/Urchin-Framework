@@ -13,13 +13,9 @@ QueueHandle_t RecationQueue;
 QueueHandle_t DebugQueue;
 // cppcheck-suppress unusedFunction
 _Noreturn void Shipping(void *pvParameters) {
-    //(void) printf("started shipping\n"); //remove later as printf is not thread safe
+    (void) printf("started shipping\n"); //remove later as printf is not thread safe
 
-    ExchangeQueue= xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
 
-    RecationQueue = xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
-
-    DebugQueue = xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
 
 
     //gpio_set_direction((gpio_num_t)CherpPin, GPIO_MODE_OUTPUT);

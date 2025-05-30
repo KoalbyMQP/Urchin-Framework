@@ -1,3 +1,5 @@
+
+
 //
 // Created by gabri on 5/24/2025.
 //
@@ -5,6 +7,7 @@
 #ifndef TICKETN_H
 #define TICKETN_H
 
+#include <stdint.h>
 /**
  * @def StripSize
  * @brief sets the strip size to be 8 this will make tape 512 bits long
@@ -25,7 +28,7 @@ extern "C" {
      */
     typedef struct{
         //512 bits
-        long int strip[StripSize];
+       uint32_t strip[StripSize];
     }TapeRoll;
 
     /**
@@ -44,7 +47,7 @@ extern "C" {
      * @date 2025-05-29
      * @author Gabriel Weaver
      */
-    void checkOut(TapeRoll *Roll, int Ticket);
+    void checkOut(TapeRoll *Roll, unsigned int Ticket);
 
     /**
      * Will set the desired ticket in the tape to 0
@@ -53,7 +56,7 @@ extern "C" {
      * @date 2025-05-29
      * @author Gabriel Weaver
      */
-    void ReturnTicket(TapeRoll *Roll, int Ticket);
+    void ReturnTicket(TapeRoll *Roll, unsigned int Ticket);
 
     /**
      * Initialises the tape roll by setting everything to 0

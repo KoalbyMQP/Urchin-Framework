@@ -1,4 +1,5 @@
 #include <sys/cdefs.h>
+#include "esp_task_wdt.h"
 //
 // Created by gabri on 3/24/2025.
 //
@@ -40,7 +41,8 @@ _Noreturn void receiving(void *pvParameters){
 
     while (1){
         vTaskDelay(100 / portTICK_PERIOD_MS);  // Delay for 0.1 second
-
+        //(void) PrintfToPI(ExchangeQueue,"hello");
+        esp_task_wdt_reset();
         int len = uart_read_bytes(UART_NUM, data, COMS_SIZE - 1, 100 / portTICK_PERIOD_MS);
 
         if (len > 0) {
@@ -68,7 +70,7 @@ _Noreturn void receiving(void *pvParameters){
 
 
 int ReqTicket(const char* buffer){
-
+(void)PrintfToPI(DebugQueue,"ReqTicket called");
 
     //Get Ticket
     int Ticket = FindFree(&TicketTape);
@@ -83,9 +85,14 @@ int ReqTicket(const char* buffer){
     checkOut(&TicketTape,Ticket);
 
     //send OK with ticket
-    (void) PrintfToPI(ExchangeQueue,"Code:%d \n%d ",OK,Ticket);
+    (void) PrintfToPI(ExchangeQueue,"Code:%d \nTicket%d ",OK,Ticket);
+    (void) PrintfToPI(ExchangeQueue,"Tape%ld",TicketTape);
   return 0;
 }
+
+
+
+
 
 
 
@@ -113,8 +120,24 @@ return 0;
 
 
 int GetHealth(const char* buffer) {
-    (void) PrintfToPI(ExchangeQueue,"GetHealth is being added");
-    DoSomething();
+    if (0== strcmp("FreeRam",buffer)) {
+        (void) PrintfToPI(ExchangeQueue,"%d",xPortGetFreeHeapSize());
+
+    }
+    if (0== strcmp("TotalRam",buffer)) {
+        (void) PrintfToPI(ExchangeQueue,"%d",xPortGetMinimumEverFreeHeapSize());
+    }
+
+    if (0== strcmp("CPU",buffer)) {
+
+    }
+    if (0== strcmp("AckCheck",buffer)) {
+
+    }
+
+
+    //(void) PrintfToPI(ExchangeQueue,"GetHealth is being added");
+    //DoSomething();
 return 0;
 }
 

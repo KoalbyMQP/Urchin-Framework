@@ -5,9 +5,6 @@
 #ifndef COMS_H
 #define COMS_H
 
-#define BeatMinfrequnacy 100
-#define BeatMaxfrequnacy 1000
-
 #define COMS_SIZE 1024
 
 #include "freertos/FreeRTOS.h"

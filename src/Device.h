@@ -9,7 +9,7 @@
  *
  */
 class Device{
-    virtual int (char buffer)=0;
+
 };
 
 

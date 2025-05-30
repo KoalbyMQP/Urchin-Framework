@@ -11,22 +11,27 @@ extern "C" {
 
 typedef struct {
     /**
-     * What output connect the data will take and thus what type of command (I2C, UART... )
+     * What output connect the data will take and thus what type of command (local,wrist,... )
      */
     int dest;
 
     /**
-     * What motor is being used
+     * (I2C,Dynamixel,Herkulex)
      */
-    int motor;
+    int protocol;
 
     /**
-     * If this will check out the motor
+     * What Device is being used
+     */
+    int device;
+
+    /**
+     * If this action check out the device
      */
     char Check;
 
     /**
-     * The packet it self
+     * The packet itself
      */
     char contance[233];
 }Packet;
