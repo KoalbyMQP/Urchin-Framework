@@ -19,7 +19,7 @@ extern "C" {
 #endif
 
 
-#define Width sizeof(long int)*8
+#define Width (sizeof(uint64_t)*8)
 
     /**
      * @brief a data type ment to hold alot of bit flags
@@ -28,7 +28,7 @@ extern "C" {
      */
     typedef struct{
         //512 bits
-       uint32_t strip[StripSize];
+       uint64_t strip[StripSize];
     }TapeRoll;
 
     /**
@@ -38,7 +38,7 @@ extern "C" {
      * @date 2025-05-29
      * @author Gabriel Weaver
      */
-    int FindFree(TapeRoll *Roll);
+    unsigned int FindFree(const TapeRoll *Roll);
 
     /**
      * Will set the desired ticket in the tape to 1
@@ -71,6 +71,10 @@ extern "C" {
      * @brief Global variable for the task ticket system
      */
     extern TapeRoll TicketTape;
+
+
+
+
 
 #ifdef __cplusplus
 }

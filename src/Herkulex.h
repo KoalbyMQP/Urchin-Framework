@@ -1,4 +1,5 @@
 /*
+ src/coms.c
  Hekulex.h - Library for Dongbu Herkulex DRS-0101/DRS-0201 
  Copyright (c) 2012 - http://robottini.altervista.org
  Created by Alessandro on 09/12/2012.
@@ -17,7 +18,7 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  
- *****************************************************************************
+ Herkulex.h.ignore
     PLEASE START READING: Herkulex Servo Manual (http://www.hovis.co.kr/guide/herkulexeng.pdf)
  *****************************************************************************
  
@@ -40,12 +41,18 @@
 #ifndef Herkulex_h
 #define Herkulex_h
 
+//
+// #if defined(ARDUINO) && ARDUINO >= 100  // Arduino IDE Version
+// #include "Arduino.h"
+// #else
+// #include "WProgram.h"
+// #endif
 
-#if defined(ARDUINO) && ARDUINO >= 100  // Arduino IDE Version
-#include "Arduino.h"
-#else
-#include "WProgram.h"
-#endif
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "driver/uart.h"
+#include "DataTypes.h"
+
 
 
 #define DATA_SIZE	 30		// buffer for input data
@@ -62,7 +69,6 @@
 #define HSTAT	 	 0x07 	//Read error
 #define HROLLBACK	 0x08 	//Back to factory value
 #define HREBOOT	 	 0x09 	//Reboot
-#include <hal/uart_types.h>
 
 // HERKULEX LED - See Manual p29
 // static int LED_GREEN =	 0x01;
@@ -72,6 +78,9 @@
 // static int LED_GREEN2= 	 0x05;
 // static int LED_PINK  =   0x06;
 // static int LED_WHITE =   0x07;
+
+
+
 
 enum RAMObject {
   Voltage,
@@ -154,7 +163,7 @@ static byte BROADCAST_ID = 0xFE;
 
 class HerkulexClass {
 public:
-  void  begin(long baud, int rx, int tx);
+  void  begin(uart_port_t uart_num,long baud, int rx, int tx);
   void  beginSerial1(long baud);
   void  beginSerial2(long baud);
   void  beginSerial3(long baud);
@@ -239,4 +248,4 @@ private:
 
 extern HerkulexClass Herkulex;
 
-#endif     Herkulex_h
+#endif     //Herkulex_h

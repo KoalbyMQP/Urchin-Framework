@@ -1,4 +1,5 @@
 /*
+ src/coms.c
  Hekulex.cpp - Library for Dongbu Herkulex DRS-0101/DRS-0201 
  Copyright (c) 2012 - http://robottini.altervista.org
  Created by Alessandro on 09/12/2012.
@@ -17,7 +18,7 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  
- *****************************************************************************
+ Herkulex.h.ignore
     PLEASE START READING: Herkulex Servo Manual (http://www.hovis.co.kr/guide/herkulexeng.pdf)
  *****************************************************************************
  
@@ -38,11 +39,11 @@
 */
 #include "Herkulex.h"
 
-#include <cstddef>
-#include <Herkulex.h>
-#include <driver/uart.h>
-
-#include "SoftwareSerial.h"
+#include "coms.h"
+#include "freertos/FreeRTOS.h"
+#include "MSGQueue.h"
+#include <string>
+//#include "SoftwareSerial.h"
 
 
 // Macro for the Serial port selection
@@ -51,62 +52,51 @@
 #define HSerial3     3   	// Write in Serial 3 port Arduino Mega - Pin 15(rx) - 14 (tx)
 #define Serial      4   	// Write in SoftSerial Arduino with 328p or Mega
  
-extern SoftwareSerial SwSerial(0, 1);
+//extern SoftwareSerial SwSerial(0, 1);
+
+
+void delay(unsigned long ms) {
+	vTaskDelay(ms / portTICK_PERIOD_MS);
+}
+
+unsigned long millis() {
+	return xTaskGetTickCount() * portTICK_PERIOD_MS;
+}
+
+
+void init_uart(uart_port_t uart_num, unsigned long band ,unsigned int BUF_SIZE ,int tx_pin, int rx_pin) {
+	uart_config_t uart_config = {
+		.baud_rate = band,
+		.data_bits = UART_DATA_8_BITS,
+		.parity    = UART_PARITY_DISABLE,
+		.stop_bits = UART_STOP_BITS_1,
+		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+	};
+
+	// Configure UART parameters
+	ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
+
+	// Set UART pins
+	ESP_ERROR_CHECK(uart_set_pin(uart_num, tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+
+	// Install UART driver
+	ESP_ERROR_CHECK(uart_driver_install(uart_num, BUF_SIZE * 2, 0, 0, NULL, 0));
+}
+
+
+
+int min(int a, int b) {
+	return (a < b) ? a : b;
+}
 
 // Herkulex begin with Arduino Uno
-void HerkulexClass::begin(long baud, int rx, int tx)
-{
-	SwSerial.setRX(rx);
-	SwSerial.setTX(tx);
-	SwSerial.begin(baud);
-	port = Serial;
+void HerkulexClass::begin(uart_port_t uart_num,long baud, int rx, int tx){
+
+	init_uart(uart_num,baud,233,tx,rx);
+
+	port = uart_num;
 }
 
-#if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega128__) || defined (__AVR_ATmega2560__)
-// Herkulex begin with Arduino Mega - Serial 1
-void HerkulexClass::beginSerial1(long baud)
-{
-	Serial1.begin(baud);
-	port = HSerial1;
-}
-
-// Herkulex begin with Arduino Mega - Serial 2
-void HerkulexClass::beginSerial2(long baud)
-{
-	UART_NUM_2
-	Serial2.begin(baud);
-	port=HSerial2;
-}
-
-// Herkulex begin with Arduino Mega - Serial 3
-void HerkulexClass::beginSerial3(long baud)
-{
-	Serial3.begin(baud);
-	port = HSerial3;
-}
-#endif
-
-// Herkulex end
-void HerkulexClass::end()
-{
-	switch (port)
-	{
-	case Serial:
-		SwSerial.end();
-		break;
-    #if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega128__) || defined (__AVR_ATmega2560__)
-	case HSerial1:
-		Serial1.end();
-		break;
-	case HSerial2:
-		Serial2.end();
-		break;
-	case HSerial3:
-		Serial3.end();
-		break;
-	#endif
-	}
-}
 
 //Types of Commands Sent to Herkulex
 
@@ -321,8 +311,8 @@ StatusData HerkulexClass::stat(int servoID)
 	
 	byte status1 = dataEx[7];
 	byte status2 = dataEx[8];
-	String StatusMessage = "Status Errors: ";
-    String StatusDetail = "Status Details: ";
+	std::string StatusMessage = "Status Errors: ";
+	std::string StatusDetail = "Status Details: ";
 
     	if (status1 == 0) {
 			StatusMessage += "No errors detected.";//Initial Code, No errors Detected
@@ -348,9 +338,9 @@ StatusData HerkulexClass::stat(int servoID)
 				}
 			}
 		}
-		Serial.println(StatusMessage);
-		Serial.println(StatusDetail);
-		return;
+		PrintfToPI(DebugQueue,(StatusMessage+"\n").c_str());
+		PrintfToPI(DebugQueue,(StatusDetail+"\n").c_str());
+		return ;
 	}
 }
 
@@ -700,9 +690,9 @@ void HerkulexClass::motor_stop(int servoID){
 	lenghtString=2;             // lenghtData
 
 	ck1=checksum1(data,lenghtString);		//6. Checksum1
-	Serial.println(ck1);
+	PrintfToPI(DebugQueue,"%d",ck1);
 	ck2=checksum2(ck1);					//7. Checksum2
-	Serial.println(ck2);
+	PrintfToPI(DebugQueue,"%d",ck2);
 
     dataEx[0] = 0xFF;				// Packet Header
     dataEx[1] = 0xFF;				// Packet Header	
@@ -736,7 +726,7 @@ void HerkulexClass::motor_stop(int servoID){
   
     sendData(dataEx, 0x0C);
 
-}-
+}
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Test RamRead Function Starts +++++++++++++++++++++++++++++++++++++++++++
 
@@ -770,45 +760,45 @@ uint16_t HerkulexClass::RAMReadSerial(uint8_t servoID, RAMObject obj) {
 
             // Print status abbreviation and value
             if (count == 0) {
-                Serial.print("[ ");  // Start of the line
+                PrintfToPI(DebugQueue,"[ ");  // Start of the line
             }
 
             // Print the label for the current status
-            Serial.print(labels[i]);
+             PrintfToPI(DebugQueue,labels[i]);
 
             // If it's the voltage status, print it as a float
             if (i == Voltage) {
-                Serial.print(result /10.0f);
+                 PrintfToPI(DebugQueue,"%f",result /10.0f);
             } else {
-                Serial.print(result);
+                 PrintfToPI(DebugQueue,"%d",result);
             }
 
             count++;
 
             // After printing 6 items, end the line and start a new one
             if (count == 6) {
-                Serial.println(" ]");
+                 PrintfToPI(DebugQueue," ]");
                 count = 0;  // Reset the counter for the next line
             } else {
-                Serial.print(" | ");  // Separator between statuses
+                PrintfToPI(DebugQueue," | ");  // Separator between statuses
             }
         }
 
         // If there are any remaining items not printed on the last line, print the closing bracket
         if (count > 0) {
-            Serial.println(" ]");
+            PrintfToPI(DebugQueue," ]");
         }
     } else {
         // Otherwise, print just the requested status
         if (obj < 0 || obj >= RAMObjectCount) {
-            Serial.println("Invalid RAM object selected.");
+             PrintfToPI(DebugQueue,"Invalid RAM object selected.");
             return;
         }
 
     const RAMInfo& info = ramInfoTable[obj];
 
     if ((info.address + info.length) > 0x7F) {
-        Serial.println("RAMRead: Exceeds register range. Aborting.");
+         PrintfToPI(DebugQueue,"RAMRead: Exceeds register range. Aborting.");
         return 0;
     }
 
@@ -846,12 +836,12 @@ uint16_t HerkulexClass::RAMReadSerial(uint8_t servoID, RAMObject obj) {
 			result = ((uint16_t)dataEx[10] << 8) | dataEx[9];
 		}
 
-		Serial.print(info.comment);
-		Serial.print(": ");
+		 PrintfToPI(DebugQueue,info.comment);
+		 PrintfToPI(DebugQueue,": ");
 		if (obj == Voltage) {
-			Serial.println(result /10.0f);  // Display as float, e.g., 12.3
+			 PrintfToPI(DebugQueue,"%f",result /10.0f);  // Display as float, e.g., 12.3
 		} else {
-			Serial.println(result);
+			 PrintfToPI(DebugQueue,"%d",result);
 		}	
 
 		return result;
@@ -984,7 +974,7 @@ uint16_t HerkulexClass::RAMRead(uint8_t servoID, RAMObject obj) {
 
 void HerkulexClass::moveSpeedOneTracking(int servoID, int targSpeed, int totalTimeMs, JogLedColor valueLed, HerkulexModel model, bool showStatus) {
     if (targSpeed > 1023 || targSpeed < -1023) {
-        Serial.println("Invalid speed input.");
+        PrintfToPI(DebugQueue,"Invalid speed input.");
         return;
     }
 
@@ -1024,7 +1014,7 @@ void HerkulexClass::moveSpeedOneTracking(int servoID, int targSpeed, int totalTi
 
     // Stop motor by setting speed to 0
     Herkulex.motor_stop(servoID);
-    Serial.println("Speed movement finished.");
+     PrintfToPI(DebugQueue,"Speed movement finished.");
 }
 
 // move one servo with continous rotation
@@ -1070,7 +1060,7 @@ void HerkulexClass::moveSpeedOne(int servoID, int targSpeed, int totalTime, JogL
         }
 
         timeRemaining -= thisTick;
-		Serial.println(timeRemaining);
+		 PrintfToPI(DebugQueue,"%d",timeRemaining);
     }
 
     // Total time reached; stop motor
@@ -1182,11 +1172,11 @@ void HerkulexClass::moveOne(int servoID, int targPosition, int pTime, JogLedColo
 		break;
 }
   if (targPosition > posLimit || targPosition < 0) {
-	Serial.println("HerkulexLib: moveOne: Error targPosition out of range");
+	 PrintfToPI(DebugQueue,"HerkulexLib: moveOne: Error targPosition out of range");
     return;              // speed (goal) non correct
   }
   if ((pTime < 0) || (pTime > 2856)) {
-	Serial.println("HerkulexLib: moveOne: Error playTime out of range");
+	 PrintfToPI(DebugQueue,"HerkulexLib: moveOne: Error playTime out of range");
 	return;
   }
   int LSB=targPosition & 0X00FF;								// MSB Pos
@@ -1264,8 +1254,8 @@ void HerkulexClass::moveOneAngle(int servoID, float angle, int pTime, JogLedColo
     int position = (int)((angle / degreesPerUnit) + center);
 
     if (position > posLimit || position < 0) {
-        Serial.print("HerkulexLib: moveOneAngle: Error position out of range for model ");
-        Serial.println(model);
+         PrintfToPI(DebugQueue,"HerkulexLib: moveOneAngle: Error position out of range for model ");
+        PrintfToPI(DebugQueue,"%d",model);
         return;
     }
 
@@ -1292,7 +1282,7 @@ void HerkulexClass::moveOneAngle(int servoID, float angle, int pTime, JogLedColo
 
             // Check if we've reached the target position
             if (abs(currentPos - position) < 10) {  // Allow a small margin for error
-                Serial.println("Target Position Reached!");
+                 PrintfToPI(DebugQueue,"Target Position Reached!");
                 reachedTarget = true;  // Exit the loop once the target is reached
             }
         }
@@ -1328,7 +1318,7 @@ void HerkulexClass::moveAll(int servoID, int Goal, JogLedColor valueLed, Herkule
             break;
     }
 	if (Goal > posLimit || Goal < 0) {
-		Serial.println("HerkulexLib: moveOne: Error targPosition out of range");
+		PrintfToPI(DebugQueue,"HerkulexLib: moveOne: Error targPosition out of range");
 		return;              // speed (goal) non correct
 	  }
 
@@ -1369,7 +1359,7 @@ void HerkulexClass::moveAllAngle(int servoID, float angle, JogLedColor valueLed,
 	// Serial.println(position);
 
     if (position > posLimit || position < 0) {
-        Serial.print("HerkulexLib: moveOneAngle: Error position out of range for model: ");
+        PrintfToPI(DebugQueue,"HerkulexLib: moveOneAngle: Error position out of range for model: ");
         // Serial.println(model);
         return;
     }
@@ -1712,9 +1702,9 @@ void HerkulexClass::addData(int GoalLSB, int GoalMSB, int set, int servoID)
 }
 
 // Sending the buffer long lenght to Serial port
-void HerkulexClass::sendData(byte* buffer, int lenght)
-{
-		clearBuffer(); 		//clear the serialport buffer - try to do it!
+void HerkulexClass::sendData(byte* buffer, int lenght){
+
+	clearBuffer(); 		//clear the serialport buffer - try to do it!
         switch (port)
 		{
 			case Serial:
@@ -1777,8 +1767,50 @@ int HerkulexClass::readData(int size)
 	int i = 0;
     int beginsave=0;
     int Time_Counter=0;
+    switch (port)
+	{
+	case Serial:
 
-
+        while((SwSerial.available() < size) & (Time_Counter < TIME_OUT)){
+        		Time_Counter++;
+        		delayMicroseconds(1000);  //wait 1 millisecond for 10 times
+		}
+        	
+		while (SwSerial.available() > 0){
+			byte inchar = (byte)SwSerial.read();
+			if ( (inchar == 0xFF) & ((byte)SwSerial.peek() == 0xFF) ){
+					beginsave=1; 
+					i=0; 				 // if found new header, begin again
+			}
+			if (beginsave==1 && i<size) {
+				   dataEx[i] = inchar;
+				   i++;
+			}
+		}
+		SwSerial.flush();
+		break;
+	
+	#if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega128__) || defined (__AVR_ATmega2560__)
+	case HSerial1:
+		while((Serial1.available() < size) & (Time_Counter < TIME_OUT)){
+        		Time_Counter++;
+        		delayMicroseconds(1000);
+		}      	
+		while (Serial1.available() > 0){
+      		byte inchar = (byte)Serial1.read();
+			//printHexByte(inchar);
+        	if ( (inchar == 0xFF) & ((byte)Serial1.peek() == 0xFF) ){
+						beginsave=1;
+						i=0; 						
+             }
+            if (beginsave==1 && i<size) {
+                       dataEx[i] = inchar;
+                       i++;
+			}
+		}
+		break;
+	
+	case HSerial2:
 	    while((Serial2.available() < size) & (Time_Counter < TIME_OUT)){
         		Time_Counter++;
         		delayMicroseconds(1000);
@@ -1787,29 +1819,86 @@ int HerkulexClass::readData(int size)
 		while (Serial2.available() > 0){
 			byte inchar = (byte)Serial2.read();
 			if ( (inchar == 0xFF) & ((byte)Serial2.peek() == 0xFF) ){
+					beginsave=1;
+					i=0; 					
+			}
+			if (beginsave==1 && i<size) {
+				   dataEx[i] = inchar;
+				   i++;
+			}
+		}
+		break;
 
-
-
+	case HSerial3:
+		while((Serial3.available() < size) & (Time_Counter < TIME_OUT)){
+			Time_Counter++;
+			delayMicroseconds(1000);
+		}
+		
+		while (Serial3.available() > 0){
+			byte inchar = (byte)Serial3.read();
+			if ( (inchar == 0xFF) & ((byte)Serial3.peek() == 0xFF) ){
+					beginsave=1;
+					i=0; 
+			}
+			if (beginsave==1 && i<size) {
+				   dataEx[i] = inchar;
+				   i++;
+			}
+		}
+		break;
+	#endif
+	}
 	return i;
 }
 
+// //clear buffer in the serial port - better - try to do this
+// void HerkulexClass::clearBuffer()
+// {
+//   switch (port)
+// 	{
+// 	case SSerial:
+//                 SwSerial.flush();
+//                 delay(1);
+//                 break;
+// 	#if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega128__) || defined (__AVR_ATmega2560__)
+// 	case HSerial1:
+// 				Serial1.flush();
+// 				while (Serial1.available()){
+// 				Serial1.read();
+// 				delayMicroseconds(200);
+// 				}
+//
+// 		break;
+// 	case HSerial2:
+// 	            Serial2.flush();
+// 				while (Serial2.available()){
+// 				Serial2.read();
+// 				delayMicroseconds(200);
+// 				}
+// 		break;
+// 	case HSerial3:
+// 	            Serial3.flush();
+// 				while (Serial3.available()){
+// 					Serial3.read();
+// 					delayMicroseconds(200);
+// 				}
+//
+// 		break;
+// 	#endif
+// 	}
+// }
 
-//clear buffer in the serial port - better - try to do this
-void HerkulexClass::clearBuffer()
-{
-	uart_flush(port);
-}
-
-void HerkulexClass::printHexByte(std::byte x)
-{
-  Serial.print("0x");
-  if (x < 16) {
-    Serial.print('0');
-  }
-    Serial.print(x, HEX);
-    Serial.print(" ");
-
-}
+// void HerkulexClass::printHexByte(byte x)
+// {
+//   Serial.print("0x");
+//   if (x < 16) {
+//     Serial.print('0');
+//   }
+//     Serial.print(x, HEX);
+//     Serial.print(" ");
+//
+// }
 
 
 

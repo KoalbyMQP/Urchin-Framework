@@ -13,9 +13,15 @@
 #include "MSGQueue.h"
 #include "GLOBAL.h"
 
+#include "Herkulex.h"
+
+#define HX_UART_NUM UART_NUM_2
 
 _Noreturn void receiving(void *pvParameters){
 
+    Herkulex.beginSerial3(115200); //open serial port 1
+    Herkulex.reboot(7); //reboot
+    Herkulex.initialize();
 
     RollINIT(&TicketTape);
 
@@ -32,6 +38,7 @@ _Noreturn void receiving(void *pvParameters){
             {"TicketInfo",10,TicketInfo},
             {"GetHealth",9,GetHealth}
     };
+
 
 
     Context *CurrentConext[PIDNUM];
@@ -70,10 +77,11 @@ _Noreturn void receiving(void *pvParameters){
 
 
 int ReqTicket(const char* buffer){
-(void)PrintfToPI(DebugQueue,"ReqTicket called");
-
+(void)PrintfToPI(DebugQueue,"\n\nReqTicket called");
+    //PrintTape(&TicketTape);
     //Get Ticket
-    int Ticket = FindFree(&TicketTape);
+
+    unsigned int Ticket = FindFree(&TicketTape);
 
     //send NoFreeTicket if non are found
     if (Ticket == -1) {
@@ -81,12 +89,13 @@ int ReqTicket(const char* buffer){
         return -1;
     }
 
+    PrintfToPI(DebugQueue,"Ticket:%d\n",Ticket);
     //Check out ticket
     checkOut(&TicketTape,Ticket);
-
     //send OK with ticket
     (void) PrintfToPI(ExchangeQueue,"Code:%d \nTicket%d ",OK,Ticket);
-    (void) PrintfToPI(ExchangeQueue,"Tape%ld",TicketTape);
+    (void) PrintfToPI(ExchangeQueue,"Tape%u",TicketTape);
+    PrintTape(&TicketTape);
   return 0;
 }
 
@@ -97,6 +106,12 @@ int ReqTicket(const char* buffer){
 
 
 int PunchTicket(const char* buffer) {
+
+    PrintfToPI(DebugQueue,"Set Led Green");
+    //Herkulex.setLed(7,0x02); //set the led to green
+    //PrintfToPI(DebugQueue,"Status:");
+    //PrintfToPI(DebugQueue,"",Herkulex.stat(n)); //verify error code
+    //Herkulex.end();
 
     (void) PrintfToPI(ExchangeQueue,"PunchTicket not added");
     return 0;

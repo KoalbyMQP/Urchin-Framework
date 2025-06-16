@@ -4,6 +4,9 @@
 
 #include "coms.h"
 
+#include <driver/uart.h>
+#include <hal/uart_types.h>
+
 
 // cppcheck-suppress unusedFunction
 int PackfToPI(QueueHandle_t MsgQueue,const char buff[], size_t buff_size){
@@ -28,3 +31,6 @@ int PrintfToPI(QueueHandle_t MsgQueue,const char *format, ...){
   va_end(args);
   return ReturnValue;
 }
+
+
+
