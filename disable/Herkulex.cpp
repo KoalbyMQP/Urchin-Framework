@@ -37,11 +37,11 @@
  Autor:   Alessandro Giacomel
  *****************************************************************************  
 */
-#include "Herkulex.h"
+#include "../src/Herkulex.h"
 
-#include "coms.h"
+#include "../src/coms.h"
 #include "freertos/FreeRTOS.h"
-#include "MSGQueue.h"
+#include "../src/MSGQueue.h"
 #include <string>
 //#include "SoftwareSerial.h"
 

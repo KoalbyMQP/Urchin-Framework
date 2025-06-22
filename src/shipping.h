@@ -22,6 +22,14 @@ extern uart_config_t uart_config;
 extern "C" {
 #endif
 
+
+
+    typedef struct __attribute__((packed))  {
+        uint8_t VPID;
+        char Convo;
+        char MSG[1024];
+    }SendingFrame;
+
 /**
  * @brief Shipping task process, Ment to handle out going communication to the PI
  * @details BEHAVOR:Will Send all outgoing message streams with PID header and loop.
@@ -32,15 +40,24 @@ extern "C" {
 _Noreturn void Shipping(void *pvParameters);
 
 /**
- * 
- * @param Queue 
+ * @brief Sends one Queue out with the VPID and Type
+ * @details
+ * @date 6/22/2025
+ * @author Gabriel Weaver
+ * @param Queue The Message Queue
+ * @param type Type of message
+ * @param VPID Virtual Procsses ID, Maps back to an ID in the PI process Multiplexor
  */
-void SendQue(QueueHandle_t Queue);
+    void SendQue(QueueHandle_t Queue,char type, int VPID);
 
 
-
-
-    void ThreadMessages();
+/**
+ * @brief Empties the queues by sendinf them out in shipping
+ * @details
+ * @date 6/22/2025
+ * @author Gabriel Weaver
+ */
+void ThreadMessages();
 
 
 
@@ -52,5 +69,4 @@ void SendQue(QueueHandle_t Queue);
 
 #define MSG_QUEUE_LENGTH 16
 #define MSG_ITEM_SIZE (COMS_SIZE*sizeof(char))
-#define MissBeatPin 25
 #endif //SHIPPING_H

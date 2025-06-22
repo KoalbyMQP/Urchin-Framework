@@ -13,12 +13,7 @@ QueueHandle_t RecationQueue;
 QueueHandle_t DebugQueue;
 // cppcheck-suppress unusedFunction
 _Noreturn void Shipping(void *pvParameters) {
-    (void) printf("started shipping\n"); //remove later as printf is not thread safe
-
-
-
-
-    //gpio_set_direction((gpio_num_t)CherpPin, GPIO_MODE_OUTPUT);
+    (void) printf("started shipping\n"); //Keep as Printf just in case it goes wrong
 
 
 
@@ -27,6 +22,7 @@ _Noreturn void Shipping(void *pvParameters) {
 
 
     //running loop
+    //DoNot add upper Bounds
     while (1) {
 
 
@@ -42,37 +38,50 @@ _Noreturn void Shipping(void *pvParameters) {
 
 
 
-void SendQue(QueueHandle_t Queue) {
-    uint8_t data[COMS_SIZE];
+void SendQue(QueueHandle_t Queue,char type, int VPID) {
+    char data[COMS_SIZE];
+    char packet[COMS_SIZE+2];
     while(uxQueueMessagesWaiting(Queue)>0){
-        if (xQueueReceive(Queue, &data, portMAX_DELAY)) {
-            int length= strlen((const char *)(data));
-            (void) uart_write_bytes(UART_NUM, data, length);
-            (void) printf("\n\n");
+        if (xQueueReceive(Queue, data, portMAX_DELAY)) {
+            char* Curent = (char*)packet;
+            Curent[0] = (char)VPID;
+            Curent[1] = type;
+            Curent=Curent+2;
+            strncpy(Curent,(char*)data,COMS_SIZE);
+            //
+            // SendingFrame packet;
+            // memset(&packet, 0, sizeof(packet));
+            // strncpy(packet.MSG,(char *)data,COMS_SIZE-1);
+            // packet.MSG[COMS_SIZE-1] = '\0';
+            // packet.Convo=type;
+            // packet.VPID=VPID;
+
+
+            //printf("%s",data);
+            //printf("Sending: VPID=%u, type=%c, first byte of data=%c", packet[0], packet[1], packet[2]);
+            //printf((char*)packet);
+            (void) uart_write_bytes(UART_NUM, packet, COMS_SIZE+2);
+
         }
     }
 }
 
-void ThreadMessages() {
-    if (uxQueueMessagesWaiting(ExchangeQueue) > 0) {
-        printf("EXCHANGE\n");
-        SendQue(ExchangeQueue);
-        printf("\r\n\r\n");
-    }
+ void ThreadMessages() {
+    //Add VPID later by mixing it in the message ques
+     if (uxQueueMessagesWaiting(ExchangeQueue) > 0) {
+         SendQue(ExchangeQueue,'E',0);
 
-    if (uxQueueMessagesWaiting(RecationQueue) > 0) {
-        printf("RECATION\n");
-        SendQue(RecationQueue);
-        printf("\r\n\r\n");
-    }
+     }
+
+     if (uxQueueMessagesWaiting(RecationQueue) > 0) {
+         SendQue(RecationQueue,'R',0);
+     }
 
 
-#ifdef DEBUG
-    if (uxQueueMessagesWaiting(DebugQueue) > 0) {
-        printf("DEBUG\n");
-        SendQue(DebugQueue);
-        printf("\r\n\r\n");
-    }
-#endif
+ #ifdef DEBUG
+     if (uxQueueMessagesWaiting(DebugQueue) > 0) {
+         SendQue(DebugQueue,'D',0);
+     }
+ #endif
 
 }

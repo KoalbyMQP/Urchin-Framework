@@ -4,11 +4,12 @@
 #ifndef UNPACKER_H
 #define UNPACKER_H
 
+#include <esp_now.h>
 #include <string.h>
 #include "GLOBAL.h"
-
+#include "coms.h"
 #define ContextWordSize 15
-#define NumOfActions 10
+#define NumOfActions 6
 #define PID 0
 
 
@@ -18,6 +19,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+typedef struct {
+    unsigned char VPID;
+    char MSG[COMS_SIZE];
+}RecvFrame;
+
 
 
     /**
@@ -64,10 +72,11 @@ extern "C" {
     /**
     * This goes through a set of Commands calling its fucntion on the buffer
     * @param Commands Array of Contexts
+    * @param ComandNum Number of Contexts in the command list
     * @param buffer The char buffer that was receved
     * @return An arror code
     */
-    int ProcessRequest(Context Commands[],const uint8_t buffer[]);
+   int ProcessRequest(Context Commands[],size_t ComandNum,const uint8_t buffer[]);
     //--------------------------------------------------------------------
 
 
@@ -110,8 +119,20 @@ extern "C" {
     */
     int GetHealth(const char* buffer);
     //-----------------------------------
+/**
+ * To be called when testing ESPNOW
+ * @param buffer number of bytes to test, Depth size
+ * @return An Error
+ */
+int ESPNOW(const char* buffer);
 
-
+/**
+ * Used for ESPNOW protocol when a messages is receved
+ * @param recv_info Info about receive
+ * @param data message data
+ * @param len length of data
+ */
+void on_data_recv(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len);
 
 
 #ifdef __cplusplus

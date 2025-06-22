@@ -1,4 +1,4 @@
-#include <Herkulex.h>
+#include <Herkulex.cpp.h>
 
 void setup()  
 {

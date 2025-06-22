@@ -3,6 +3,8 @@
 //
 
 #include "setup.h"
+#include "unpacker.h"
+#include "shipping.h"
 
 
 
@@ -22,6 +24,6 @@ void SetUpUart() {
     uart_param_config(UART_NUM, &uart_config);
 
     // Install UART driver
-    uart_driver_install(UART_NUM, COMS_SIZE * 2, 0, 0, NULL, 0);
+    uart_driver_install(UART_NUM, sizeof(RecvFrame)*2, sizeof(uint8_t)+sizeof(char)+sizeof(char)*1024, 0, NULL, 0);
 
 }
