@@ -126,6 +126,10 @@ typedef struct {
  */
 int ESPNOW(const char* buffer);
 
+
+
+    int MotTest(const char* buffer);
+
 /**
  * Used for ESPNOW protocol when a messages is receved
  * @param recv_info Info about receive

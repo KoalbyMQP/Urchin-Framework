@@ -100,7 +100,8 @@ _Noreturn void receiving(void *pvParameters){
             {"CloseTicket",11,CloseTicket},
             {"TicketInfo",10,TicketInfo},
             {"GetHealth",9,GetHealth},
-        {"ESPNOW",6,ESPNOW}
+        {"ESPNOW",6,ESPNOW},
+        {"MotTest",7,MotTest}
     };
 
 
@@ -280,6 +281,13 @@ int ESPNOW(const char* buffer) {
 
     return 0;
 }
+
+int MotTest(const char* buffer) {
+    PrintfToPI(DebugQueue,"MotTest called\n");
+    return 0;
+}
+
+
 
 void on_data_recv(const esp_now_recv_info_t *recv_info, const uint8_t *data, int len) {
     rtt = esp_timer_get_time() - send_time_us;

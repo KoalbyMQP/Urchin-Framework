@@ -12,6 +12,11 @@ QueueHandle_t ExchangeQueue;
 QueueHandle_t RecationQueue;
 QueueHandle_t DebugQueue;
 // cppcheck-suppress unusedFunction
+
+
+
+
+
 _Noreturn void Shipping(void *pvParameters) {
     (void) printf("started shipping\n"); //Keep as Printf just in case it goes wrong
 
@@ -38,30 +43,22 @@ _Noreturn void Shipping(void *pvParameters) {
 
 
 
-void SendQue(QueueHandle_t Queue,char type, int VPID) {
-    char data[COMS_SIZE];
-    char packet[COMS_SIZE+2];
-    while(uxQueueMessagesWaiting(Queue)>0){
+void SendQue(QueueHandle_t Queue, char type, int VPID) {
+    char data[COMS_SIZE] = {0};
+    char packet[COMS_SIZE + 2] = {0};  // 1 byte VPID + 1 byte type + data
+
+    while (uxQueueMessagesWaiting(Queue) > 0) {
         if (xQueueReceive(Queue, data, portMAX_DELAY)) {
-            char* Curent = (char*)packet;
-            Curent[0] = (char)VPID;
-            Curent[1] = type;
-            Curent=Curent+2;
-            strncpy(Curent,(char*)data,COMS_SIZE);
-            //
-            // SendingFrame packet;
-            // memset(&packet, 0, sizeof(packet));
-            // strncpy(packet.MSG,(char *)data,COMS_SIZE-1);
-            // packet.MSG[COMS_SIZE-1] = '\0';
-            // packet.Convo=type;
-            // packet.VPID=VPID;
 
 
-            //printf("%s",data);
-            //printf("Sending: VPID=%u, type=%c, first byte of data=%c", packet[0], packet[1], packet[2]);
-            //printf((char*)packet);
-            (void) uart_write_bytes(UART_NUM, packet, COMS_SIZE+2);
+            //packet[0] = (char)VPID;
+            //packet[1] = type;
+            //memcpy(&packet[2], data, COMS_SIZE);  // Safely copy message
 
+            // Uncomment to debug contents
+            // printf("Sending: VPID=%d, Type=%c, Data[0]=%c\n", VPID, type, data[0]);
+            //printf("%d%c%s",VPID,type,data);
+            //uart_write_bytes(UART_NUM, packet, sizeof(packet));
         }
     }
 }
