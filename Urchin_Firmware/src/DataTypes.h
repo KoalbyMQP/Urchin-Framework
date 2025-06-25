@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#include <cstdint>
+#include <stdint.h>
 typedef uint8_t byte;
 
 #ifdef __cplusplus

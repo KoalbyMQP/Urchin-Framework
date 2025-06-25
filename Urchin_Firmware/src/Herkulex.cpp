@@ -37,7 +37,7 @@
  Autor:   Alessandro Giacomel
  *****************************************************************************  
 */
-#include "Herkulex.h"
+#include "../src/Herkulex.h"
 
 #include "coms.h"
 #include "freertos/FreeRTOS.h"

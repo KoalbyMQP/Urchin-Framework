@@ -7,6 +7,11 @@
 #include <string.h>
 #include "GLOBAL.h"
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ContextWordSize 15
 #define NumOfActions 10
 #define PID 0
@@ -14,10 +19,19 @@
 
 
 
+/**
+     * @brief Receiving task process, Ment to handle incoming going communication to the PI, command validation, and pushing to the Queue
+     * @details BEHAVOR:Will receve a message then sent it to the context of its PID then loop.
+     * @param pvParameters Empty
+     * @date 2025-05-29
+     * @author Gabriel Weaver
+     */
+    _Noreturn void receiving(void *pvParameters);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
+
+
+
 
 
     /**
@@ -42,14 +56,7 @@ extern "C" {
     }Context;
 
 
-    /**
-     * @brief Receiving task process, Ment to handle incoming going communication to the PI, command validation, and pushing to the Queue
-     * @details BEHAVOR:Will receve a message then sent it to the context of its PID then loop.
-     * @param pvParameters Empty
-     * @date 2025-05-29
-     * @author Gabriel Weaver
-     */
-    _Noreturn void receiving(void *pvParameters);
+
 
     //Helpers
     //-------------------------------------------------
@@ -111,12 +118,11 @@ extern "C" {
     int GetHealth(const char* buffer);
     //-----------------------------------
 
-
-
-
 #ifdef __cplusplus
 }
 #endif
+
+
 
 
 #endif //UNPACKER_H

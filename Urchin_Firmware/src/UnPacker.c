@@ -2,6 +2,7 @@
 #include "esp_task_wdt.h"
 //
 // Created by gabri on 3/24/2025.
+// !!! do you best you use only C in this file
 //
 
 #include "UnPacker.h"
@@ -19,15 +20,18 @@
 
 _Noreturn void receiving(void *pvParameters){
 
-    Herkulex.beginSerial3(115200); //open serial port 1
-    Herkulex.reboot(7); //reboot
-    Herkulex.initialize();
+    //HerkulexClass Herkulex;
+    //Herkulex.beginSerial3(115200); //open serial port 1
+    //Herkulex.reboot(7); //reboot
+    //erkulex.initialize();
 
     RollINIT(&TicketTape);
 
 
     //setup massage buffer
     uint8_t data[COMS_SIZE];
+
+
 
 
 
@@ -47,6 +51,12 @@ _Noreturn void receiving(void *pvParameters){
 
 
     while (1){
+        PrintfToPI(DebugQueue,"test DebugQueue");
+
+        PrintfToPI(ExchangeQueue,"test ExchangeQueue");
+        PrintfToPI(RecationQueue,   "test RecationQueue");
+
+
         vTaskDelay(100 / portTICK_PERIOD_MS);  // Delay for 0.1 second
         //(void) PrintfToPI(ExchangeQueue,"hello");
         esp_task_wdt_reset();
@@ -65,6 +75,8 @@ _Noreturn void receiving(void *pvParameters){
         }
 
     }
+
+
 
 
 }
@@ -95,7 +107,7 @@ int ReqTicket(const char* buffer){
     //send OK with ticket
     (void) PrintfToPI(ExchangeQueue,"Code:%d \nTicket%d ",OK,Ticket);
     (void) PrintfToPI(ExchangeQueue,"Tape%u",TicketTape);
-    PrintTape(&TicketTape);
+
   return 0;
 }
 
@@ -107,11 +119,14 @@ int ReqTicket(const char* buffer){
 
 int PunchTicket(const char* buffer) {
 
-    PrintfToPI(DebugQueue,"Set Led Green");
-    //Herkulex.setLed(7,0x02); //set the led to green
-    //PrintfToPI(DebugQueue,"Status:");
-    //PrintfToPI(DebugQueue,"",Herkulex.stat(n)); //verify error code
-    //Herkulex.end();
+    /*
+     PrintfToPI(DebugQueue,"Set Led Green");
+
+    Herkulex.setLed(7, LED_GREEN2_HRAMWRITE); //set the led to green
+    PrintfToPI(DebugQueue,"Status:");
+    PrintfToPI(DebugQueue,"",Herkulex.stat(n)); //verify error code
+    Herkulex.end();
+    */
 
     (void) PrintfToPI(ExchangeQueue,"PunchTicket not added");
     return 0;
