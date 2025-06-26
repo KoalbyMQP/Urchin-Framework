@@ -14,7 +14,7 @@
 #include "MSGQueue.h"
 #include "GLOBAL.h"
 
-#include "Herkulex.h"
+//#include "Herkulex.h"
 
 #define HX_UART_NUM UART_NUM_2
 
@@ -53,8 +53,8 @@ _Noreturn void receiving(void *pvParameters){
     while (1){
         PrintfToPI(DebugQueue,"test DebugQueue");
 
-        PrintfToPI(ExchangeQueue,"test ExchangeQueue");
-        PrintfToPI(RecationQueue,   "test RecationQueue");
+        //PrintfToPI(ExchangeQueue,"test ExchangeQueue");
+        //PrintfToPI(RecationQueue,   "test RecationQueue");
 
 
         vTaskDelay(100 / portTICK_PERIOD_MS);  // Delay for 0.1 second

@@ -25,7 +25,7 @@ _Noreturn void Shipping(void *pvParameters) {
 
 
 
-
+    printf("<<StartStart>>");
     //running loop
     while (1) {
 
@@ -46,15 +46,20 @@ void SendQue(QueueHandle_t Queue) {
     uint8_t data[COMS_SIZE];
     while(uxQueueMessagesWaiting(Queue)>0){
         if (xQueueReceive(Queue, &data, portMAX_DELAY)) {
-            int length= strlen((const char *)(data));
-            (void) uart_write_bytes(UART_NUM, data, length);
-            (void) printf("\n\n");
+            //int length= strlen((const char *)(data));
+            Box board;
+            board.VPID=0;
+            board.Stream='P';
+            memset(board.data,0,sizeof(board.data));
+            strncpy((char*)board.data,(char*)data,COMS_SIZE-1);
+            (void) uart_write_bytes(UART_NUM, data, sizeof(Packet));
+            //(void) printf("\n\n");
         }
     }
 }
 
 void ThreadMessages() {
-    if (uxQueueMessagesWaiting(ExchangeQueue) > 0) {
+    /*if (uxQueueMessagesWaiting(ExchangeQueue) > 0) {
         printf("EXCHANGE\n");
         SendQue(ExchangeQueue);
         printf("\r\n\r\n");
@@ -65,13 +70,13 @@ void ThreadMessages() {
         SendQue(RecationQueue);
         printf("\r\n\r\n");
     }
-
+*/
 
 #ifdef DEBUG
     if (uxQueueMessagesWaiting(DebugQueue) > 0) {
-        printf("DEBUG\n");
+        //printf("DEBUG\n");
         SendQue(DebugQueue);
-        printf("\r\n\r\n");
+        //printf("\r\n\r\n");
     }
 #endif
 

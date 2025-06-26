@@ -22,6 +22,21 @@ extern uart_config_t uart_config;
 extern "C" {
 #endif
 
+
+
+
+#pragma pack(push, 1) // Ensure no padding bytes
+
+typedef struct {
+    uint8_t VPID;
+    uint8_t Stream;
+    char data[1024] ;
+    } Box;
+
+#pragma pack(pop)
+
+
+
 /**
  * @brief Shipping task process, Ment to handle out going communication to the PI
  * @details BEHAVOR:Will Send all outgoing message streams with PID header and loop.

@@ -1,57 +1,38 @@
 import serial
-import keyboard
-import time
 import struct
-import logging
-from ESPSerial import EspConnect
+
+ser = serial.Serial('COM3', 115200, timeout=5)
+
+packet_size = struct.calcsize("<BB1024s")
 
 
+def read_exact(ser, n):
+    buf = b''
+    while len(buf) < n:
+        chunk = ser.read(n - len(buf))
+        if not chunk:
+            # No data received, possibly timeout
+            break
+        buf += chunk
+    return buf
 
-# Initialize the serial connection using your custom EspConnect
-ser = EspConnect()
+buffer = b''
+while True:
+    byte = ser.read()  # Read one byte
+    buffer += byte
+    if b'<<StartStart>>' in buffer:
+        break
 
+while True:
+    data = read_exact(ser, packet_size)
+    if len(data) != packet_size:
+        print(f"Incomplete packet received ({len(data)} bytes), skipping")
+        continue
 
-# Setup logging
-logging.basicConfig(
-    filename='UrchinAPI.log',
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    filemode='w'
-)
+    VPID, Stream, raw_data = struct.unpack("<BB1024s", data)
+    try:
+        data_str = raw_data.decode('utf-8').rstrip('\x00')
+    except UnicodeDecodeError:
+        data_str = repr(raw_data)
 
-logging.info("Starting Serial Communication Listener")
-
-context = "null"
-size = 1
-number = 0
-
-try:
-    print("Waiting for serial data...")
-
-    while True:
-        # Simulate input request
-        #request_str = "ReqTicket\0"
-        #ser.write(request_str.encode('utf-8'))
-        time.sleep(0.2)
-
-        try:
-            serial_data= ser.read(1025)
-            decoded = serial_data.decode('utf-8').strip()
-            print("Serial Data:", decoded)
-
-
-
-        except serial.SerialException as e:
-            logging.error(f"Serial error: {e}")
-            print(f"Serial error occurred: {e}")
-        except PermissionError as e:
-            logging.error(f"Permission error: {e}")
-            print(f"Permission error: {e}")
-
-except KeyboardInterrupt:
-    print("\n[!] Program stopped by user.")
-    logging.info("Program stopped by user.")
-
-finally:
-    ser.close()
-    logging.info("Serial connection closed.")
+    print(f"VPID: {VPID}, Stream: {Stream}, Data: {data_str}")

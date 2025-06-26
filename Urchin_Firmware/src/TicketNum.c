@@ -9,11 +9,11 @@
 TapeRoll TicketTape;
 
 unsigned int FindFree(const TapeRoll *Roll){
-  PrintfToPI(DebugQueue,"FindFree");
+    (void)PrintfToPI(DebugQueue,"FindFree");
 for(int i=0; i<StripSize; i++){
   for(int j=0; j<Width ; j++){
     if (!(Roll->strip[i] & (1U<<j))){
-      PrintfToPI(DebugQueue,"Found at bit:%d chunk:%d",j+1,i);
+        (void) PrintfToPI(DebugQueue,"Found at bit:%d chunk:%d",j+1,i);
       return i*Width+j;
 
     }
@@ -23,16 +23,16 @@ return -1;
 }
 
 void checkOut(TapeRoll *Roll, unsigned int Ticket) {
-  PrintfToPI(DebugQueue,"CheckOut");
+    (void) PrintfToPI(DebugQueue,"CheckOut");
 
 
   unsigned int Mod = Ticket%Width;
   if (Ticket<Width){Mod=Ticket;}
-PrintfToPI(DebugQueue,"    Mod:%u",Mod);
+    (void) PrintfToPI(DebugQueue,"    Mod:%u",Mod);
 
 
   unsigned int Chunk=(Ticket-Mod)/(Width);
-  PrintfToPI(DebugQueue,"    Chunk:%u",Chunk);
+     PrintfToPI(DebugQueue,"    Chunk:%u",Chunk);
 
 
   if (Chunk<StripSize){

@@ -1,0 +1,5 @@
+Checks: >
+  -*,
+  clang-analyzer-core.CallAndMessage,
+  clang-diagnostic-unused-result
+WarningsAsErrors: clang-analyzer-core.CallAndMessage,clang-diagnostic-unused-result
