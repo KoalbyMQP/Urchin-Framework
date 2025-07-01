@@ -18,6 +18,7 @@ uart_config_t uart_config;
 
 
 extern "C" [[noreturn]] void app_main() {
+    esp_log_level_set("*", ESP_LOG_NONE);
     //sets up the seral comuncation
     SetUpUart();
 
@@ -56,9 +57,9 @@ extern "C" [[noreturn]] void app_main() {
     TaskHandle_t xHandleRecv = nullptr;
     BaseType_t RecvxReturned = xTaskCreate(receiving, "Receiving", 8048, nullptr, 3, &xHandleRecv);
     if( RecvxReturned == pdPASS ){
-        printf("Receiving Task creation worked!\n");
+        //printf("Receiving Task creation worked!\n");
     }else {
-        printf("Receiving Task creation failed!\n");
+        //printf("Receiving Task creation failed!\n");
     }
 
 

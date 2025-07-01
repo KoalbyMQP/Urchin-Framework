@@ -1,5 +1,6 @@
+
 /*
- src/coms.c
+
  Hekulex.h - Library for Dongbu Herkulex DRS-0101/DRS-0201 
  Copyright (c) 2012 - http://robottini.altervista.org
  Created by Alessandro on 09/12/2012.
@@ -35,8 +36,11 @@
  Contact: alegiaco@gmail.com
  Web:     http://robottini.altervista.org
  Autor:   Alessandro Giacomel
+ Updater: Gabriel Weaver 6/23/2025
  *****************************************************************************  
 */
+
+#ifdef __cplusplus
 
 #ifndef Herkulex_h
 #define Herkulex_h
@@ -99,11 +103,11 @@ enum RAMObject {
   StatusAll
 };
 
-struct RAMInfo {
+typedef struct  {
   uint8_t address;
   uint8_t length;
-  const char* comment;
-};
+  //const char* comment;
+}RAMInfo;
 
 enum LedColor {
   LED_GREEN_HRAMWRITE  = 0x01,
@@ -247,5 +251,7 @@ private:
 };
 
 extern HerkulexClass Herkulex;
+
+#endif // __cplusplus
 
 #endif     //Herkulex_h

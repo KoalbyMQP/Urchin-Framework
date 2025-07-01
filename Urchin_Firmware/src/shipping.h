@@ -24,11 +24,18 @@ extern "C" {
 
 
 
-    typedef struct __attribute__((packed))  {
-        uint8_t VPID;
-        char Convo;
-        char MSG[1024];
-    }SendingFrame;
+
+#pragma pack(push, 1) // Ensure no padding bytes
+
+typedef struct {
+    uint8_t VPID;
+    uint8_t Stream;
+    char data[1024] ;
+    } Box;
+
+#pragma pack(pop)
+
+
 
 /**
  * @brief Shipping task process, Ment to handle out going communication to the PI
@@ -40,24 +47,15 @@ extern "C" {
 _Noreturn void Shipping(void *pvParameters);
 
 /**
- * @brief Sends one Queue out with the VPID and Type
- * @details
- * @date 6/22/2025
- * @author Gabriel Weaver
- * @param Queue The Message Queue
- * @param type Type of message
- * @param VPID Virtual Procsses ID, Maps back to an ID in the PI process Multiplexor
+ * 
+ * @param Queue 
  */
-    void SendQue(QueueHandle_t Queue,char type, int VPID);
+void SendQue(QueueHandle_t Queue);
 
 
-/**
- * @brief Empties the queues by sendinf them out in shipping
- * @details
- * @date 6/22/2025
- * @author Gabriel Weaver
- */
-void ThreadMessages();
+
+
+    void ThreadMessages();
 
 
 
@@ -69,4 +67,5 @@ void ThreadMessages();
 
 #define MSG_QUEUE_LENGTH 16
 #define MSG_ITEM_SIZE (COMS_SIZE*sizeof(char))
+#define MissBeatPin 25
 #endif //SHIPPING_H

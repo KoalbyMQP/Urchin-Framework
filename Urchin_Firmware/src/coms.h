@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "freertos/queue.h"
+#include "Annotations.h"
+
 #define UART_NUM UART_NUM_0  // Use UART0 (default for USB serial)
 
 
@@ -53,7 +55,7 @@ extern "C" {
  * @date 2025-03-24
  * @version 1.0
  */
-int PackfToPI(QueueHandle_t MsgQueue,const char buff[], size_t buff_size);
+ int PackfToPI(QueueHandle_t MsgQueue,const char buff[], size_t buff_size);
 
 /**
  * @brief Prints to the Pi over the USB bridge
@@ -82,7 +84,7 @@ int PackfToPI(QueueHandle_t MsgQueue,const char buff[], size_t buff_size);
  * @date 2025-03-24
  * @version 1.0
  */
-int PrintfToPI(QueueHandle_t MsgQueue,const char *format, ...);
+ int PrintfToPI(QueueHandle_t MsgQueue,const char *format, ...);
 
 #ifdef __cplusplus
 }
