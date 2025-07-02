@@ -55,7 +55,7 @@ extern "C" {
  * @date 2025-03-24
  * @version 1.0
  */
- int PackfToPI(QueueHandle_t MsgQueue,const char buff[], size_t buff_size);
+ int PackfToPI(QueueHandle_t MsgQueue, const uint8_t VPID, const char buff[], size_t buff_size);
 
 /**
  * @brief Prints to the Pi over the USB bridge
@@ -63,6 +63,7 @@ extern "C" {
  * @note This fucntion adds a message to a queue that is handled by the Shipping thread. Thus Shipping thread must be running
  *
  * @param MsgQueue[out] The outgoing message Que
+ * @param VPID virtual process id
  * @param format[in] A string that may contain format specifiers like %d, %s, etc., which control the formatting of subsequent arguments.
  * @param ...[in] A variable number of arguments to be formatted and printed according to the format string.
  *
@@ -84,7 +85,7 @@ extern "C" {
  * @date 2025-03-24
  * @version 1.0
  */
- int PrintfToPI(QueueHandle_t MsgQueue,const char *format, ...);
+ int PrintfToPI(QueueHandle_t MsgQueue, const uint8_t VPID, const char *format, ...);
 
 #ifdef __cplusplus
 }

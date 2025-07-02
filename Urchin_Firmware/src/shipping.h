@@ -28,9 +28,10 @@ extern "C" {
 #pragma pack(push, 1) // Ensure no padding bytes
 
 typedef struct {
+    char delimiter;
     uint8_t VPID;
     uint8_t Stream;
-    char data[1024] ;
+    char data[COMS_SIZE] ;
     } Box;
 
 #pragma pack(pop)
@@ -66,6 +67,13 @@ void SendQue(QueueHandle_t Queue);
 
 
 #define MSG_QUEUE_LENGTH 16
-#define MSG_ITEM_SIZE (COMS_SIZE*sizeof(char))
+
+typedef struct{
+    uint8_t VPID;
+    char data[COMS_SIZE];
+}MSG;
+
+#define MSG_ITEM_SIZE (sizeof(MSG))
+
 #define MissBeatPin 25
 #endif //SHIPPING_H

@@ -43,17 +43,23 @@ _Noreturn void Shipping(void *pvParameters) {
 
 
 void SendQue(QueueHandle_t Queue) {
-    uint8_t data[COMS_SIZE];
+    MSG received_data_from_queue;
     while(uxQueueMessagesWaiting(Queue)>0){
-        if (xQueueReceive(Queue, &data, portMAX_DELAY)) {
+        if (xQueueReceive(Queue, &received_data_from_queue, portMAX_DELAY)) {
             //int length= strlen((const char *)(data));
+
+
+
             Box board;
-            board.VPID=0;
-            board.Stream='P';
-            memset(board.data,0,sizeof(board.data));
-            strncpy((char*)board.data,(char*)data,COMS_SIZE-1);
-            (void) uart_write_bytes(UART_NUM, data, sizeof(Packet));
-            //(void) printf("\n\n");
+            (void) memset(board.data,0,sizeof(board));
+            board.delimiter='\a';
+            board.VPID=received_data_from_queue.VPID;
+            board.Stream='D';
+            (void) memset(board.data,0,sizeof(board.data));
+            (void) strncpy((char*)board.data,(char*)received_data_from_queue.data,COMS_SIZE-1);
+            //(void) uart_write_bytes(UART_NUM, "\a", 1);
+            (void) uart_write_bytes(UART_NUM, (const void*)&board, sizeof(Packet));
+
         }
     }
 }

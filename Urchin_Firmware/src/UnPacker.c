@@ -48,11 +48,12 @@ _Noreturn void receiving(void *pvParameters){
     Context *CurrentConext[PIDNUM];
     CurrentConext[0]=Basic;
 
-
-
+    //PrintfToPI(DebugQueue,0,"test DebugQueue");
+int count=0;
     while (1){
-        PrintfToPI(DebugQueue,"test DebugQueue");
 
+        PrintfToPI(DebugQueue,0,"test DebugQueue%d",count);
+        count++;
         //PrintfToPI(ExchangeQueue,"test ExchangeQueue");
         //PrintfToPI(RecationQueue,   "test RecationQueue");
 
@@ -89,7 +90,7 @@ _Noreturn void receiving(void *pvParameters){
 
 
 int ReqTicket(const char* buffer){
-(void)PrintfToPI(DebugQueue,"\n\nReqTicket called");
+(void)PrintfToPI(DebugQueue,0,"\n\nReqTicket called");
     //PrintTape(&TicketTape);
     //Get Ticket
 
@@ -97,16 +98,16 @@ int ReqTicket(const char* buffer){
 
     //send NoFreeTicket if non are found
     if (Ticket == -1) {
-        (void) PrintfToPI(ExchangeQueue,"Code:%d",NoFreeTicket);
+        (void) PrintfToPI(ExchangeQueue,0,"Code:%d",NoFreeTicket);
         return -1;
     }
 
-    PrintfToPI(DebugQueue,"Ticket:%d\n",Ticket);
+    PrintfToPI(DebugQueue,0,"Ticket:%d\n",Ticket);
     //Check out ticket
     checkOut(&TicketTape,Ticket);
     //send OK with ticket
-    (void) PrintfToPI(ExchangeQueue,"Code:%d \nTicket%d ",OK,Ticket);
-    (void) PrintfToPI(ExchangeQueue,"Tape%u",TicketTape);
+    (void) PrintfToPI(ExchangeQueue,0,"Code:%d \nTicket%d ",OK,Ticket);
+    (void) PrintfToPI(ExchangeQueue,0,"Tape%u",TicketTape);
 
   return 0;
 }
@@ -128,14 +129,14 @@ int PunchTicket(const char* buffer) {
     Herkulex.end();
     */
 
-    (void) PrintfToPI(ExchangeQueue,"PunchTicket not added");
+    (void) PrintfToPI(ExchangeQueue,0,"PunchTicket not added");
     return 0;
 }
 
 
 int CloseTicket(const char* buffer) {
 
-    (void) PrintfToPI(ExchangeQueue,"CloseTicket not added");
+    (void) PrintfToPI(ExchangeQueue,0,"CloseTicket not added");
 return 0;
 }
 
@@ -143,7 +144,7 @@ return 0;
 
 int TicketInfo(const char* buffer) {
 
-    (void) PrintfToPI(ExchangeQueue,"TicketInfo not added");
+    (void) PrintfToPI(ExchangeQueue,0,"TicketInfo not added");
 return 0;
 }
 
@@ -151,11 +152,11 @@ return 0;
 
 int GetHealth(const char* buffer) {
     if (0== strcmp("FreeRam",buffer)) {
-        (void) PrintfToPI(ExchangeQueue,"%d",xPortGetFreeHeapSize());
+        (void) PrintfToPI(ExchangeQueue,0,"%d",xPortGetFreeHeapSize());
 
     }
     if (0== strcmp("TotalRam",buffer)) {
-        (void) PrintfToPI(ExchangeQueue,"%d",xPortGetMinimumEverFreeHeapSize());
+        (void) PrintfToPI(ExchangeQueue,0,"%d",xPortGetMinimumEverFreeHeapSize());
     }
 
     if (0== strcmp("CPU",buffer)) {
@@ -183,7 +184,7 @@ int ProcessRequest(Context Commands[],const uint8_t buffer[]) {
         int found=0;
         int error=0;
 
-    (void) PrintfToPI(DebugQueue,"ProcessRequest:%s",buffer);
+    (void) PrintfToPI(DebugQueue,0,"ProcessRequest:%s",buffer);
         while (i < NumOfActions && !found){
             if (0==strncmp((char*)buffer,Commands[i].Name,Commands[i].depth)) {
                 error=Commands[i].function(SkipFoward((char*)buffer,Commands[i].depth));
