@@ -29,7 +29,9 @@ _Noreturn void receiving(void *pvParameters){
 
 
     //setup massage buffer
-    uint8_t data[COMS_SIZE];
+    //uint8_t data[COMS_SIZE];
+
+    Box LocalBox;
 
 
 
@@ -49,11 +51,13 @@ _Noreturn void receiving(void *pvParameters){
     CurrentConext[0]=Basic;
 
     //PrintfToPI(DebugQueue,0,"test DebugQueue");
-int count=0;
+    int count=0;
     while (1){
+        memset(&LocalBox,0,sizeof(Box));
 
         PrintfToPI(DebugQueue,0,"test DebugQueue%d",count);
         count++;
+        if (count==32){abort();}
         //PrintfToPI(ExchangeQueue,"test ExchangeQueue");
         //PrintfToPI(RecationQueue,   "test RecationQueue");
 
@@ -61,19 +65,20 @@ int count=0;
         vTaskDelay(100 / portTICK_PERIOD_MS);  // Delay for 0.1 second
         //(void) PrintfToPI(ExchangeQueue,"hello");
         esp_task_wdt_reset();
-        int len = uart_read_bytes(UART_NUM, data, COMS_SIZE - 1, 100 / portTICK_PERIOD_MS);
 
-        if (len > 0) {
+        char delimiter;
+        //uart_read_bytes(UART_NUM,&delimiter,1,100 / portTICK_PERIOD_MS);
+        //if (delimiter=='\a') {
+            int len=uart_read_bytes(UART_NUM, &LocalBox, sizeof(Box), 100 / portTICK_PERIOD_MS);
+                if (len == sizeof(Box)) {
+                    //Processes data
+                   //PackfToPI(DebugQueue,0,&LocalBox,sizeof(Box));
 
-            data[len] = '\0';
 
+                }
 
-            //Processes data
-            ProcessRequest(CurrentConext[PID], data);
+        //}
 
-        } else {
-            // no message is received so do nothing
-        }
 
     }
 

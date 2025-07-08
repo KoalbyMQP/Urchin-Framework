@@ -24,6 +24,7 @@ extern "C" [[noreturn]] void app_main() {
 
 
 
+
     // QueueHandle_t AsyncQueue = xQueueCreate(AsyncSize, sizeof(Ticket));
     // QueueHandle_t SequentialQueue = xQueueCreate(SequentialSize, sizeof(Ticket));
     // Ticket *interrupt;
@@ -72,6 +73,10 @@ int nothing=0;
     }
 
 }
+
+
+
+
 
 
 

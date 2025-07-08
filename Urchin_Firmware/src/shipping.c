@@ -42,27 +42,40 @@ _Noreturn void Shipping(void *pvParameters) {
 
 
 
-void SendQue(QueueHandle_t Queue) {
+void SendQue(QueueHandle_t Queue, char Stream) {
     MSG received_data_from_queue;
     while(uxQueueMessagesWaiting(Queue)>0){
         if (xQueueReceive(Queue, &received_data_from_queue, portMAX_DELAY)) {
             //int length= strlen((const char *)(data));
+            (void) SendMessage(received_data_from_queue.VPID ,Stream, (uint8_t*)&received_data_from_queue.data,COMS_SIZE);
 
 
-
-            Box board;
-            (void) memset(board.data,0,sizeof(board));
-            board.delimiter='\a';
-            board.VPID=received_data_from_queue.VPID;
-            board.Stream='D';
-            (void) memset(board.data,0,sizeof(board.data));
-            (void) strncpy((char*)board.data,(char*)received_data_from_queue.data,COMS_SIZE-1);
-            //(void) uart_write_bytes(UART_NUM, "\a", 1);
-            (void) uart_write_bytes(UART_NUM, (const void*)&board, sizeof(Packet));
 
         }
     }
 }
+
+
+int SendMessage(const uint8_t VPID, const char Stream, const uint8_t buff[], const size_t size) {
+    if (size>COMS_SIZE) return -1; // run time assertion : size is too large
+
+
+    if (strchr("REDFS",Stream)==NULL) return -2; // run time assertion : not a valid stream
+
+
+    Box board;
+    (void) memset(&board,0,sizeof(board));
+    board.delimiter='\a';
+    board.VPID=VPID;
+    board.Stream=Stream;
+    (void) memset(board.data,0,sizeof(board.data));
+    (void) strncpy((char*)board.data,(char*)buff,size);
+    (void) uart_write_bytes(UART_NUM, (const void*)&board, sizeof(Box));
+
+    return 0;
+}
+
+
 
 void ThreadMessages() {
     /*if (uxQueueMessagesWaiting(ExchangeQueue) > 0) {
@@ -81,7 +94,7 @@ void ThreadMessages() {
 #ifdef DEBUG
     if (uxQueueMessagesWaiting(DebugQueue) > 0) {
         //printf("DEBUG\n");
-        SendQue(DebugQueue);
+        SendQue(DebugQueue,'D');
         //printf("\r\n\r\n");
     }
 #endif

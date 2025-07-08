@@ -39,8 +39,8 @@ typedef struct {
 
 
 /**
- * @brief Shipping task process, Ment to handle out going communication to the PI
- * @details BEHAVOR:Will Send all outgoing message streams with PID header and loop.
+ * @brief Shipping task process, Ment to handle outgoing communication to the PI
+ * @details BEHAVIOR:Will Send all outgoing message streams with PID header and loop.
  * @param pvParameters leave empty
  * @date 2025-03-24
  * @author Gabriel Weaver
@@ -49,14 +49,27 @@ _Noreturn void Shipping(void *pvParameters);
 
 /**
  * 
- * @param Queue 
+ * @param Queue
+ * @date 7/4/2025
+ * @author Gabriel Weaver
  */
-void SendQue(QueueHandle_t Queue);
+void SendQue(QueueHandle_t Queue, char Stream);
 
 
+/**
+ *
+ */
+void ThreadMessages();
 
-
-    void ThreadMessages();
+/**
+ *
+ * @param VPID
+ * @param Stream
+ * @param buff
+ * @param size
+ * @return
+ */
+int SendMessage(const uint8_t VPID, const char Stream, const uint8_t buff[], const size_t size);
 
 
 
