@@ -31,7 +31,7 @@ _Noreturn void receiving(void *pvParameters){
     //setup massage buffer
     //uint8_t data[COMS_SIZE];
 
-    Box LocalBox;
+
 
 
 
@@ -52,12 +52,16 @@ _Noreturn void receiving(void *pvParameters){
 
     //PrintfToPI(DebugQueue,0,"test DebugQueue");
     int count=0;
+    Box LocalBox;
+
+
+
+
     while (1){
         memset(&LocalBox,0,sizeof(Box));
-
         PrintfToPI(DebugQueue,0,"test DebugQueue%d",count);
         count++;
-        if (count==32){abort();}
+        if (count==32){count=0;}
         //PrintfToPI(ExchangeQueue,"test ExchangeQueue");
         //PrintfToPI(RecationQueue,   "test RecationQueue");
 
@@ -70,11 +74,14 @@ _Noreturn void receiving(void *pvParameters){
         //uart_read_bytes(UART_NUM,&delimiter,1,100 / portTICK_PERIOD_MS);
         //if (delimiter=='\a') {
             int len=uart_read_bytes(UART_NUM, &LocalBox, sizeof(Box), 100 / portTICK_PERIOD_MS);
+            printf("%s", (char*)&LocalBox);
                 if (len == sizeof(Box)) {
                     //Processes data
-                   //PackfToPI(DebugQueue,0,&LocalBox,sizeof(Box));
-
-
+                    PrintfToPI(DebugQueue,1,"Delim:c% VPID:%d stream :%c size:%d",LocalBox.delimiter,LocalBox.VPID,LocalBox.Stream,strnlen(LocalBox.data,COMS_SIZE));
+                   //PackfToPI(DebugQueue,0,(char*) &LocalBox.data,1024);
+                   //ProcessRequest(CurrentConext[0],((const uint8_t *)LocalBox.data);
+                    vTaskDelay(1000 / portTICK_PERIOD_MS);  // Delay for 0.1 second
+                }else{ //PrintfToPI(DebugQueue,1,"whohh now%d",len);
                 }
 
         //}

@@ -45,6 +45,8 @@ class ESPSerial(object):
 
         if len(packet_data) < self.PACKET_SIZE:
             print(f"Incomplete packet received ({len(packet_data)} bytes), expecting {self.PACKET_SIZE}.")
+            print(packet_data.decode())
+
             return None
 
         return packet_data
@@ -62,12 +64,27 @@ class ESPSerial(object):
                 # Marker found
                 return True
 
+   # def send_packet(self, VPID, buff):
+   #     if isinstance(buff, str):
+   #         buff = buff.encode('utf-8')
+    #    buff = buff.ljust(1024, b'\x00')[:1024]
+    #    packed_data = struct.pack("<cBB1024s", b'\a', VPID, ord('N'), buff)
+   #    self.serial.write(packed_data)
 
     def send_packet(self, VPID, buff):
-        packed_data = struct.pack(self.PACKET_FORMAT, VPID, b'N', buff)
-        #self.serial.write("\a".encode('ascii'))
-        self.serial.write(packed_data)
+        if not isinstance(VPID, int) or not (0 <= VPID <= 255):
+            raise ValueError("VPID must be an integer between 0 and 255")
 
+        if isinstance(buff, str):
+            buff = buff.encode('utf-8')
+
+        buff = buff.ljust(1024, b'\x00')[:1024]
+
+        try:
+            packed_data = struct.pack("<cBB1024s", b'\a', VPID, ord('N'), buff)
+            self.serial.write(packed_data)
+        except Exception as e:
+            print("Error while packing or sending:", e)
 
 
     def read_packet(self):
