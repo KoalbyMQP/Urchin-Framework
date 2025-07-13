@@ -83,6 +83,9 @@ class ESPSerial(object):
         try:
             packed_data = struct.pack("<cBB1024s", b'\a', VPID, ord('N'), buff)
             self.serial.write(packed_data)
+
+            #print(struct.calcsize("<cBB1024s"))
+            #print("Decode:  "+packed_data.decode())
         except Exception as e:
             print("Error while packing or sending:", e)
 

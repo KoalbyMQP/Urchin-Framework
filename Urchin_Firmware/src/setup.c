@@ -24,24 +24,8 @@ void SetUpUart() {
     uart_param_config(UART_NUM, &uart_config);
 
     // Install UART driver
-    uart_driver_install(UART_NUM,  sizeof(Box), sizeof(Box), 0, NULL, 0);
+    uart_driver_install(UART_NUM,  sizeof(Box)*12, sizeof(Box)*2, 0, NULL, 0);
 
 }
 
 
-// void esp_core_dump_to_custom(const void* core_dump_data, size_t data_len) {
-  ///  printf("ESP core dump:!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-    // const uint8_t* data = (const uint8_t*) core_dump_data;
-    // size_t offset = 0;
-    //
-    // while (offset < data_len) {
-    //     size_t chunk_size = COMS_SIZE;
-    //     if (offset + chunk_size > data_len) {
-    //         chunk_size = data_len - offset;
-    //     }
-    //
-    //     SendMessage(0, 'F', data + offset, chunk_size);
-    //     offset += chunk_size;
-    // }
-
- //}

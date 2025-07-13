@@ -13,9 +13,44 @@
 #include <stdio.h>
 #include <string.h>
 #include "freertos/queue.h"
-//#include "Annotations.h"
+
 
 #define UART_NUM UART_NUM_0  // Use UART0 (default for USB serial)
+
+
+
+//Used to remove padding so python can take it apart
+#pragma pack(push, 1) // Ensure no padding bytes
+
+/**
+ *Used to send messages to and from PI
+ */
+typedef struct {
+   /**
+    * Char to denote start of box should be '\a'
+    */
+    char delimiter;
+
+    /**
+     * Virtual Process ID (Used to separate different API instances)
+     */
+    uint8_t VPID;
+
+    /**
+     * Type of message
+     */
+    uint8_t Stream;
+
+    /**
+     * Message data
+     */
+    char data[COMS_SIZE] ;
+
+} Box;
+
+#pragma pack(pop)
+
+
 
 
 //Return codes

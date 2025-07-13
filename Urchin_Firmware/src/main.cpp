@@ -12,6 +12,7 @@
 #include "Ticket.h"
 #include "UnPacker.h"
 #include "MSGQueue.h"
+#include "Receving.h"
 
 uart_config_t uart_config;
 

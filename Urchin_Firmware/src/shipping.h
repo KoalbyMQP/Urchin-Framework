@@ -25,16 +25,6 @@ extern "C" {
 
 
 
-#pragma pack(push, 1) // Ensure no padding bytes
-
-typedef struct {
-    char delimiter;
-    uint8_t VPID;
-    uint8_t Stream;
-    char data[COMS_SIZE] ;
-    } Box;
-
-#pragma pack(pop)
 
 
 
@@ -47,9 +37,11 @@ typedef struct {
  */
 _Noreturn void Shipping(void *pvParameters);
 
+
 /**
- * 
- * @param Queue
+ * Send the whole queue over the USB
+ * @param Queue the queue to be sent
+ * @param Stream type of message
  * @date 7/4/2025
  * @author Gabriel Weaver
  */
@@ -62,12 +54,14 @@ void SendQue(QueueHandle_t Queue, char Stream);
 void ThreadMessages();
 
 /**
- *
- * @param VPID
- * @param Stream
- * @param buff
- * @param size
- * @return
+ * Sends a single message over uart USB
+ * @param VPID Virtual Process ID (Used to separate different API instances)
+ * @param Stream Type of message
+ * @param buff Message
+ * @param size length of message, MAX=1024
+
+ * @retval 0 Success
+ * @retval -1 Failed
  */
 int SendMessage(const uint8_t VPID, const char Stream, const uint8_t buff[], const size_t size);
 

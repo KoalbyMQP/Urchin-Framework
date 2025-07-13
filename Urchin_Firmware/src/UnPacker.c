@@ -7,7 +7,7 @@
 
 #include "UnPacker.h"
 
-#include <coms.h>
+
 #include "shipping.h"
 #include "Errors.h"
 #include "TicketNum.h"
@@ -16,83 +16,9 @@
 
 //#include "Herkulex.h"
 
-#define HX_UART_NUM UART_NUM_2
-
-_Noreturn void receiving(void *pvParameters){
-
-    //HerkulexClass Herkulex;
-    //Herkulex.beginSerial3(115200); //open serial port 1
-    //Herkulex.reboot(7); //reboot
-    //erkulex.initialize();
-
-    RollINIT(&TicketTape);
-
-
-    //setup massage buffer
-    //uint8_t data[COMS_SIZE];
 
 
 
-
-
-
-
-    static Context Basic[]={
-            {"ReqTicket",9,ReqTicket},
-            {"PunchTicket",11,PunchTicket},
-            {"CloseTicket",11,CloseTicket},
-            {"TicketInfo",10,TicketInfo},
-            {"GetHealth",9,GetHealth}
-    };
-
-
-
-    Context *CurrentConext[PIDNUM];
-    CurrentConext[0]=Basic;
-
-    //PrintfToPI(DebugQueue,0,"test DebugQueue");
-    int count=0;
-    Box LocalBox;
-
-
-
-
-    while (1){
-        memset(&LocalBox,0,sizeof(Box));
-        PrintfToPI(DebugQueue,0,"test DebugQueue%d",count);
-        count++;
-        if (count==32){count=0;}
-        //PrintfToPI(ExchangeQueue,"test ExchangeQueue");
-        //PrintfToPI(RecationQueue,   "test RecationQueue");
-
-
-        vTaskDelay(100 / portTICK_PERIOD_MS);  // Delay for 0.1 second
-        //(void) PrintfToPI(ExchangeQueue,"hello");
-        esp_task_wdt_reset();
-
-        char delimiter;
-        //uart_read_bytes(UART_NUM,&delimiter,1,100 / portTICK_PERIOD_MS);
-        //if (delimiter=='\a') {
-            int len=uart_read_bytes(UART_NUM, &LocalBox, sizeof(Box), 100 / portTICK_PERIOD_MS);
-            printf("%s", (char*)&LocalBox);
-                if (len == sizeof(Box)) {
-                    //Processes data
-                    PrintfToPI(DebugQueue,1,"Delim:c% VPID:%d stream :%c size:%d",LocalBox.delimiter,LocalBox.VPID,LocalBox.Stream,strnlen(LocalBox.data,COMS_SIZE));
-                   //PackfToPI(DebugQueue,0,(char*) &LocalBox.data,1024);
-                   //ProcessRequest(CurrentConext[0],((const uint8_t *)LocalBox.data);
-                    vTaskDelay(1000 / portTICK_PERIOD_MS);  // Delay for 0.1 second
-                }else{ //PrintfToPI(DebugQueue,1,"whohh now%d",len);
-                }
-
-        //}
-
-
-    }
-
-
-
-
-}
 
 
 

@@ -78,18 +78,18 @@ int SendMessage(const uint8_t VPID, const char Stream, const uint8_t buff[], con
 
 
 void ThreadMessages() {
-    /*if (uxQueueMessagesWaiting(ExchangeQueue) > 0) {
-        printf("EXCHANGE\n");
-        SendQue(ExchangeQueue);
-        printf("\r\n\r\n");
+    if (uxQueueMessagesWaiting(ExchangeQueue) > 0) {
+        //printf("EXCHANGE\n");
+        SendQue(ExchangeQueue,'E');
+        //printf("\r\n\r\n");
     }
 
     if (uxQueueMessagesWaiting(RecationQueue) > 0) {
-        printf("RECATION\n");
-        SendQue(RecationQueue);
-        printf("\r\n\r\n");
+       // printf("RECATION\n");
+        SendQue(RecationQueue,'R');
+        //printf("\r\n\r\n");
     }
-*/
+
 
 #ifdef DEBUG
     if (uxQueueMessagesWaiting(DebugQueue) > 0) {
