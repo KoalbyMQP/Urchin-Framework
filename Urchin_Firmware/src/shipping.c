@@ -42,40 +42,59 @@ _Noreturn void Shipping(void *pvParameters) {
 
 
 
-void SendQue(QueueHandle_t Queue) {
-    uint8_t data[COMS_SIZE];
+void SendQue(QueueHandle_t Queue, char Stream) {
+    MSG received_data_from_queue;
     while(uxQueueMessagesWaiting(Queue)>0){
-        if (xQueueReceive(Queue, &data, portMAX_DELAY)) {
+        if (xQueueReceive(Queue, &received_data_from_queue, portMAX_DELAY)) {
             //int length= strlen((const char *)(data));
-            Box board;
-            board.VPID=0;
-            board.Stream='P';
-            memset(board.data,0,sizeof(board.data));
-            strncpy((char*)board.data,(char*)data,COMS_SIZE-1);
-            (void) uart_write_bytes(UART_NUM, data, sizeof(Packet));
-            //(void) printf("\n\n");
+            (void) SendMessage(received_data_from_queue.VPID ,Stream, (uint8_t*)&received_data_from_queue.data,COMS_SIZE);
+
+
+
         }
     }
 }
 
+
+int SendMessage(const uint8_t VPID, const char Stream, const uint8_t buff[], const size_t size) {
+    if (size>COMS_SIZE) return -1; // run time assertion : size is too large
+
+
+    if (strchr("REDFS",Stream)==NULL) return -2; // run time assertion : not a valid stream
+
+
+    Box board;
+    (void) memset(&board,0,sizeof(board));
+    board.delimiter='\a';
+    board.VPID=VPID;
+    board.Stream=Stream;
+    (void) memset(board.data,0,sizeof(board.data));
+    (void) strncpy((char*)board.data,(char*)buff,size);
+    (void) uart_write_bytes(UART_NUM, (const void*)&board, sizeof(Box));
+
+    return 0;
+}
+
+
+
 void ThreadMessages() {
-    /*if (uxQueueMessagesWaiting(ExchangeQueue) > 0) {
-        printf("EXCHANGE\n");
-        SendQue(ExchangeQueue);
-        printf("\r\n\r\n");
+    if (uxQueueMessagesWaiting(ExchangeQueue) > 0) {
+        //printf("EXCHANGE\n");
+        SendQue(ExchangeQueue,'E');
+        //printf("\r\n\r\n");
     }
 
     if (uxQueueMessagesWaiting(RecationQueue) > 0) {
-        printf("RECATION\n");
-        SendQue(RecationQueue);
-        printf("\r\n\r\n");
+       // printf("RECATION\n");
+        SendQue(RecationQueue,'R');
+        //printf("\r\n\r\n");
     }
-*/
+
 
 #ifdef DEBUG
     if (uxQueueMessagesWaiting(DebugQueue) > 0) {
         //printf("DEBUG\n");
-        SendQue(DebugQueue);
+        SendQue(DebugQueue,'D');
         //printf("\r\n\r\n");
     }
 #endif

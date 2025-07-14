@@ -14,19 +14,6 @@ extern "C" {
 
 #define ContextWordSize 15
 #define NumOfActions 10
-#define PID 0
-
-
-
-
-/**
-     * @brief Receiving task process, Ment to handle incoming going communication to the PI, command validation, and pushing to the Queue
-     * @details BEHAVOR:Will receve a message then sent it to the context of its PID then loop.
-     * @param pvParameters Empty
-     * @date 2025-05-29
-     * @author Gabriel Weaver
-     */
-    _Noreturn void receiving(void *pvParameters);
 
 
 
@@ -34,10 +21,13 @@ extern "C" {
 
 
 
+
+
+    typedef struct Context Context;  // Forward declaration
     /**
      *@brief A context is a function to be called when a word is seen in message from the PI
      */
-    typedef struct {
+    typedef struct Context{
         /**
          * The word or phrase that will signal a kind of action
          */
@@ -52,8 +42,22 @@ extern "C" {
          * The function to be called when the name was mentioned
          * @param buffer[] The remaining string after the "Name"
          */
-        int (*function)(const char buffer[]);
+         int (*function)(const char buffer[]);
+
+        /**
+         * list contexts to branch to
+         */
+         Context* branch;
+
+        /**
+         * Number of contexts in list
+         */
+        const unsigned int size;
+
     }Context;
+
+
+
 
 
 

@@ -7,7 +7,7 @@
 
 #include "UnPacker.h"
 
-#include <coms.h>
+
 #include "shipping.h"
 #include "Errors.h"
 #include "TicketNum.h"
@@ -16,70 +16,9 @@
 
 //#include "Herkulex.h"
 
-#define HX_UART_NUM UART_NUM_2
-
-_Noreturn void receiving(void *pvParameters){
-
-    //HerkulexClass Herkulex;
-    //Herkulex.beginSerial3(115200); //open serial port 1
-    //Herkulex.reboot(7); //reboot
-    //erkulex.initialize();
-
-    RollINIT(&TicketTape);
-
-
-    //setup massage buffer
-    uint8_t data[COMS_SIZE];
 
 
 
-
-
-    static Context Basic[]={
-            {"ReqTicket",9,ReqTicket},
-            {"PunchTicket",11,PunchTicket},
-            {"CloseTicket",11,CloseTicket},
-            {"TicketInfo",10,TicketInfo},
-            {"GetHealth",9,GetHealth}
-    };
-
-
-
-    Context *CurrentConext[PIDNUM];
-    CurrentConext[0]=Basic;
-
-
-
-    while (1){
-        PrintfToPI(DebugQueue,"test DebugQueue");
-
-        //PrintfToPI(ExchangeQueue,"test ExchangeQueue");
-        //PrintfToPI(RecationQueue,   "test RecationQueue");
-
-
-        vTaskDelay(100 / portTICK_PERIOD_MS);  // Delay for 0.1 second
-        //(void) PrintfToPI(ExchangeQueue,"hello");
-        esp_task_wdt_reset();
-        int len = uart_read_bytes(UART_NUM, data, COMS_SIZE - 1, 100 / portTICK_PERIOD_MS);
-
-        if (len > 0) {
-
-            data[len] = '\0';
-
-
-            //Processes data
-            ProcessRequest(CurrentConext[PID], data);
-
-        } else {
-            // no message is received so do nothing
-        }
-
-    }
-
-
-
-
-}
 
 
 
@@ -89,7 +28,7 @@ _Noreturn void receiving(void *pvParameters){
 
 
 int ReqTicket(const char* buffer){
-(void)PrintfToPI(DebugQueue,"\n\nReqTicket called");
+(void)PrintfToPI(DebugQueue,0,"\n\nReqTicket called");
     //PrintTape(&TicketTape);
     //Get Ticket
 
@@ -97,16 +36,16 @@ int ReqTicket(const char* buffer){
 
     //send NoFreeTicket if non are found
     if (Ticket == -1) {
-        (void) PrintfToPI(ExchangeQueue,"Code:%d",NoFreeTicket);
+        (void) PrintfToPI(ExchangeQueue,0,"Code:%d",URCHIN_ERROR_NoFreeTicket);
         return -1;
     }
 
-    PrintfToPI(DebugQueue,"Ticket:%d\n",Ticket);
+    PrintfToPI(DebugQueue,0,"Ticket:%d\n",Ticket);
     //Check out ticket
     checkOut(&TicketTape,Ticket);
     //send OK with ticket
-    (void) PrintfToPI(ExchangeQueue,"Code:%d \nTicket%d ",OK,Ticket);
-    (void) PrintfToPI(ExchangeQueue,"Tape%u",TicketTape);
+    (void) PrintfToPI(ExchangeQueue,0,"Code:%d \nTicket%d ",URCHIN_OK,Ticket);
+    (void) PrintfToPI(ExchangeQueue,0,"Tape%u",TicketTape);
 
   return 0;
 }
@@ -128,14 +67,14 @@ int PunchTicket(const char* buffer) {
     Herkulex.end();
     */
 
-    (void) PrintfToPI(ExchangeQueue,"PunchTicket not added");
+    (void) PrintfToPI(ExchangeQueue,0,"PunchTicket not added");
     return 0;
 }
 
 
 int CloseTicket(const char* buffer) {
 
-    (void) PrintfToPI(ExchangeQueue,"CloseTicket not added");
+    (void) PrintfToPI(ExchangeQueue,0,"CloseTicket not added");
 return 0;
 }
 
@@ -143,7 +82,7 @@ return 0;
 
 int TicketInfo(const char* buffer) {
 
-    (void) PrintfToPI(ExchangeQueue,"TicketInfo not added");
+    (void) PrintfToPI(ExchangeQueue,0,"TicketInfo not added");
 return 0;
 }
 
@@ -151,11 +90,11 @@ return 0;
 
 int GetHealth(const char* buffer) {
     if (0== strcmp("FreeRam",buffer)) {
-        (void) PrintfToPI(ExchangeQueue,"%d",xPortGetFreeHeapSize());
+        (void) PrintfToPI(ExchangeQueue,0,"%d",xPortGetFreeHeapSize());
 
     }
     if (0== strcmp("TotalRam",buffer)) {
-        (void) PrintfToPI(ExchangeQueue,"%d",xPortGetMinimumEverFreeHeapSize());
+        (void) PrintfToPI(ExchangeQueue,0,"%d",xPortGetMinimumEverFreeHeapSize());
     }
 
     if (0== strcmp("CPU",buffer)) {
@@ -183,7 +122,7 @@ int ProcessRequest(Context Commands[],const uint8_t buffer[]) {
         int found=0;
         int error=0;
 
-    (void) PrintfToPI(DebugQueue,"ProcessRequest:%s",buffer);
+    (void) PrintfToPI(DebugQueue,0,"ProcessRequest:%s",buffer);
         while (i < NumOfActions && !found){
             if (0==strncmp((char*)buffer,Commands[i].Name,Commands[i].depth)) {
                 error=Commands[i].function(SkipFoward((char*)buffer,Commands[i].depth));
@@ -191,7 +130,7 @@ int ProcessRequest(Context Commands[],const uint8_t buffer[]) {
             }
             i++;
             }
-    if (!found) {return CommandNotFound;}
+    if (!found) {return URCHIN_ERROR_CommandNotFound;}
     return error;
 
 }

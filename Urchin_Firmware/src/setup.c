@@ -3,8 +3,10 @@
 //
 
 #include "setup.h"
-#include "shipping.h"
 
+#include "MSGQueue.h"
+#include "shipping.h"
+//#include "esp_core_dump.h"
 
 
 void SetUpUart() {
@@ -17,11 +19,13 @@ void SetUpUart() {
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
         .rx_flow_ctrl_thresh = 122,  // Common safe value
-        .flags = { .allow_pd = 0, .backup_before_sleep = 0 }  // Ensure flags are set
+        .source_clk = UART_SCLK_APB  // Ensure flags are set
     };
     uart_param_config(UART_NUM, &uart_config);
 
     // Install UART driver
-    uart_driver_install(UART_NUM,  sizeof(Box), sizeof(Box), 0, NULL, 0);
+    uart_driver_install(UART_NUM,  sizeof(Box)*12, sizeof(Box)*2, 0, NULL, 0);
 
 }
+
+

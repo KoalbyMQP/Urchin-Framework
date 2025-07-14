@@ -10,6 +10,8 @@
 #include "driver/uart.h"
 #include "coms.h"
 #include "GLOBAL.h"
+#include "shipping.h"
+
 
 #define AsyncSize 64
 #define SequentialSize 64
@@ -21,6 +23,9 @@ extern "C" {
 
     void SetUpUart();
 
+
+
+     void esp_core_dump_to_custom(const void* core_dump_data, size_t data_len);
 
 #ifdef __cplusplus
 }

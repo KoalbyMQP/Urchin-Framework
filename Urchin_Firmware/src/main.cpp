@@ -12,6 +12,7 @@
 #include "Ticket.h"
 #include "UnPacker.h"
 #include "MSGQueue.h"
+#include "Receving.h"
 
 uart_config_t uart_config;
 
@@ -21,6 +22,7 @@ extern "C" [[noreturn]] void app_main() {
     esp_log_level_set("*", ESP_LOG_NONE);
     //sets up the seral comuncation
     SetUpUart();
+
 
 
 
@@ -72,6 +74,10 @@ int nothing=0;
     }
 
 }
+
+
+
+
 
 
 
