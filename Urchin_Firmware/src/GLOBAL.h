@@ -16,7 +16,8 @@
 extern "C" {
 #endif
 
-void DoSomething();
+
+
 
 #ifdef __cplusplus
 }

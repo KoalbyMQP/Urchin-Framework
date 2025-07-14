@@ -36,7 +36,7 @@ int ReqTicket(const char* buffer){
 
     //send NoFreeTicket if non are found
     if (Ticket == -1) {
-        (void) PrintfToPI(ExchangeQueue,0,"Code:%d",NoFreeTicket);
+        (void) PrintfToPI(ExchangeQueue,0,"Code:%d",URCHIN_ERROR_NoFreeTicket);
         return -1;
     }
 
@@ -44,7 +44,7 @@ int ReqTicket(const char* buffer){
     //Check out ticket
     checkOut(&TicketTape,Ticket);
     //send OK with ticket
-    (void) PrintfToPI(ExchangeQueue,0,"Code:%d \nTicket%d ",OK,Ticket);
+    (void) PrintfToPI(ExchangeQueue,0,"Code:%d \nTicket%d ",URCHIN_OK,Ticket);
     (void) PrintfToPI(ExchangeQueue,0,"Tape%u",TicketTape);
 
   return 0;
@@ -130,7 +130,7 @@ int ProcessRequest(Context Commands[],const uint8_t buffer[]) {
             }
             i++;
             }
-    if (!found) {return CommandNotFound;}
+    if (!found) {return URCHIN_ERROR_CommandNotFound;}
     return error;
 
 }

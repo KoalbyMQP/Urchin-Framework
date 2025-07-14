@@ -6,7 +6,8 @@
 #include "UnPacker.h"
 #include "TicketNum.h"
 #include "coms.h"
-
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 _Noreturn void receiving(void *pvParameters){
 
     //HerkulexClass Herkulex;
@@ -15,6 +16,8 @@ _Noreturn void receiving(void *pvParameters){
     //erkulex.initialize();
 
     RollINIT(&TicketTape);
+
+    TicketTapeMutex = xSemaphoreCreateMutex();
 
 
     //setup massage buffer
@@ -51,7 +54,9 @@ _Noreturn void receiving(void *pvParameters){
     //if we are looking for the delimiter
     bool syncing = true;
 
-    while (1) {
+
+    bool working = true;
+    while (working) {
         int len = uart_read_bytes(UART_NUM, rx_buffer, sizeof(rx_buffer), pdMS_TO_TICKS(20));
         if (len > 0) { //Check if there was something to receive
 
