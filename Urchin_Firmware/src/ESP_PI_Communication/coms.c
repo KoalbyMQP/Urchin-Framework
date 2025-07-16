@@ -3,11 +3,10 @@
 //
 
 #include "coms.h"
-#include "shipping.h"
-#include <driver/uart.h>
+#include "Shipping.h"
 #include <hal/uart_types.h>
-#include "Errors.h"
-#include "GLOBAL.h"
+#include "Global/Errors.h"
+#include "Global/GLOBAL.h"
 
 // cppcheck-suppress unusedFunction
 int PackfToPI(QueueHandle_t MsgQueue, const uint8_t VPID,const char buff[], size_t buff_size){

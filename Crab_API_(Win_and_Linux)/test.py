@@ -1,14 +1,11 @@
-from ESPSerial import ESPSerial
+import serial.tools.list_ports
 
-ESP = ESPSerial()
-
-# --- Main Loop ---
-try:
-    while True:
-        ESP.read_packet()
-        ESP.send_packet(0,b"GetHealth")
-        print("trying to send packet")
-
-finally:
-    print("\nClosing serial port.")
-    ESP.close()
+for port in serial.tools.list_ports.comports():
+    print(f"Device : {port.device}")
+    print(f"  Name : {port.name}")
+    print(f"  VID  : {hex(port.vid) if port.vid else 'Unknown'}")
+    print(f"  PID  : {hex(port.pid) if port.pid else 'Unknown'}")
+    print(f"  Description : {port.description}")
+    print(f"  Manufacturer: {port.manufacturer}")
+    print(f"  Serial No.  : {port.serial_number}")
+    print()

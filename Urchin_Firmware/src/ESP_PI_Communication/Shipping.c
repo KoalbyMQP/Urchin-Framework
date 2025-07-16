@@ -2,22 +2,19 @@
 //
 // Created by gabri on 3/23/2025.
 //
-#include "GLOBAL.h"
-#include "shipping.h"
-#include "Ticket.h"
-#include "TicketNum.h"
-#include "UnPacker.h"
-#include "MSGQueue.h"
+#include "Global//GLOBAL.h"
+#include "Shipping.h"
+#include "Ticketing/Ticket.h"
+#include "Ticketing/TicketNum.h"
+#include "Conversation/UnPacker.h"
+
+
 QueueHandle_t ExchangeQueue;
 QueueHandle_t RecationQueue;
 QueueHandle_t DebugQueue;
 // cppcheck-suppress unusedFunction
 _Noreturn void Shipping(void *pvParameters) {
-    (void) printf("started shipping\n"); //remove later as printf is not thread safe
-
-
-
-
+    //(void) printf("started shipping\n"); //remove later as printf is not thread safe
     //gpio_set_direction((gpio_num_t)CherpPin, GPIO_MODE_OUTPUT);
 
 
@@ -60,7 +57,7 @@ int SendMessage(const uint8_t VPID, const char Stream, const uint8_t buff[], con
     if (size>COMS_SIZE) return -1; // run time assertion : size is too large
 
 
-    if (strchr("REDFS",Stream)==NULL) return -2; // run time assertion : not a valid stream
+    if (strchr("REDFS",Stream)==NULL) return -2; // run time assertion : not a valid stream "REDFS" is a list of chars that are valid streams
 
 
     Box board;

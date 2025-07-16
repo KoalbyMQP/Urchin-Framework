@@ -1,3 +1,4 @@
+// Lib headers
 #include <cstring>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -5,14 +6,16 @@
 #include "esp_log.h"
 #include "driver/uart.h"
 
-#include "GLOBAL.h"
-#include "setup.h"
-#include "coms.h"
-#include "shipping.h"
-#include "Ticket.h"
-#include "UnPacker.h"
-#include "MSGQueue.h"
-#include "Receving.h"
+
+// Local headers
+#include "Global/GLOBAL.h"
+#include "Global/setup.h"
+#include "ESP_PI_Communication/coms.h"
+#include "ESP_PI_Communication/Shipping.h"
+#include "Ticketing/Ticket.h"
+#include "Conversation/UnPacker.h"
+#include "ESP_PI_Communication/MSGQueue.h"
+#include "ESP_PI_Communication/Receving.h"
 
 uart_config_t uart_config;
 
@@ -23,6 +26,7 @@ extern "C" [[noreturn]] void app_main() {
     //sets up the seral comuncation
     SetUpUart();
 
+    SetUpPins();
 
 
 

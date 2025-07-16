@@ -1,0 +1,25 @@
+# Root folder
+/.idea
+/.vscode
+
+# Urchin Firmware
+/Urchin_Firmware/.idea
+/Urchin_Firmware/.vscode
+/Urchin_Firmware/.pio
+
+# Mollusk Firmware
+/Mollusk_Firmware/.idea
+/Mollusk_Firmware/.vscode
+/Mollusk_Firmware/.pio
+
+#Crab API
+/Crab_API_(Win_and_Linux)/.idea
+/Crab_API_(Win_and_Linux)/.vscode
+
+# Coral Multiplexor
+/Coral_Multiplexor_(Win_and_Linux)/.idea
+/Coral_Multiplexor_(Win_and_Linux)/.vscode
+
+# Dev container
+/.devcontainer/.idea
+/.devcontainer/.vscode

@@ -1,21 +1,52 @@
-import Items
-import Reaction
+import queue
+import threading
+
+from ESPSerial import *
+from Types import *
 
 
 class Smart:
-    def __init__(self,serial):
+    def __init__(self,serial: str)->None:
         #todo
         #start the listener loop
         self.react=[]
 
+        self.Thread = threading.Thread(target=self.SmartRuner)
+
+        self.Exchange=queue.Queue()
+        self.Reaction=queue.Queue()
+        self.Debug=queue.Queue()
+
         self.serial=serial
 
-    def LissenerLoop(self):
+
+
+    def SmartRuner(self):
+        print("Starting Smart Thread")
+        serial=ESPSerial()
+
+
+
+        while(True):
+
+            port=serial.read_packet()
+
+            if (port["Stream"]=='E'):
+                print("E"+port["data_str"])
+                self.Exchange.put(port["data_str"])
+
+            if (port["Stream"] == 'R'):
+                print("R"+port["data_str"])
+                self.Reaction.put(port["data_str"])
+
+            if (port["Stream"] == 'D'):
+                print("D"+port["data_str"])
+                self.Debug.put(port["data_str"])
 
 
 
 
-    def send(self,type,items,resolver,chained):
+    def send(self,type: str ,items: List[Item] ,resolver : React, chained: bool )-> int:
         '''
         Used to send a motor control command to the Esp32
         :param type: the Type of command "Interrupt","Sequential","Resolving","asynchronous"
@@ -25,28 +56,28 @@ class Smart:
         :return: ticket number
         '''
 
-
-        if not isinstance(type,str):
-            raise TypeError('type must be str')
-        if type not in ["Interrupt","Sequential","Resolving","asynchronous"]:
-            raise TypeError("Type must be one of Interrupt , Sequential , Resolving , asynchronous")
-
-        if not isinstance(items,list):
-            raise TypeError("items must be a list")
-        if not all(isinstance(item, Items) for item in items):
-            raise TypeError("all elements in items must be \"Items\"")
+        # deprecated due to Typing
+        # if not isinstance(type,str):
+        #     raise TypeError('type must be str')
+        # if type not in ["Interrupt","Sequential","Resolving","asynchronous"]:
+        #     raise TypeError("Type must be one of Interrupt , Sequential , Resolving , asynchronous")
+        #
+        # if not isinstance(items,list):
+        #     raise TypeError("items must be a list")
+        # if not all(isinstance(item, Items) for item in items):
+        #     raise TypeError("all elements in items must be \"Items\"")
 
         # todo
         # add restraints later
 
-
-        if not isinstance(resolver,list):
-            raise TypeError("resolver must be a list")
-        if not all(isinstance(hold,Reaction) for hold in resolver):
-            raise TypeError("all elements in resolver must be a\"Reaction\"")
-
-        if not isinstance(chained,bool):
-            raise TypeError("chained must be a bool")
+        # deprecated due to Typing
+        # if not isinstance(resolver,list):
+        #     raise TypeError("resolver must be a list")
+        # if not all(isinstance(hold,Reaction) for hold in resolver):
+        #     raise TypeError("all elements in resolver must be a\"Reaction\"")
+        #
+        # if not isinstance(chained,bool):
+        #     raise TypeError("chained must be a bool")
 
         # todo
         #request ticket
@@ -62,7 +93,7 @@ class Smart:
 
 
         #todo
-        #return ticket
+        return 0
 
 
     def CloseTicket(self,ticket):

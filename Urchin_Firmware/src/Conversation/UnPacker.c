@@ -8,11 +8,11 @@
 #include "UnPacker.h"
 
 
-#include "shipping.h"
-#include "Errors.h"
-#include "TicketNum.h"
-#include "MSGQueue.h"
-#include "GLOBAL.h"
+#include "ESP_PI_Communication/Shipping.h"
+#include "Global/Errors.h"
+#include "Ticketing//TicketNum.h"
+#include "ESP_PI_Communication//MSGQueue.h"
+#include "Global/GLOBAL.h"
 
 //#include "Herkulex.h"
 
@@ -49,10 +49,6 @@ int ReqTicket(const char* buffer){
 
   return 0;
 }
-
-
-
-
 
 
 
@@ -109,6 +105,10 @@ int GetHealth(const char* buffer) {
     //DoSomething();
 return 0;
 }
+
+
+
+
 
 //-----------------------------------------------------------------------
 
