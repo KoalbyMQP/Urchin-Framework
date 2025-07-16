@@ -4,7 +4,7 @@
 
 #include "TicketNum.h"
 #include "ESP_PI_Communication/MSGQueue.h"
-#include "ESP_PI_Communication/coms.h"
+#include "ESP_PI_Communication/Coms.h"
 
 TapeRoll TicketTape;
 SemaphoreHandle_t TicketTapeMutex;

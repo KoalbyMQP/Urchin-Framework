@@ -10,7 +10,7 @@
 // Local headers
 #include "Global/GLOBAL.h"
 #include "Global/setup.h"
-#include "ESP_PI_Communication/coms.h"
+#include "ESP_PI_Communication/Coms.h"
 #include "ESP_PI_Communication/Shipping.h"
 #include "Ticketing/Ticket.h"
 #include "Conversation/UnPacker.h"

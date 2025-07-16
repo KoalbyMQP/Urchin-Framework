@@ -8,7 +8,7 @@
 #include "driver/gpio.h"
 #include "GLOBAL.h"
 #include "driver/uart.h"
-#include "ESP_PI_Communication/coms.h"
+#include "ESP_PI_Communication/Coms.h"
 #include "GLOBAL.h"
 #include "ESP_PI_Communication/Shipping.h"
 
