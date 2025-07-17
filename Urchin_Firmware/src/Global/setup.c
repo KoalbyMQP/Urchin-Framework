@@ -3,9 +3,9 @@
 //
 
 #include "setup.h"
-
+#include "GLOBAL.h"
 #include "MSGQueue.h"
-#include "shipping.h"
+#include "Shipping.h"
 //#include "esp_core_dump.h"
 
 
@@ -25,6 +25,21 @@ void SetUpUart() {
 
     // Install UART driver
     uart_driver_install(UART_NUM,  sizeof(Box)*12, sizeof(Box)*2, 0, NULL, 0);
+
+}
+
+
+
+void SetUpPins() {
+    gpio_config_t io_conf = {
+            .pin_bit_mask = (1ULL << CherpPin),
+            .mode = GPIO_MODE_OUTPUT,
+            .pull_up_en = GPIO_PULLUP_DISABLE,
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,
+            .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&io_conf);
+
 
 }
 

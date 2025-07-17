@@ -5,7 +5,7 @@
 #define UNPACKER_H
 
 #include <string.h>
-#include "GLOBAL.h"
+#include "Global/GLOBAL.h"
 
 
 #ifdef __cplusplus
@@ -13,7 +13,7 @@ extern "C" {
 #endif
 
 #define ContextWordSize 15
-#define NumOfActions 10
+#define NumOfActions 11
 
 
 
@@ -120,6 +120,10 @@ extern "C" {
     * @return An Error
     */
     int GetHealth(const char* buffer);
+
+
+
+
     //-----------------------------------
 
 #ifdef __cplusplus

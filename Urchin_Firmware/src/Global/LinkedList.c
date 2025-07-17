@@ -36,6 +36,8 @@ int append_node(LinkedList** head, void* data, size_t data_size) {
         current = current->next;
     }
     current->next = new_node;
+
+    return 0;
 }
 
 

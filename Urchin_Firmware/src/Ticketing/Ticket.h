@@ -6,7 +6,7 @@
 #define TICKET_H
 
 #include "Packet.h"
-#include "LinkedList.h"
+#include "GLOBAL/LinkedList.h"
 
 #ifdef __cplusplus
 extern "C" {

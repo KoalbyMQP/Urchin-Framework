@@ -1,6 +1,7 @@
 # This is a sample Python script.
 import serial
 import sys
+from Smart import *
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
@@ -17,17 +18,16 @@ if __name__ == '__main__':
     #if(sys.platform=="linux"):
     #    ser = serial.Serial('/dev/ttyUSB0', 115200)  # Linux
 
+    ser = ESPSerial()
 
-
-    ESP = ESPSerial()
-
-    # --- Main Loop ---
     try:
+
         while True:
-            ESP.read_packet()
-            ESP.send_packet(0, "GetHealth")
+           ser.send_packet(0,"GetHealth")
+           ser.read_packet()
+
 
     finally:
         print("\nClosing serial port.")
-        ESP.close()
+        ser.close()
 

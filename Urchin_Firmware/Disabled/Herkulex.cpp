@@ -39,7 +39,7 @@
 */
 #include "../src/Herkulex.h"
 
-#include "../src/coms.h"
+#include "../src/Coms.h"
 #include "freertos/FreeRTOS.h"
 #include "../src/MSGQueue.h"
 #include <string>

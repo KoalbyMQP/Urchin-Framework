@@ -5,7 +5,7 @@
 #ifndef URCHIN_FIRMWARE_RECEVING_H
 #define URCHIN_FIRMWARE_RECEVING_H
 
-#include "GLOBAL.h"
+#include "Global/GLOBAL.h"
 #include "driver/uart.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -23,7 +23,7 @@ extern "C" {
      * @date 2025-05-29
      * @author Gabriel Weaver
      */
-_Noreturn void receiving(void *pvParameters);
+ void receiving(void *pvParameters);
 
 
 #ifdef __cplusplus
