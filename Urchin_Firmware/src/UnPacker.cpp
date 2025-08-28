@@ -14,16 +14,16 @@
 #include "MSGQueue.h"
 #include "GLOBAL.h"
 
-//#include "Herkulex.h"
+#include "Herkulex.h"
 
 #define HX_UART_NUM UART_NUM_2
 
-_Noreturn void receiving(void *pvParameters){
+ void receiving(void *pvParameters){
 
-    //HerkulexClass Herkulex;
-    //Herkulex.beginSerial3(115200); //open serial port 1
-    //Herkulex.reboot(7); //reboot
-    //erkulex.initialize();
+    HerkulexClass Herkulex;
+    Herkulex.begin(UART_NUM_1,115200,16,17);
+    Herkulex.reboot(7); //reboot
+    Herkulex.initialize();
 
     RollINIT(&TicketTape);
 
@@ -52,7 +52,7 @@ _Noreturn void receiving(void *pvParameters){
 
     while (1){
         PrintfToPI(DebugQueue,"test DebugQueue");
-
+        PunchTicket("");
         //PrintfToPI(ExchangeQueue,"test ExchangeQueue");
         //PrintfToPI(RecationQueue,   "test RecationQueue");
 
@@ -119,14 +119,14 @@ int ReqTicket(const char* buffer){
 
 int PunchTicket(const char* buffer) {
 
-    /*
-     PrintfToPI(DebugQueue,"Set Led Green");
+     printf("Set Led Green");
+     PrintfToPI(DebugQueue,"Set Led BLUE");
 
-    Herkulex.setLed(7, LED_GREEN2_HRAMWRITE); //set the led to green
-    PrintfToPI(DebugQueue,"Status:");
-    PrintfToPI(DebugQueue,"",Herkulex.stat(n)); //verify error code
-    Herkulex.end();
-    */
+    Herkulex.setLed(7, LED_BLUE_HRAMWRITE); //set the led to green
+    //PrintfToPI(DebugQueue,"Status:");
+    //PrintfToPI(DebugQueue,"",Herkulex.stat(n)); //verify error code
+
+
 
     (void) PrintfToPI(ExchangeQueue,"PunchTicket not added");
     return 0;

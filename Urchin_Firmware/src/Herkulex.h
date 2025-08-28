@@ -178,6 +178,14 @@ static const RAMInfo ramInfoTable[RAMObjectCount] = {
 // HERKULEX Broadcast Servo ID
 static byte BROADCAST_ID = 0xFE;
 
+void init_uart(uart_port_t uart_num, int band ,unsigned int BUF_SIZE ,int tx_pin, int rx_pin);
+
+void delay(unsigned long ms);
+
+unsigned long millis();
+
+int min(int a, int b);
+
 class HerkulexClass {
 public:
   void  begin(uart_port_t uart_num,long baud, int rx, int tx);

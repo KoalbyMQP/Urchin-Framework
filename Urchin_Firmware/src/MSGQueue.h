@@ -6,6 +6,7 @@
 #define MSGQUEUE_H
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
 
 #ifdef __cplusplus
 extern "C" {

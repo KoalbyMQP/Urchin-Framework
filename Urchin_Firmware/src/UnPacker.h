@@ -8,9 +8,7 @@
 #include "GLOBAL.h"
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 #define ContextWordSize 15
 #define NumOfActions 10
@@ -117,10 +115,6 @@ extern "C" {
     */
     int GetHealth(const char* buffer);
     //-----------------------------------
-
-#ifdef __cplusplus
-}
-#endif
 
 
 

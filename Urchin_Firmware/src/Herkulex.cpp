@@ -67,26 +67,15 @@ unsigned long millis() {
 
 // void init_uart(uart_port_t uart_num, unsigned long band ,unsigned int BUF_SIZE ,int tx_pin, int rx_pin) {
 void init_uart(uart_port_t uart_num, int band ,unsigned int BUF_SIZE ,int tx_pin, int rx_pin) {
-	// uart_config_t uart_config = {
-	// 	.baud_rate = band,
-	// 	.data_bits = UART_DATA_8_BITS,
-	// 	.parity    = UART_PARITY_DISABLE,
-	// 	.stop_bits = UART_STOP_BITS_1,
-	// 	.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-	// 	.rx_flow_ctrl_thresh = 0,
-	// 	.source_clk = UART_SCLK_DEFAULT,
-	// 	.flags = {.allow_pd = 0, .backup_before_sleep = 0}
-	// };
 	uart_config_t uart_config = {
-        .baud_rate = band,
-        .data_bits = UART_DATA_8_BITS,
-        .parity = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-        .rx_flow_ctrl_thresh = 122,  // Common safe value
-		.source_clk = UART_SCLK_DEFAULT,
-        .flags = { .allow_pd = 0, .backup_before_sleep = 0 }  // Ensure flags are set
-    };
+		.baud_rate = 115200,
+		.data_bits = UART_DATA_8_BITS,
+		.parity = UART_PARITY_DISABLE,
+		.stop_bits = UART_STOP_BITS_1,
+		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+		.rx_flow_ctrl_thresh = 122,  // Common safe value
+		.source_clk = UART_SCLK_APB  // Ensure flags are set
+		};
 
 	// Configure UART parameters
 	ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
