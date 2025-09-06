@@ -112,7 +112,9 @@ void HerkulexClass::sendRamWrite(byte* data, int lenghtString){
 	dataEx[1] = 0xFF;			// Packet Header	
 	dataEx[2] = pSize;	 		// Packet Size
 	dataEx[3] = pID;			// Servo ID
+	printf("IDI|%d|IDID",pID);
 	dataEx[4] = cmd;			// Command Ram Write
+	printf("cmdcmd|%d|cmdcmd",cmd);
 	dataEx[5] = ck1;			// Checksum 1
 	dataEx[6] = ck2;			// Checksum 2
 	for (int i = 0; i < lenghtString; i++) {
@@ -352,7 +354,7 @@ StatusData HerkulexClass::stat(int servoID)
 void HerkulexClass::torqueON(int servoID)
 {
 	pSize = 0x0A;               // 3.Packet size 7-58
-	pID   = servoID;            // 4. Servo ID
+	pID   = 0x07;            // 4. Servo ID
 	cmd   = HRAMWRITE;          // 5. CMD
 	data[0]=0x34;               // 8. Address
 	data[1]=0x01;               // 9. Lenght
@@ -571,6 +573,7 @@ void HerkulexClass::setLed(int servoID, LedColor valueLed)
 	data[0] = 0x35;               // 8. Address 53
     data[1] = 0x01;               // 9. Lenght
 	data[2] = valueLed;           // 10.LedValue
+	printf("|led value %d|",valueLed);
 	lenghtString=3;               // lenghtData
 
 	sendRamWrite(data, lenghtString);
@@ -1725,6 +1728,8 @@ void HerkulexClass::addData(int GoalLSB, int GoalMSB, int set, int servoID)
 void HerkulexClass::sendData(byte* buffer, int lenght){
 
 	// clearBuffer(); 		//clear the serialport buffer - try to do it!
+printf("|packet  :%u|",buffer[3]);
+
 	(void) uart_write_bytes(port, buffer, lenght);
         // switch (port)
 		// {
