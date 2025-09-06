@@ -45,15 +45,8 @@
 #ifndef Herkulex_h
 #define Herkulex_h
 
-//
-// #if defined(ARDUINO) && ARDUINO >= 100  // Arduino IDE Version
-// #include "Arduino.h"
-// #else
-// #include "WProgram.h"
-// #endif
 
 #include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "driver/uart.h"
 #include "DataTypes.h"
 
@@ -73,18 +66,6 @@
 #define HSTAT	 	 0x07 	//Read error
 #define HROLLBACK	 0x08 	//Back to factory value
 #define HREBOOT	 	 0x09 	//Reboot
-
-// HERKULEX LED - See Manual p29
-// static int LED_GREEN =	 0x01;
-// static int LED_BLUE  =   0x02;
-// static int LED_CYAN  =   0x03;
-// static int LED_RED   = 	 0x04;
-// static int LED_GREEN2= 	 0x05;
-// static int LED_PINK  =   0x06;
-// static int LED_WHITE =   0x07;
-
-
-
 
 enum RAMObject {
   Voltage,
@@ -178,26 +159,84 @@ static const RAMInfo ramInfoTable[RAMObjectCount] = {
 // HERKULEX Broadcast Servo ID
 static byte BROADCAST_ID = 0xFE;
 
+
+/**
+ *
+ * @param uart_num The uart port number
+ * @param band Date speed rate, see manual
+ * @param BUF_SIZE max size of packets, see manual
+ * @param tx_pin ESP32 data transfer pin
+ * @param rx_pin ESP32 data receive pin
+ */
 void init_uart(uart_port_t uart_num, int band ,unsigned int BUF_SIZE ,int tx_pin, int rx_pin);
 
+/**
+ *
+ * @param ms
+ */
 void delay(unsigned long ms);
 
+
+/**
+ *
+ *
+ * @return
+ */
 unsigned long millis();
 
+
+/**
+ *
+ * @param a
+ * @param b
+ * @return
+ */
 int min(int a, int b);
 
+
+/**
+ *
+ */
 class HerkulexClass {
 public:
+  /**
+   *
+   * @param uart_num
+   * @param baud
+   * @param rx
+   * @param tx
+   */
   void  begin(uart_port_t uart_num,long baud, int rx, int tx);
-  // void  beginSerial1(long baud);
-  // void  beginSerial2(long baud);
-  // void  beginSerial3(long baud);
+
+  /**
+   *
+   */
   void  end();
-  
+
+  /**
+   *
+   */
   void  initialize();
+
+  /**
+   *
+   * @param servoID
+   * @return
+   */
   StatusData  stat(int servoID);
+
+  /**
+   *
+   * @param valueACK
+   */
   void  ACK(int valueACK);
+
+  /**
+   *
+   * @return
+   */
   byte  model();
+
   void  set_ID(int ID_Old, int ID_New);
   void  clearError(int servoID);
   
@@ -235,7 +274,7 @@ public:
 
   void sendData(byte* buffer, int lenght);
   int  readData(int size);
-  int  checksum2(int XOR);
+
 
   uint16_t RAMRead(uint8_t servoID, RAMObject obj);
   uint16_t RAMReadSerial(uint8_t servoID, RAMObject obj);
@@ -256,8 +295,8 @@ private:
   
   
   void addData(int GoalLSB, int GoalMSB, int set, int servoID);
-  int  checksum1(byte* data, int lenghtString);
-  
+  byte  checksum1(byte* data, int lenghtString);
+  byte  checksum2(byte* data, int lenghtString);
   void clearBuffer();
   void printHexByte(byte x);
 
@@ -266,7 +305,7 @@ private:
   
   int conta;
   
-  int XOR;
+  //int XOR;
   int playTime;
  
 };

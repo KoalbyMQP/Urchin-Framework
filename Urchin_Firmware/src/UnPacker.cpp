@@ -21,10 +21,17 @@
  void receiving(void *pvParameters){
 
     HerkulexClass Herkulex;
-    Herkulex.begin(UART_NUM_1,115200,16,17);
-    Herkulex.reboot(7); //reboot
-    Herkulex.initialize();
+    Herkulex.begin(UART_NUM_1,115200,16,17); //115200 is default for DRS-0601
+    //Herkulex.reboot(7); //reboot
+    //Herkulex.initialize();
 
+     Herkulex.torqueON(7);
+     vTaskDelay(100 / portTICK_PERIOD_MS);
+     Herkulex.setLed(7, LED_BLUE_HRAMWRITE);
+     vTaskDelay(100 / portTICK_PERIOD_MS);
+     Herkulex.moveOne(7,512,27,LED_GREEN,MODEL_0601);
+     vTaskDelay(100 / portTICK_PERIOD_MS);
+     Herkulex.moveOne(7,0,27,LED_RED,MODEL_0601);
     RollINIT(&TicketTape);
 
 
@@ -119,8 +126,8 @@ int ReqTicket(const char* buffer){
 
 int PunchTicket(const char* buffer) {
 
-     printf("Set Led Green");
-     PrintfToPI(DebugQueue,"Set Led BLUE");
+     printf("Set Led Blue");
+     //PrintfToPI(DebugQueue,"Set Led BLUE");
 
     Herkulex.setLed(7, LED_BLUE_HRAMWRITE); //set the led to green
     //PrintfToPI(DebugQueue,"Status:");
