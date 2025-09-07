@@ -47,10 +47,10 @@
  Autor:   Alessandro Giacomel
  *****************************************************************************  
 */
-#include "../src/Herkulex.h"
-#include "../src/coms.h"
+#include "Herkulex.h"
+#include "../ESP_PI_Communication/Coms.h"
 #include "freertos/FreeRTOS.h"
-#include "../src/MSGQueue.h"
+#include "../ESP_PI_Communication/MSGQueue.h"
 #include <string>
 #include <cmath>
 
@@ -347,8 +347,8 @@ StatusData HerkulexClass::stat(int servoID)
 				}
 			}
 		}
-		PrintfToPI(DebugQueue,(StatusMessage+"\n").c_str());
-		PrintfToPI(DebugQueue,(StatusDetail+"\n").c_str());
+		PrintfToPI(DebugQueue,0,(StatusMessage+"\n").c_str());
+		PrintfToPI(DebugQueue,0,(StatusDetail+"\n").c_str());
 		return {status1, status2};
 	}
 }
@@ -584,9 +584,9 @@ void HerkulexClass::motor_stop(int servoID){
 	lenghtString=2;             // lenghtData
 
 	ck1=checksum1(data,lenghtString);		//6. Checksum1
-	PrintfToPI(DebugQueue,"%d",ck1);
+	PrintfToPI(DebugQueue,0,"%d",ck1);
 	ck2=checksum2(data,lenghtString);					//7. Checksum2
-	PrintfToPI(DebugQueue,"%d",ck2);
+	PrintfToPI(DebugQueue,0,"%d",ck2);
 
     dataEx[0] = 0xFF;				// Packet Header
     dataEx[1] = 0xFF;				// Packet Header	
@@ -639,45 +639,45 @@ uint16_t HerkulexClass::RAMReadSerial(uint8_t servoID, RAMObject obj) {
 
             // Print status abbreviation and value
             if (count == 0) {
-                PrintfToPI(DebugQueue,"[ ");  // Start of the line
+                PrintfToPI(DebugQueue,0,"[ ");  // Start of the line
             }
 
             // Print the label for the current status
-             PrintfToPI(DebugQueue,labels[i]);
+             PrintfToPI(DebugQueue,0,labels[i]);
 
             // If it's the voltage status, print it as a float
             if (i == Voltage) {
-                 PrintfToPI(DebugQueue,"%f",result /10.0f);
+                 PrintfToPI(DebugQueue,0,"%f",result /10.0f);
             } else {
-                 PrintfToPI(DebugQueue,"%d",result);
+                 PrintfToPI(DebugQueue,0,"%d",result);
             }
 
             count++;
 
             // After printing 6 items, end the line and start a new one
             if (count == 6) {
-                 PrintfToPI(DebugQueue," ]");
+                 PrintfToPI(DebugQueue,0," ]");
                 count = 0;  // Reset the counter for the next line
             } else {
-                PrintfToPI(DebugQueue," | ");  // Separator between statuses
+                PrintfToPI(DebugQueue,0," | ");  // Separator between statuses
             }
         }
 
         // If there are any remaining items not printed on the last line, print the closing bracket
         if (count > 0) {
-            PrintfToPI(DebugQueue," ]");
+            PrintfToPI(DebugQueue,0," ]");
         }
     } else {
         // Otherwise, print just the requested status
         if (obj < 0 || obj >= RAMObjectCount) {
-             PrintfToPI(DebugQueue,"Invalid RAM object selected.");
+             PrintfToPI(DebugQueue,0,"Invalid RAM object selected.");
             return 0;
         }
 
     const RAMInfo& info = ramInfoTable[obj];
 
     if ((info.address + info.length) > 0x7F) {
-         PrintfToPI(DebugQueue,"RAMRead: Exceeds register range. Aborting.");
+         PrintfToPI(DebugQueue,0,"RAMRead: Exceeds register range. Aborting.");
         return 0;
     }
 
@@ -715,12 +715,12 @@ uint16_t HerkulexClass::RAMReadSerial(uint8_t servoID, RAMObject obj) {
 			result = ((uint16_t)dataEx[10] << 8) | dataEx[9];
 		}
 
-		 PrintfToPI(DebugQueue,info.comment);
-		 PrintfToPI(DebugQueue,": ");
+		 PrintfToPI(DebugQueue,0,info.comment);
+		 PrintfToPI(DebugQueue,0,": ");
 		if (obj == Voltage) {
-			 PrintfToPI(DebugQueue,"%f",result /10.0f);  // Display as float, e.g., 12.3
+			 PrintfToPI(DebugQueue,0,"%f",result /10.0f);  // Display as float, e.g., 12.3
 		} else {
-			 PrintfToPI(DebugQueue,"%d",result);
+			 PrintfToPI(DebugQueue,0,"%d",result);
 		}	
 
 		return result;
@@ -855,7 +855,7 @@ uint16_t HerkulexClass::RAMRead(uint8_t servoID, RAMObject obj) {
 
 void HerkulexClass::moveSpeedOneTracking(int servoID, int targSpeed, int totalTimeMs, JogLedColor valueLed, HerkulexModel model, bool showStatus) {
     if (targSpeed > 1023 || targSpeed < -1023) {
-        PrintfToPI(DebugQueue,"Invalid speed input.");
+        PrintfToPI(DebugQueue,0,"Invalid speed input.");
         return;
     }
 
@@ -895,7 +895,7 @@ void HerkulexClass::moveSpeedOneTracking(int servoID, int targSpeed, int totalTi
 
     // Stop motor by setting speed to 0
     Herkulex.motor_stop(servoID);
-     PrintfToPI(DebugQueue,"Speed movement finished.");
+     PrintfToPI(DebugQueue,0,"Speed movement finished.");
 }
 
 // move one servo with continous rotation
@@ -941,7 +941,7 @@ void HerkulexClass::moveSpeedOne(int servoID, int targSpeed, int totalTime, JogL
         }
 
         timeRemaining -= thisTick;
-		 PrintfToPI(DebugQueue,"%d",timeRemaining);
+		 PrintfToPI(DebugQueue,0,"%d",timeRemaining);
     }
 
     // Total time reached; stop motor
@@ -1053,11 +1053,11 @@ void HerkulexClass::moveOne(int servoID, int targPosition, int pTime, JogLedColo
 		break;
 }
   if (targPosition > posLimit || targPosition < 0) {
-	 PrintfToPI(DebugQueue,"HerkulexLib: moveOne: Error targPosition out of range");
+	 PrintfToPI(DebugQueue,0,"HerkulexLib: moveOne: Error targPosition out of range");
     return;              // speed (goal) non correct
   }
   if ((pTime < 0) || (pTime > 2856)) {
-	 PrintfToPI(DebugQueue,"HerkulexLib: moveOne: Error playTime out of range");
+	 PrintfToPI(DebugQueue,0,"HerkulexLib: moveOne: Error playTime out of range");
 	return;
   }
   int LSB=targPosition & 0X00FF;								// MSB Pos
@@ -1135,8 +1135,8 @@ void HerkulexClass::moveOneAngle(int servoID, float angle, int pTime, JogLedColo
     int position = (int)((angle / degreesPerUnit) + center);
 
     if (position > posLimit || position < 0) {
-         PrintfToPI(DebugQueue,"HerkulexLib: moveOneAngle: Error position out of range for model ");
-        PrintfToPI(DebugQueue,"%d",model);
+         PrintfToPI(DebugQueue,0,"HerkulexLib: moveOneAngle: Error position out of range for model ");
+        PrintfToPI(DebugQueue,0,"%d",model);
         return;
     }
 
@@ -1163,7 +1163,7 @@ void HerkulexClass::moveOneAngle(int servoID, float angle, int pTime, JogLedColo
 
             // Check if we've reached the target position
             if (abs(currentPos - position) < 10) {  // Allow a small margin for error
-                 PrintfToPI(DebugQueue,"Target Position Reached!");
+                 PrintfToPI(DebugQueue,0,"Target Position Reached!");
                 reachedTarget = true;  // Exit the loop once the target is reached
             }
         }
@@ -1199,7 +1199,7 @@ void HerkulexClass::moveAll(int servoID, int Goal, JogLedColor valueLed, Herkule
             break;
     }
 	if (Goal > posLimit || Goal < 0) {
-		PrintfToPI(DebugQueue,"HerkulexLib: moveOne: Error targPosition out of range");
+		PrintfToPI(DebugQueue,0,"HerkulexLib: moveOne: Error targPosition out of range");
 		return;              // speed (goal) non correct
 	  }
 
@@ -1240,7 +1240,7 @@ void HerkulexClass::moveAllAngle(int servoID, float angle, JogLedColor valueLed,
 	// Serial.println(position);
 
     if (position > posLimit || position < 0) {
-        PrintfToPI(DebugQueue,"HerkulexLib: moveOneAngle: Error position out of range for model: ");
+        PrintfToPI(DebugQueue,0,"HerkulexLib: moveOneAngle: Error position out of range for model: ");
         // Serial.println(model);
         return;
     }

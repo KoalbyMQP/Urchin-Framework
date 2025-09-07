@@ -5,21 +5,19 @@
 // !!! do you best you use only C in this file
 //
 
+
+
 #include "UnPacker.h"
 
-
+#include <ESP_PI_Communication/Coms.h>
 #include "ESP_PI_Communication/Shipping.h"
 #include "Global/Errors.h"
-#include "Ticketing//TicketNum.h"
-#include "ESP_PI_Communication//MSGQueue.h"
-#include "Global/GLOBAL.h"
-
-//#include "Herkulex.h"
+#include "Ticketing/TicketNum.h"
+#include "ESP_PI_Communication/MSGQueue.h"
 
 
 
-
-
+#include "Herkulex/Herkulex.h"
 
 
 
@@ -139,4 +137,3 @@ int ProcessRequest(Context Commands[],const uint8_t buffer[]) {
 const char* SkipFoward(const char buffer[],unsigned int distance) {
     return &buffer[distance];
 }
-

@@ -8,12 +8,25 @@
 #include "Coms.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "Herkulex/Herkulex.h"
+
+
+#define HX_UART_NUM UART_NUM_2
+
 void receiving(void *pvParameters){
 
-    //HerkulexClass Herkulex;
-    //Herkulex.beginSerial3(115200); //open serial port 1
+    HerkulexClass Herkulex;
+    Herkulex.begin(UART_NUM_1,115200,16,17); //115200 is default for DRS-0601
     //Herkulex.reboot(7); //reboot
-    //erkulex.initialize();
+    //Herkulex.initialize();
+    Herkulex.reboot(7);
+    Herkulex.torqueON(7);
+
+    Herkulex.setLed(7, LED_GREEN_HRAMWRITE);
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
+    Herkulex.setLed(7, LED_BLUE_HRAMWRITE);
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
+    Herkulex.setLed(7, LED_GREEN2_HRAMWRITE);
 
     RollINIT(&TicketTape);
 
