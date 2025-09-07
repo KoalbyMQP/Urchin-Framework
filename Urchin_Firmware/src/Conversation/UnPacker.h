@@ -8,9 +8,7 @@
 #include "Global/GLOBAL.h"
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+
 
 #define ContextWordSize 15
 #define NumOfActions 11
@@ -125,10 +123,6 @@ extern "C" {
 
 
     //-----------------------------------
-
-#ifdef __cplusplus
-}
-#endif
 
 
 
