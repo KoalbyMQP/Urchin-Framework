@@ -8,7 +8,7 @@
 
 
 
-#define CherpPin 32
+#define CherpPin 2
 #define PIDNUM 256
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -16,7 +16,8 @@
 extern "C" {
 #endif
 
-void DoSomething();
+
+
 
 #ifdef __cplusplus
 }

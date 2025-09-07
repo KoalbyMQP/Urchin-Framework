@@ -8,6 +8,9 @@
 #define TICKETN_H
 
 #include <stdint.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+
 /**
  * @def StripSize
  * @brief sets the strip size to be 8 this will make tape 512 bits long
@@ -71,6 +74,11 @@ extern "C" {
      * @brief Global variable for the task ticket system
      */
     extern TapeRoll TicketTape;
+
+    /**
+     * @brief Global variable for the task ticket system mutex
+     */
+    extern SemaphoreHandle_t TicketTapeMutex;
 
 
 

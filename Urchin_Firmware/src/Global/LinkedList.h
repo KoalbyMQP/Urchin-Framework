@@ -31,7 +31,7 @@ extern "C" {
      * @param head start of List
      * @param data void pointer to your data
      */
-    void append_node(LinkedList** head, void* data, size_t data_size);
+    int append_node(LinkedList** head, void* data, size_t data_size);
 
 
     /**

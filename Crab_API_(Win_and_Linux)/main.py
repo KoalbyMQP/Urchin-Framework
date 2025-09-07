@@ -1,28 +1,33 @@
 # This is a sample Python script.
 import serial
 import sys
+from Smart import *
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
-
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+from ESPSerial import ESPSerial
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
-    if(sys.platform=="win32"):
-        ser = serial.Serial('COM4', 115200,timeout=1)
+    #if(sys.platform=="win32"):
+    #    ser = serial.Serial('COM4', 115200,timeout=1)
 
 
-    if(sys.platform=="linux"):
-        ser = serial.Serial('/dev/ttyUSB0', 115200)  # Linux
+    #if(sys.platform=="linux"):
+    #    ser = serial.Serial('/dev/ttyUSB0', 115200)  # Linux
 
-    ser.write("GetHealth".encode())
-    while(True):
-        print("|"+ser.readline().decode('utf-8').strip("")+"|")
-    print_hi('PyCharm')
+    ser = ESPSerial()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    try:
+
+        while True:
+           ser.send_packet(0,"GetHealth")
+           ser.read_packet()
+
+
+    finally:
+        print("\nClosing serial port.")
+        ser.close()
+

@@ -1,0 +1,8 @@
+# Enable core dump system
+CONFIG_ESP_COREDUMP_ENABLE=y
+
+# Use a custom handler
+CONFIG_ESP_COREDUMP_TO_CUSTOM=y
+
+# Binary format for compact data
+CONFIG_ESP_COREDUMP_DATA_FORMAT_BIN=y

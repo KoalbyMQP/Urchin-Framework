@@ -1,0 +1,22 @@
+pin outs for uart1
+    2 pin jst connector
+
+pin outs for uart2
+    2 pin jst connector
+
+CAN Transceiver
+    2 pin jst connector
+
+Chirp Pin out
+    1 pin connector
+
+Wake up pin
+    1 pin connector
+
+led
+    Integrated LED
+
+Debugger prob
+    JTAG
+    https://www.amazon.com/Treedix-Breakout-Converter-Connector-Flexible/dp/B09DKDG7XN/ref=pd_bxgy_thbs_d_sccl_1/131-9847665-8279330?pd_rd_w=6qsqv&content-id=amzn1.sym.de9a1315-b9df-4c24-863c-7afcb2e4cc0a&pf_rd_p=de9a1315-b9df-4c24-863c-7afcb2e4cc0a&pf_rd_r=6WCHQMZM9M840M9440YQ&pd_rd_wg=Oz3ne&pd_rd_r=3dbd4a96-bd75-4391-a4b1-1673dfa8d679&pd_rd_i=B09DKDG7XN&psc=1
+    make the connection to vcc disabled but possible

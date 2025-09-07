@@ -1,0 +1,30 @@
+# History of maintainers
+# @meman0303
+# @.....
+
+
+#------------------------------------
+# Define creator for entire repo
+*       @meman0303
+#------------------------------------
+
+
+
+#-----------------------------------------------------
+# Define ownership for specific projects
+
+# Urchin Firmware
+/Urchin_Firmware  @meman0303
+
+# Mollusk Firmware
+/Mollusk_Firmware @meman0303
+
+# Crab API
+/Crab_API_(Win_and_Linux) @meman0303
+
+# Coral Multiplexor
+/Coral_Multiplexor_(Win_and_Linux) @meman0303
+
+# Dev container
+/.devcontainer @jake-molnia
+#-----------------------------------------------------

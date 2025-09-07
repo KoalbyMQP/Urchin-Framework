@@ -1,38 +1,11 @@
-import serial
-import struct
+import serial.tools.list_ports
 
-ser = serial.Serial('COM3', 115200, timeout=5)
-
-packet_size = struct.calcsize("<BB1024s")
-
-
-def read_exact(ser, n):
-    buf = b''
-    while len(buf) < n:
-        chunk = ser.read(n - len(buf))
-        if not chunk:
-            # No data received, possibly timeout
-            break
-        buf += chunk
-    return buf
-
-buffer = b''
-while True:
-    byte = ser.read()  # Read one byte
-    buffer += byte
-    if b'<<StartStart>>' in buffer:
-        break
-
-while True:
-    data = read_exact(ser, packet_size)
-    if len(data) != packet_size:
-        print(f"Incomplete packet received ({len(data)} bytes), skipping")
-        continue
-
-    VPID, Stream, raw_data = struct.unpack("<BB1024s", data)
-    try:
-        data_str = raw_data.decode('utf-8').rstrip('\x00')
-    except UnicodeDecodeError:
-        data_str = repr(raw_data)
-
-    print(f"VPID: {VPID}, Stream: {Stream}, Data: {data_str}")
+for port in serial.tools.list_ports.comports():
+    print(f"Device : {port.device}")
+    print(f"  Name : {port.name}")
+    print(f"  VID  : {hex(port.vid) if port.vid else 'Unknown'}")
+    print(f"  PID  : {hex(port.pid) if port.pid else 'Unknown'}")
+    print(f"  Description : {port.description}")
+    print(f"  Manufacturer: {port.manufacturer}")
+    print(f"  Serial No.  : {port.serial_number}")
+    print()

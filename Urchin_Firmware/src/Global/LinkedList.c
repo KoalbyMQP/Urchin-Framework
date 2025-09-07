@@ -6,12 +6,14 @@
 #include <string.h>
 
 #include "freertos/FreeRTOS.h"
-
+#include "Errors.h"
 
 
 
 LinkedList* create_node(const void* data,const size_t data_size) {
     LinkedList* node = (LinkedList*) pvPortMalloc(sizeof(LinkedList));
+
+    if (node == NULL){return NULL;}
     node->data = pvPortMalloc(data_size);
     memcpy(node->data,data,data_size);
 
@@ -20,17 +22,22 @@ LinkedList* create_node(const void* data,const size_t data_size) {
 }
 
 
-void append_node(LinkedList** head, void* data, size_t data_size) {
+int append_node(LinkedList** head, void* data, size_t data_size) {
     LinkedList* new_node = create_node(data,data_size);
+
+    if(new_node == NULL){return URCHIN_ERROR_FailedToAllocate;}
+
     if (*head == NULL) {
         *head = new_node;
-        return;
+        return URCHIN_OK;
     }
     LinkedList* current = *head;
     while (current->next != NULL) {
         current = current->next;
     }
     current->next = new_node;
+
+    return 0;
 }
 
 
