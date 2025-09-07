@@ -24,14 +24,18 @@
     Herkulex.begin(UART_NUM_1,115200,16,17); //115200 is default for DRS-0601
     //Herkulex.reboot(7); //reboot
     //Herkulex.initialize();
-
+     Herkulex.reboot(7);
      Herkulex.torqueON(7);
-     vTaskDelay(100 / portTICK_PERIOD_MS);
+
+     Herkulex.setLed(7, LED_GREEN_HRAMWRITE);
+     vTaskDelay(10000 / portTICK_PERIOD_MS);
      Herkulex.setLed(7, LED_BLUE_HRAMWRITE);
-     vTaskDelay(100 / portTICK_PERIOD_MS);
-     Herkulex.moveOne(7,512,27,LED_GREEN,MODEL_0601);
-     vTaskDelay(100 / portTICK_PERIOD_MS);
-     Herkulex.moveOne(7,0,27,LED_RED,MODEL_0601);
+     vTaskDelay(10000 / portTICK_PERIOD_MS);
+     Herkulex.setLed(7, LED_GREEN2_HRAMWRITE);
+
+     //Herkulex.moveOne(7,512,27,LED_GREEN,MODEL_0601);
+
+     //Herkulex.moveOne(7,0,27,LED_RED,MODEL_0601);
     RollINIT(&TicketTape);
 
 
@@ -58,8 +62,7 @@
 
 
     while (1){
-        PrintfToPI(DebugQueue,"test DebugQueue");
-        PunchTicket("");
+
         //PrintfToPI(ExchangeQueue,"test ExchangeQueue");
         //PrintfToPI(RecationQueue,   "test RecationQueue");
 

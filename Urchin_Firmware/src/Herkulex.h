@@ -1,9 +1,19 @@
+/**
+ * @file Herkulex.h
+ * @brief Header file for Herkulex motor drivers
+ * @author Alessandro Giacomel
+ * @author Gabriel Weaver
+ * @date 2025-09-07
+ * @version 1.0
+ *
+ * @defgroup Herkulex HerkuleX-Drivers
+ */
 
 /*
-
  Hekulex.h - Library for Dongbu Herkulex DRS-0101/DRS-0201 
  Copyright (c) 2012 - http://robottini.altervista.org
- Created by Alessandro on 09/12/2012.
+ Refactored by Gabriel Weaver 6/23/2025
+ Original Created by Alessandro on 09/12/2012.
  
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -19,24 +29,20 @@
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  
- Herkulex.h.ignore
+ Herkulex.h
     PLEASE START READING: Herkulex Servo Manual (http://www.hovis.co.kr/guide/herkulexeng.pdf)
  *****************************************************************************
  
  IMPORTANT:
-
-  The library works on Arduino UNO/2009 - Arduino Mega.
-  Please with Arduino UNO/2009 works with SoftwareSerial library modified with baud rate 57.600.
-  Use this begin type:
-		begin(57600, int rx, int tx);
- 
-  For Arduino Mega, please use baud rate 115.200
-
+  This library only works for ESP-IDF
  *****************************************************************************
+
+ Refactored for ESP-IDF: Gabriel Weaver
+
+ Original Autor:   Alessandro Giacomel
  Contact: alegiaco@gmail.com
  Web:     http://robottini.altervista.org
- Autor:   Alessandro Giacomel
- Updater: Gabriel Weaver 6/23/2025
+
  *****************************************************************************  
 */
 
@@ -51,61 +57,140 @@
 #include "DataTypes.h"
 
 
+/**
+ * @def buffer for input data
+ */
+#define DATA_SIZE	 30
 
-#define DATA_SIZE	 30		// buffer for input data
-#define DATA_MOVE  	 50		// max 10 servos <---- change this for more servos!
-#define TIME_OUT     5   	//timeout serial communication
+
+/**
+ * @def max 10 servos <---- change this for more servos!
+ */
+#define DATA_MOVE  	 50
+
+
+
 
 // SERVO HERKULEX COMMAND - See Manual p40
-#define HEEPWRITE    0x01 	//Rom write
-#define HEEPREAD     0x02 	//Rom read
-#define HRAMWRITE	 0x03 	//Ram write
-#define HRAMREAD	 0x04 	//Ram read
-#define HINDEJOG		 0x05 	//Write n servo with different timing
-#define HSIMULJOG		 0x06 	//Write n servo with same time
-#define HSTAT	 	 0x07 	//Read error
-#define HROLLBACK	 0x08 	//Back to factory value
-#define HREBOOT	 	 0x09 	//Reboot
+/**
+ * @def ROM write
+ */
+#define HEEPWRITE    0x01
 
+
+/**
+ * @def ROM read
+ */
+#define HEEPREAD     0x02
+
+
+/**
+ * @def RAM write
+ */
+#define HRAMWRITE	 0x03
+
+
+/**
+ * @def RAM read
+ */
+#define HRAMREAD	 0x04
+
+
+/**
+ * @def Write n servo with different timing
+ */
+#define HINDEJOG		 0x05
+
+
+/**
+ * @def Write n servo with same time
+ */
+#define HSIMULJOG		 0x06
+
+
+/**
+ * @def Read error
+ */
+#define HSTAT	 	 0x07
+
+
+/**
+ * @def Back to factory value
+ */
+#define HROLLBACK	 0x08
+
+
+/**
+ * @def Reboot
+ */
+#define HREBOOT	 	 0x09
+
+/**
+ * @enum RAMObject
+ * @brief Brief description of the enum
+ *
+ */
+
+
+
+
+/**
+ * @enum RAMObject
+ * @brief Brief description of the enum
+ */
 enum RAMObject {
-  Voltage,
-  Temperature,
-  ControlMode,
-  Tick,
-  CalibrationPosition,
-  AbsolutePosition,
-  DifferentialPosition,
-  PWM,
-  Absolute2ndPosition,
-  AbsoluteGoalPosition,
-  DesiredTrajectoryPosition,
-  DesiredVelocity,
-  RAMObjectCount,
-  StatusAll
+  Voltage, /**< Description of VALUE_ONE */
+  Temperature, /**< Description of VALUE_ONE */
+  ControlMode, /**< Description of VALUE_ONE */
+  Tick, /**< Description of VALUE_ONE */
+  CalibrationPosition, /**< Description of VALUE_ONE */
+  AbsolutePosition, /**< Description of VALUE_ONE */
+  DifferentialPosition, /**< Description of VALUE_ONE */
+  PWM, /**< Description of VALUE_ONE */
+  Absolute2ndPosition, /**< Description of VALUE_ONE */
+  AbsoluteGoalPosition, /**< Description of VALUE_ONE */
+  DesiredTrajectoryPosition, /**< Description of VALUE_ONE */
+  DesiredVelocity, /**< Description of VALUE_ONE */
+  RAMObjectCount, /**< Description of VALUE_ONE */
+  StatusAll /**< Description of VALUE_ONE */
 };
 
+
+/**
+ * @struct RAMInfo
+ * @brief FILL THIS IN
+ */
 typedef struct  {
-  uint8_t address;
-  uint8_t length;
-  const char* comment;
+  uint8_t address; /**< FILL THIS IN */
+  uint8_t length; /**< FILL THIS IN */
+  const char* comment; /**< FILL THIS IN */
 }RAMInfo;
 
+/**
+ * @enum LedColor
+ */
 enum LedColor {
-  LED_GREEN_HRAMWRITE  = 0x01,
-  LED_BLUE_HRAMWRITE   = 0x02,
-  LED_CYAN_HRAMWRITE   = 0x03,
-  LED_RED_HRAMWRITE    = 0x04,
-  LED_GREEN2_HRAMWRITE = 0x05,
-  LED_PINK_HRAMWRITE   = 0x06,
-  LED_WHITE_HRAMWRITE  = 0x07
+  LED_GREEN_HRAMWRITE  = 0x01, /**< Green */
+  LED_BLUE_HRAMWRITE   = 0x02, /**< Blue */
+  LED_CYAN_HRAMWRITE   = 0x03, /**< Cyan */
+  LED_RED_HRAMWRITE    = 0x04, /**< Red */
+  LED_GREEN2_HRAMWRITE = 0x05, /**< Soft Green */
+  LED_PINK_HRAMWRITE   = 0x06, /**< Pink */
+  LED_WHITE_HRAMWRITE  = 0x07 /**< White */
 };
 
+/**
+ * @enum JogLedColor
+ */
 enum JogLedColor {
   LED_GREEN = 0x02,
   LED_BLUE = 0x03,
   LED_RED = 0x04,
 };
 
+/**
+ * @enum HerkulexModel
+ */
 enum HerkulexModel {
   MODEL_0101,
   MODEL_0201,
@@ -113,35 +198,18 @@ enum HerkulexModel {
   MODEL_0602
 };
 
+/**
+ *
+ */
 struct StatusData {
   byte StatusError;
   byte StatusDetail;
 };
 
-// // HERKULEX STATUS ERROR - See Manual p39
-// static byte H_STATUS_OK					= 0x00;
-// static byte H_ERROR_INPUT_VOLTAGE 		= 0x01;
-// static byte H_ERROR_POS_LIMIT			= 0x02;
-// static byte H_ERROR_TEMPERATURE_LIMIT	= 0x04;
-// static byte H_ERROR_INVALID_PKT			= 0x08;
-// static byte H_ERROR_OVERLOAD			= 0x10;
-// static byte H_ERROR_DRIVER_FAULT  		= 0x20;
-// static byte H_ERROR_EEPREG_DISTORT		= 0x40;
 
-// static const RAMInfo ramInfoTable[] = {
-//   {0x36, 1}, //voltage currently received
-//   {0x37, 1}, //Internal temperature in Celcius
-//   {0x38, 1}, //Current Control Method, 0: Position Control, 1: Velocity Turn Control
-//   {0x39, 1}, //Actual Servo Tick time
-//   {0x3A, 2}, //Calibrated Position
-//   {0x3C, 2}, //Absolute Raw Position Data
-//   {0x3E, 2}, //Exponent Showing Speed
-//   {0x40, 2}, //PWM
-//   {0x42, 2}, //Potentiometer Absolute Position Raw Data
-//   {0x44, 2}, //Absolute goal Position Raw Data
-//   {0x46, 2}, //Current goal position based on Speed Profile
-//   {0x48, 2} //Raw data of desired speed
-// };
+/**
+ *
+ */
 static const RAMInfo ramInfoTable[RAMObjectCount] = {
         {0x36, 1, "voltage currently received"},
         {0x37, 1, "Internal temperature in Celcius"},
@@ -157,7 +225,7 @@ static const RAMInfo ramInfoTable[RAMObjectCount] = {
         {0x48, 2, "Raw data of desired speed"}
     };
 // HERKULEX Broadcast Servo ID
-static byte BROADCAST_ID = 0xFE;
+static byte BROADCAST_ID = 0xFE; /**< ID that control's all motors*/
 
 
 /**
@@ -208,15 +276,18 @@ public:
    */
   void  begin(uart_port_t uart_num,long baud, int rx, int tx);
 
+
   /**
    *
    */
   void  end();
 
+
   /**
    *
    */
   void  initialize();
+
 
   /**
    *
@@ -225,11 +296,13 @@ public:
    */
   StatusData  stat(int servoID);
 
+
   /**
    *
    * @param valueACK
    */
   void  ACK(int valueACK);
+
 
   /**
    *
@@ -237,76 +310,307 @@ public:
    */
   byte  model();
 
+
+  /**
+   * Changes the ID number of a motor
+   * @param ID_Old The old number
+   * @param ID_New The new number
+   */
   void  set_ID(int ID_Old, int ID_New);
+
+
+  /**
+   *
+   * @param servoID
+   */
   void  clearError(int servoID);
-  
+
+
+  /**
+   *
+   * @param servoID
+   */
   void  torqueON(int servoID);
+
+
+  /**
+   *
+   * @param servoID
+   */
   void  torqueOFF(int servoID);
-  
+
+
+  /**
+   *
+   * @param servoID
+   * @param Goal
+   * @param valueLed
+   * @param model
+   */
   void  moveAll(int servoID, int Goal, JogLedColor valueLed, HerkulexModel model);
+
+
+  /**
+   *
+   * @param servoID
+   * @param Goal
+   * @param valueLed
+   * @param model
+   */
   void  moveSpeedAll(int servoID, int Goal, JogLedColor valueLed, HerkulexModel model);
+
+
+  /**
+   *
+   * @param servoID
+   * @param angle
+   * @param valueLed
+   * @param model
+   */
   void  moveAllAngle(int servoID, float angle, JogLedColor valueLed, HerkulexModel model);
+
+
+  /**
+   *
+   * @param pTime
+   * @param showStatus
+   */
   void  actionAll(int pTime, bool showStatus);
 
+
+  /**
+   *
+   * @param data
+   * @param lenghtString
+   */
   void  sendRamWrite(byte* data, int lenghtString);
 
+
+  /**
+   *
+   * @param servoID
+   * @param address
+   * @param values
+   * @param length
+   */
   void  sendEepWriteRegistry(int servoID, int address, byte* values, int length);
+
+
+  /**
+   *
+   * @param servoID
+   * @param address
+   * @param length
+   * @return
+   */
   uint16_t  eepRead(int servoID, int address, int length);
+
+
+  /**
+   *
+   * @param servoID
+   * @param mode
+   * @param pTime
+   * @param valueLed
+   * @param model
+   * @param Mode
+   * @param LSB
+   * @param MSB
+   */
   void  sendSJog(int servoID, int mode, int pTime, JogLedColor valueLed, HerkulexModel model, bool Mode, int LSB, int MSB);
-  // void  sendIJog();
+
+
+  /**
+   *
+   * @param servoID
+   * @param Goal
+   * @param totalTime
+   * @param valueLed
+   * @param model
+   */
   void  moveSpeedOne(int servoID, int Goal, int totalTime, JogLedColor valueLed, HerkulexModel model);
+
+
+  /**
+   *
+   * @param servoID
+   * @param Goal
+   * @param pTime
+   * @param valueLed
+   * @param model
+   * @param showStatus
+   */
   void  moveSpeedOneTracking(int servoID, int Goal, int pTime, JogLedColor valueLed, HerkulexModel model, bool showStatus);
+
+
+  /**
+   *
+   * @param servoID
+   * @param Goal
+   * @param pTime
+   * @param valueLed
+   * @param model
+   */
   void  moveOne(int servoID, int Goal, int pTime, JogLedColor valueLed, HerkulexModel model);
+
+
+  /**
+   *
+   * @param servoID
+   * @param angle
+   * @param pTime
+   * @param valueLed
+   * @param model
+   * @param showStatus
+   */
   void  moveOneAngle(int servoID, float angle, int pTime, JogLedColor valueLed, HerkulexModel model, bool showStatus);
-  // void  moveOneAngleTracking(int servoID, float angle, int pTime, JogLedColor valueLed, HerkulexModel model);
 
-  int   getPosition(int servoID);
+
+  /**
+   *
+   * @param servoID
+   * @return
+   */
+  int getPosition(int servoID);
+
+
+  /**
+   *
+   * @param servoID
+   * @param model
+   * @return
+   */
   float getAngle(int servoID, HerkulexModel model);
+
+
+  /**
+   *
+   * @param servoID
+   * @return
+   */
   int   getSpeed(int servoID);
-		
+
+
+  /**
+   *
+   * @param servoID
+   */
   void  reboot(int servoID);
+
+
+  /**
+   *
+   * @param servoID
+   * @param valueLed
+   */
   void  setLed(int servoID, LedColor valueLed);
+
+
+  /**
+   *
+   */
   void  test_stop(void);
+
+
+  /**
+   *
+   * @param servoID
+   */
   void  motor_stop(int servoID);
- 
-  // void  writeRegistryRAM(int servoID, int address, int writeByte);
-  // void  writeRegistryEEP(int servoID, int address, int writeByte);
 
+
+  /**
+   *
+   * @param buffer
+   * @param lenght
+   */
   void sendData(byte* buffer, int lenght);
-  int  readData(int size);
 
 
+  /**
+   *
+   * @param size
+   * @return
+   */
+  int readData(int size);
+
+
+  /**
+   *
+   * @param servoID
+   * @param obj
+   * @return
+   */
   uint16_t RAMRead(uint8_t servoID, RAMObject obj);
+
+
+  /**
+   *
+   * @param servoID
+   * @param obj
+   * @return
+   */
   uint16_t RAMReadSerial(uint8_t servoID, RAMObject obj);
 
-  
-  int pSize;
-  int pID;
-  int cmd;
-  int lenghtString;
-  int ck1;
-  int ck2;
-  byte dataEx[DATA_MOVE+8];
-  byte data[DATA_SIZE]; 
-  byte moveData[DATA_MOVE];
 
-// private area  
+  int pSize; /**< The total size of the packet */
+  int pID; /**< The Motor ID */
+  int cmd; /**< The type of motor command  */
+  int lenghtString; /**< Size of data section of packet */
+  int ck1; /**< Check sum 1 */
+  int ck2; /**< Check sum 2 */
+  byte dataEx[DATA_MOVE+8]; /**< Full packet (ready to send) */
+  byte data[DATA_SIZE];  /**< Parameters only (working buffer)  */
+  byte moveData[DATA_MOVE]; /**< Helper buffer specifically for motion commands.  */
+
+
 private:
-  
-  
+
+  /**
+   *
+   * @param GoalLSB
+   * @param GoalMSB
+   * @param set
+   * @param servoID
+   */
   void addData(int GoalLSB, int GoalMSB, int set, int servoID);
+
+
+  /**
+   *
+   * @param data
+   * @param lenghtString
+   * @return
+   */
   byte  checksum1(byte* data, int lenghtString);
+
+
+  /**
+   *
+   * @param data
+   * @param lenghtString
+   * @return
+   */
   byte  checksum2(byte* data, int lenghtString);
+
+
+  /**
+   *
+   */
   void clearBuffer();
+
+
+  /**
+   *
+   * @param x
+   */
   void printHexByte(byte x);
 
-  uart_port_t port;
-  
-  
-  int conta;
-  
-  //int XOR;
-  int playTime;
+
+
+  uart_port_t port; /**< The UART port for motor movement */
+  int conta; /**< Packet buffer index (used when filling dataEx[] with bytes) */
+  int playTime; /**< Motion duration in units of 11.2 ms (0–255) */
  
 };
 
@@ -314,4 +618,4 @@ extern HerkulexClass Herkulex;
 
 #endif // __cplusplus
 
-#endif     //Herkulex_h
+#endif //Herkulex_h

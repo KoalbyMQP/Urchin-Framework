@@ -1,5 +1,15 @@
+/**
+ * @file Hekulex.cpp
+ * @brief C++ file for Herkulex motor drivers
+ * @author Alessandro Giacomel
+ * @author Gabriel Weaver
+ * @date 2025-09-07
+ * @version 1.0
+ *
+ * @ingroup Herkulex
+ */
+
 /*
- src/coms.c
  Hekulex.cpp - Library for Dongbu Herkulex DRS-0101/DRS-0201 
  Copyright (c) 2012 - http://robottini.altervista.org
  Created by Alessandro on 09/12/2012.
@@ -38,7 +48,6 @@
  *****************************************************************************  
 */
 #include "../src/Herkulex.h"
-
 #include "../src/coms.h"
 #include "freertos/FreeRTOS.h"
 #include "../src/MSGQueue.h"
@@ -59,14 +68,19 @@ unsigned long millis() {
 // void init_uart(uart_port_t uart_num, unsigned long band ,unsigned int BUF_SIZE ,int tx_pin, int rx_pin) {
 void init_uart(uart_port_t uart_num, int band ,unsigned int BUF_SIZE ,int tx_pin, int rx_pin) {
 	uart_config_t uart_config = {
-		.baud_rate = 115200,
+		.baud_rate = band,
 		.data_bits = UART_DATA_8_BITS,
-		.parity = UART_PARITY_DISABLE,
+		.parity    = UART_PARITY_DISABLE,
 		.stop_bits = UART_STOP_BITS_1,
 		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-		.rx_flow_ctrl_thresh = 122,  // Common safe value
-		.source_clk = UART_SCLK_APB  // Ensure flags are set
+		.rx_flow_ctrl_thresh = 122,
+		.source_clk = UART_SCLK_APB,
+		.flags = {
+			.allow_pd = 0,
+			.backup_before_sleep = 0
+		}
 		};
+
 
 	// Configure UART parameters
 	ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
@@ -470,68 +484,6 @@ void HerkulexClass::clearError(int servoID)
 	sendRamWrite(data, lenghtString);
 }
 
-/*
-int HerkulexClass::getPosition(int servoID, bool is0601) {
-	int Position  = 0;
-
-    pSize = 0x09;               // 3.Packet size 7-58
-	pID   = servoID;     	    // 4. Servo ID - 253=all servos
-	cmd   = HRAMREAD;           // 5. CMD
-	data[0]=0x3A;               // 8. Address
-	data[1]=0x02;               // 9. Lenght
-	
-	lenghtString=2;             // lenghtData
-  	
-	ck1=checksum1(data,lenghtString);	//6. Checksum1
-	ck2=checksum2(ck1);					//7. Checksum2
-
-	dataEx[0] = 0xFF;			// Packet Header
-	dataEx[1] = 0xFF;			// Packet Header	
-	dataEx[2] = pSize;	 		// Packet Size
-	dataEx[3] = pID;			// Servo ID
-	dataEx[4] = cmd;			// Command Ram Write
-	dataEx[5] = ck1;			// Checksum 1
-	dataEx[6] = ck2;			// Checksum 2
-	dataEx[7] = data[0];      	// Address  
-	dataEx[8] = data[1]; 		// Length
-	
-	sendData(dataEx, pSize);
-
-    delay(1);
-	readData(13);
-
-        	
-	pSize = dataEx[2];           // 3.Packet size 7-58
-	pID   = dataEx[3];           // 4. Servo ID
-	cmd   = dataEx[4];           // 5. CMD
-	data[0]=dataEx[7];
-    data[1]=dataEx[8];
-    data[2]=dataEx[9];
-    data[3]=dataEx[10];
-    data[4]=dataEx[11];
-    data[5]=dataEx[12];
-    lenghtString=6;
-
-    ck1=checksum1(data,lenghtString);	//6. Checksum1
-	ck2=checksum2(ck1);					//7. Checksum2
-
-    if (ck1 != dataEx[5]) return -1;
-	if (ck2 != dataEx[6]) return -1;
-
-    int maxMSB = is0601 ? 0x07 : 0x03;
-
-	Position = ((dataEx[10]&maxMSB)<<8) | dataEx[9];
-        return Position;
-	
-}
-*/
-
-// float HerkulexClass::getAngle(int servoID, bool is0601) {
-// 	int pos = (int)getPosition(servoID, is0601);
-//     int conversionFactor = is0601 ? 2 : 1;
-// 	return (pos/conversionFactor - 512) * 0.325;
-// }
-
 // reboot single servo - pay attention 253 - all servos doesn't work!
 void HerkulexClass::reboot(int servoID) {
         
@@ -566,60 +518,7 @@ void HerkulexClass::setLed(int servoID, LedColor valueLed)
 
 	sendRamWrite(data, lenghtString);
 }
-/*
-// get the speed for one servo - values betweeb -1023 <--> 1023
-int HerkulexClass::getSpeed(int servoID) {
-  int speedy  = 0;
 
-  pSize = 0x09;               // 3.Packet size 7-58
-  pID   = servoID;     	   	  // 4. Servo ID 
-  cmd   = HRAMREAD;           // 5. CMD
-  data[0]=0x40;               // 8. Address
-  data[1]=0x02;               // 9. Lenght
-
-  lenghtString=2;             // lenghtData
-
-  ck1=checksum1(data,lenghtString);		//6. Checksum1
-  ck2=checksum2(ck1);					//7. Checksum2
-
-  dataEx[0] = 0xFF;			// Packet Header
-  dataEx[1] = 0xFF;			// Packet Header	
-  dataEx[2] = pSize;		// Packet Size
-  dataEx[3] = pID;			// Servo ID
-  dataEx[4] = cmd;			// Command Ram Write
-  dataEx[5] = ck1;			// Checksum 1
-  dataEx[6] = ck2;			// Checksum 2
-  dataEx[7] = data[0]; 	    // Address  
-  dataEx[8] = data[1]; 		// Length
-
-  sendData(dataEx, pSize);
-
-  delay(1);
-  readData(13);
-
-
-  pSize = dataEx[2];           // 3.Packet size 7-58
-  pID   = dataEx[3];           // 4. Servo ID
-  cmd   = dataEx[4];           // 5. CMD
-  data[0]=dataEx[7];
-  data[1]=dataEx[8];
-  data[2]=dataEx[9];
-  data[3]=dataEx[10];
-  data[4]=dataEx[11];
-  data[5]=dataEx[12];
-  lenghtString=6;
-
-  ck1=checksum1(data,lenghtString);	//6. Checksum1
-  ck2=checksum2(ck1);				//7. Checksum2
-
-  if (ck1 != dataEx[5]) return -1;
-  if (ck2 != dataEx[6]) return -1;
-
-  speedy = ((dataEx[10]&0xFF)<<8) | dataEx[9];
-  return speedy;
-
-}
-  */
 
 int HerkulexClass::getSpeed(int servoID){
 	return Herkulex.RAMRead(servoID, DifferentialPosition);
@@ -702,22 +601,6 @@ void HerkulexClass::motor_stop(int servoID){
     dataEx[10] = 0x02;
     dataEx[11] = pID;
 
-	// Serial.println("=== motor_stop() DEBUG ===");
-    // Serial.print("pSize: "); Serial.println(pSize);
-    // Serial.print("pID: "); Serial.println(pID);
-    // Serial.print("cmd: "); Serial.println(cmd, HEX);
-    // Serial.print("data[0] (Address): "); Serial.println(data[0], HEX);
-    // Serial.print("data[1] (Length): "); Serial.println(data[1], HEX);
-    // Serial.print("ck1: "); Serial.println(ck1, HEX);
-    // Serial.print("ck2: "); Serial.println(ck2, HEX);
-
-    // Serial.println("dataEx:");
-    // for (int i = 0; i < 12; i++) {
-    //     Serial.print("dataEx["); Serial.print(i); Serial.print("]: ");
-    //     Serial.println(dataEx[i], HEX);
-    // }
-
-    // Serial.println("==========================");
   
     sendData(dataEx, 0x0C);
 
@@ -740,20 +623,7 @@ uint16_t HerkulexClass::RAMReadSerial(uint8_t servoID, RAMObject obj) {
         {0x46, 2, "Current goal position based on Speed Profile"},
         {0x48, 2, "Raw data of desired speed"}
     };
-	// static const RAMInfo ramInfoTable[] = {
-	// 	{0x36, 1}, //voltage currently received
-	// 	{0x37, 1}, //Internal temperature in Celcius
-	// 	{0x38, 1}, //Current Control Method, 0: Position Control, 1: Velocity Turn Control
-	// 	{0x39, 1}, //Actual Servo Tick time
-	// 	{0x3A, 2}, //Calibrated Position
-	// 	{0x3C, 2}, //Absolute Raw Position Data
-	// 	{0x3E, 2}, //Exponent Showing Speed
-	// 	{0x40, 2}, //PWM
-	// 	{0x42, 2}, //Potentiometer Absolute Position Raw Data
-	// 	{0x44, 2}, //Absolute goal Position Raw Data
-	// 	{0x46, 2}, //Current goal position based on Speed Profile
-	// 	{0x48, 2} //Raw data of desired speed
-	// };
+
 
 	if (obj == StatusAll) {
         int count = 0;  // Counter to track the number of items printed per line
@@ -1727,202 +1597,20 @@ void HerkulexClass::addData(int GoalLSB, int GoalMSB, int set, int servoID)
 
 // Sending the buffer long lenght to Serial port
 void HerkulexClass::sendData(byte* buffer, int lenght){
-
-	// clearBuffer(); 		//clear the serialport buffer - try to do it!
-printf("|packet  :%u|",buffer[3]);
-
-if (buffer[3]!=0x07) {
-	buffer[3]=0x07;
-}
 	(void) uart_write_bytes(port, buffer, lenght);
-
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 }
 
-// * Receiving the lenght of bytes from Serial port
 
-// int HerkulexClass::readData(int size) {
-//     int i = 0;
-//     int beginsave = 0;
-//     int Time_Counter = 0;
-
-//     while ((SwSerial.available() < size) && (Time_Counter < TIME_OUT)) {
-//         Time_Counter++;
-//         delayMicroseconds(1000);  // wait 1ms
-//     }
-
-//     if (SwSerial.available() < size) {
-//         Serial.println("readData: Timeout — not enough bytes available");
-//         return 0;
-//     }
-
-//     while (SwSerial.available() > 0 && i < 128) {  // Increase safety buffer limit
-//         byte inchar = (byte)SwSerial.read();
-
-//         if ((inchar == 0xFF) && ((byte)SwSerial.peek() == 0xFF)) {
-//             beginsave = 1;
-//             i = 0; // Restart buffer on new packet
-//         }
-
-//         if (beginsave == 1 && i < sizeof(dataEx)) {
-//             dataEx[i] = inchar;
-//             i++;
-//         }
-//     }
-
-//     return i;  // Return number of bytes read
-// }
-
-int HerkulexClass::readData(int size)
-{
+int HerkulexClass::readData(int size){
 	int i = 0;
 	byte* bpt = &dataEx[9];
 	(void) uart_read_bytes(port, bpt, size, pdMS_TO_TICKS(10));
-    // int beginsave=0;
-    // int Time_Counter=0;
-    // switch (port)
-	// {
-	// // case Serial:
-
-    // //     while((SwSerial.available() < size) & (Time_Counter < TIME_OUT)){
-    // //     		Time_Counter++;
-    // //     		delayMicroseconds(1000);  //wait 1 millisecond for 10 times
-	// // 	}
-        	
-	// // 	while (SwSerial.available() > 0){
-	// // 		byte inchar = (byte)SwSerial.read();
-	// // 		if ( (inchar == 0xFF) & ((byte)SwSerial.peek() == 0xFF) ){
-	// // 				beginsave=1; 
-	// // 				i=0; 				 // if found new header, begin again
-	// // 		}
-	// // 		if (beginsave==1 && i<size) {
-	// // 			   dataEx[i] = inchar;
-	// // 			   i++;
-	// // 		}
-	// // 	}
-	// // 	SwSerial.flush();
-	// // 	break;
-	// case UART_NUM_0:
-	// 			delay(1);
-	// 			break;
-	// 		case UART_NUM_1:
-	// 			delay(1);
-	// 			break;
-	// 		case UART_NUM_2:
-	// 			delay(1);
-	// 			break;
-	// 		case UART_NUM_MAX:
-	// 			delay(1);
-	// 			break;
-	
-	// #if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega128__) || defined (__AVR_ATmega2560__)
-	// case HSerial1:
-	// 	while((Serial1.available() < size) & (Time_Counter < TIME_OUT)){
-    //     		Time_Counter++;
-    //     		delayMicroseconds(1000);
-	// 	}      	
-	// 	while (Serial1.available() > 0){
-    //   		byte inchar = (byte)Serial1.read();
-	// 		//printHexByte(inchar);
-    //     	if ( (inchar == 0xFF) & ((byte)Serial1.peek() == 0xFF) ){
-	// 					beginsave=1;
-	// 					i=0; 						
-    //          }
-    //         if (beginsave==1 && i<size) {
-    //                    dataEx[i] = inchar;
-    //                    i++;
-	// 		}
-	// 	}
-	// 	break;
-	
-	// case HSerial2:
-	//     while((Serial2.available() < size) & (Time_Counter < TIME_OUT)){
-    //     		Time_Counter++;
-    //     		delayMicroseconds(1000);
-	// 	}
-        	
-	// 	while (Serial2.available() > 0){
-	// 		byte inchar = (byte)Serial2.read();
-	// 		if ( (inchar == 0xFF) & ((byte)Serial2.peek() == 0xFF) ){
-	// 				beginsave=1;
-	// 				i=0; 					
-	// 		}
-	// 		if (beginsave==1 && i<size) {
-	// 			   dataEx[i] = inchar;
-	// 			   i++;
-	// 		}
-	// 	}
-	// 	break;
-
-	// case HSerial3:
-	// 	while((Serial3.available() < size) & (Time_Counter < TIME_OUT)){
-	// 		Time_Counter++;
-	// 		delayMicroseconds(1000);
-	// 	}
-		
-	// 	while (Serial3.available() > 0){
-	// 		byte inchar = (byte)Serial3.read();
-	// 		if ( (inchar == 0xFF) & ((byte)Serial3.peek() == 0xFF) ){
-	// 				beginsave=1;
-	// 				i=0; 
-	// 		}
-	// 		if (beginsave==1 && i<size) {
-	// 			   dataEx[i] = inchar;
-	// 			   i++;
-	// 		}
-	// 	}
-	// 	break;
-	// #endif
-	// }
+	vTaskDelay(100 / portTICK_PERIOD_MS);
 	return i;
 }
 
-// //clear buffer in the serial port - better - try to do this
-// void HerkulexClass::clearBuffer()
-// {
-//   switch (port)
-// 	{
-// 	case SSerial:
-//                 SwSerial.flush();
-//                 delay(1);
-//                 break;
-// 	#if defined (__AVR_ATmega1280__) || defined (__AVR_ATmega128__) || defined (__AVR_ATmega2560__)
-// 	case HSerial1:
-// 				Serial1.flush();
-// 				while (Serial1.available()){
-// 				Serial1.read();
-// 				delayMicroseconds(200);
-// 				}
-//
-// 		break;
-// 	case HSerial2:
-// 	            Serial2.flush();
-// 				while (Serial2.available()){
-// 				Serial2.read();
-// 				delayMicroseconds(200);
-// 				}
-// 		break;
-// 	case HSerial3:
-// 	            Serial3.flush();
-// 				while (Serial3.available()){
-// 					Serial3.read();
-// 					delayMicroseconds(200);
-// 				}
-//
-// 		break;
-// 	#endif
-// 	}
-// }
 
-// void HerkulexClass::printHexByte(byte x)
-// {
-//   Serial.print("0x");
-//   if (x < 16) {
-//     Serial.print('0');
-//   }
-//     Serial.print(x, HEX);
-//     Serial.print(" ");
-//
-// }
 
 
 
