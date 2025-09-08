@@ -2,7 +2,16 @@ from typing import List, Union, Callable
 
 
 class Item:
+    """
+
+    """
     def __init__(self,motor: int, command: str ,values: List[Union[int,float]]) -> None:
+        """
+        Makes a smart item
+        :param motor: motor ID number
+        :param command: Command name
+        :param values: list of values for command
+        """
         self.motor = motor
         self.command = command
         self.values = values

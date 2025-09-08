@@ -6,6 +6,7 @@ from Types import *
 
 
 class Smart:
+    
     def __init__(self,serial: str)->None:
         #todo
         #start the listener loop
