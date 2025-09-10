@@ -53,7 +53,25 @@
 #include "../ESP_PI_Communication/MSGQueue.h"
 #include <string>
 #include <cmath>
+#include <stdexcept>
 
+RAMInfo ramInfoTable[RAMObjectCount] = {
+	{0x36, 1, "voltage currently received"},
+	{0x37, 1, "Internal temperature in Celcius"},
+	{0x38, 1, "Current Control Method, 0: Position Control, 1: Velocity Turn Control"},
+	{0x39, 1, "Actual Servo Tick time"},
+	{0x3A, 2, "Calibrated Position"},
+	{0x3C, 2, "Absolute Raw Position Data"},
+	{0x3E, 2, "Exponent Showing Speed"},
+	{0x40, 2, "Size of the Energy Output"},
+	{0x42, 2, "Potentiometer Absolute Position Raw Data"},
+	{0x44, 2, "Absolute goal Position Raw Data"},
+	{0x46, 2, "Current goal position based on Speed Profile"},
+	{0x48, 2, "Raw data of desired speed"}
+};
+
+// HERKULEX Broadcast Servo ID
+static byte BROADCAST_ID = 0xFE; /**< ID that control's all motors*/
 
 
 void delay(unsigned long ms) {
@@ -533,7 +551,11 @@ float HerkulexClass::getAngle(int servoID, HerkulexModel model) {
     int center = 0;
     float degreesPerUnit = 0.0;
 
+
     switch (model) {
+    	default:
+    		return -1.0;
+    		break;
 		case MODEL_0101:
         case MODEL_0201:
             center = 512;
@@ -547,6 +569,9 @@ float HerkulexClass::getAngle(int servoID, HerkulexModel model) {
             center = 16384;
             degreesPerUnit = 0.011;
             break;
+
+
+
     }
     return (pos - center) * degreesPerUnit;
 }
@@ -951,6 +976,7 @@ void HerkulexClass::moveSpeedOne(int servoID, int targSpeed, int totalTime, JogL
 	float degreesPerUnit = 1.0;
 	float center = 0.0;
 
+
 	switch (model) {
 		case MODEL_0601:
 			center = 1024;
@@ -964,6 +990,10 @@ void HerkulexClass::moveSpeedOne(int servoID, int targSpeed, int totalTime, JogL
 		case MODEL_0201:
 			center = 512;
 			degreesPerUnit = 0.325;
+			break;
+
+		default:
+			return;
 			break;
 	}
 
@@ -1035,10 +1065,10 @@ void HerkulexClass::moveSpeedOne(int servoID, int targSpeed, int totalTime, JogL
 
 
 // move one servo at target position 0 - 1024
-void HerkulexClass::moveOne(int servoID, int targPosition, int pTime, JogLedColor valueLed, HerkulexModel model)
-{
+void HerkulexClass::moveOne(int servoID, int targPosition, int pTime, JogLedColor valueLed, HerkulexModel model){
   // command-specific checks
   int posLimit = 0;
+
 
   switch (model) {
 	case MODEL_0601:
@@ -1051,6 +1081,9 @@ void HerkulexClass::moveOne(int servoID, int targPosition, int pTime, JogLedColo
 	case MODEL_0201:
 		posLimit = 1023;
 		break;
+    default:
+  		return;
+  		break;
 }
   if (targPosition > posLimit || targPosition < 0) {
 	 PrintfToPI(DebugQueue,0,"HerkulexLib: moveOne: Error targPosition out of range");
@@ -1113,6 +1146,7 @@ void HerkulexClass::moveOneAngle(int servoID, float angle, int pTime, JogLedColo
     float degreesPerUnit = 0.0;
     int posLimit = 0;
 
+
     switch (model) {
         case MODEL_0601:
             center = 1024;
@@ -1130,6 +1164,9 @@ void HerkulexClass::moveOneAngle(int servoID, float angle, int pTime, JogLedColo
             degreesPerUnit = 0.325;
             posLimit = 1023;
             break;
+    	default:
+    		return;
+    		break;
     }
 
     int position = (int)((angle / degreesPerUnit) + center);
@@ -1180,6 +1217,7 @@ void HerkulexClass::moveAll(int servoID, int Goal, JogLedColor valueLed, Herkule
     // float degreesPerUnit = 0.0;
     int posLimit = 0;
 
+
     switch (model) {
         case MODEL_0601:
             // center = 1024;
@@ -1197,6 +1235,9 @@ void HerkulexClass::moveAll(int servoID, int Goal, JogLedColor valueLed, Herkule
             // degreesPerUnit = 0.325;
             posLimit = 1023;
             break;
+    	default:
+    		return;
+    		break;
     }
 	if (Goal > posLimit || Goal < 0) {
 		PrintfToPI(DebugQueue,0,"HerkulexLib: moveOne: Error targPosition out of range");
@@ -1234,6 +1275,9 @@ void HerkulexClass::moveAllAngle(int servoID, float angle, JogLedColor valueLed,
             degreesPerUnit = 0.325;
             posLimit = 1023;
             break;
+    	default:
+    		return;
+    		break;
     }
 
     int position = (int)((angle / degreesPerUnit) + center);
@@ -1380,13 +1424,7 @@ void HerkulexClass::actionAll(int pTime, bool showStatus)
 	dataEx[6] = ck2;				// Checksum 2
 	dataEx[7] = playTime;			// Execution time	
 	
-	// Serial.println("Sending motor movement data:");
-    // for (int i = 0; i < conta; i++) {
-    //     Serial.print("Data[");
-    //     Serial.print(i);
-    //     Serial.print("]: ");
-    //     Serial.println(dataEx[i + 8]);
-    // }
+
 
 	for (int i=0; i < conta; i++)
 		dataEx[i+8]=moveData[i];	// Variable servo data	

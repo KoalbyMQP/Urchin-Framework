@@ -1,132 +1,231 @@
+# Urchin Framework
+
+Urchin Framework is a **smart motor driver** system designed to simplify and improve motor control through a combination of firmware and software. Its primary goal is to **abstract, synchronize, order, and enhance the safety** of motor and I²C chains, making complex motor networks easier and safer to manage.
+
+---
+
 # Objective
-    The goal of the project is to provide a safe and expandable platform for the Raspberry Pi to interface with motors and sensors with a seamless abstract interface
+The goal of the project is to provide a safe and expandable platform for the Raspberry Pi to interface with motors and sensors with a seamless abstract interface.
+
+---
+
 ## Goal
-    
-    The API will have the least amount of user faceing funtion call changes
-    The possabily of expantion of scoop shall be planed for and included in designe
-    The framework should be addaped to multipule purpourse will the least amount of changes
-    Multiple instances of fermware shall be versiond from one tree with the leat amount of files changes
-## Success criteria
+- The API will have the least amount of user-facing function call changes.
+- The possibility of expansion of scope shall be planned for and included in the design.
+- The framework should be adaptable to multiple purposes with minimal changes.
+- Multiple instances of firmware shall be versioned from one tree with minimal file changes.
+
+---
+
+## Success Criteria
+- [Define specific success metrics here based on testing and deployment.]
+
+---
+
 # Background
+- [Provide project background, motivation, and context here.]
+
+---
 
 # Scope
-# Design
-The Urchin framework is divided into four sectors, Each with their own aquatic name
-1. Urchin firmware
-2. Crab API
-3. Mollusk Peer
-4. Coral Multiplexor
+- [Define the scope of the project, boundaries, and limitations.]
 
-## Lucid chart
+---
+
+# Design
+
+The Urchin framework is divided into four sectors, each with its own aquatic-themed name:
+
+1. **Urchin Firmware**
+2. **Crab API**
+3. **Mollusk Peer**
+4. **Coral Multiplexor**
+
+---
+
+## Lucid Chart
+- [Include Lucidchart link or embed diagram showing architecture.]
+
+---
+
 ## Overview
+- [High-level overview of system architecture.]
+
+---
+
 ## Infrastructure
+- [Describe hardware and software infrastructure required.]
+
+---
+
 ## Detailed Design
+- [Explain internal design, modules, and data flow.]
+
+---
+
 ## Expansion / Adaptability
+- [Describe how the system can be scaled or adapted for other purposes.]
+
+---
+
 ## Dependencies
 
 ### C
-* [Free RTOS](https://www.freertos.org/ "Title").
-* [Espidf](https://idf.espressif.com/ "Title").
+- [FreeRTOS](https://www.freertos.org/)
+- [Espidf](https://idf.espressif.com/)
 
 ### Python
-See standards set by 
-* Threading
-* Serial
+- Threading
+- Serial
+
+---
+
 # Standards
- ## Python
- ## C/C++
+
+## Python
+- [Define Python coding standards here.]
+
+## C/C++
 **When should I use C or C++?**
-To handle libraries that are already in C++ we will keep ore files in C++ but your code should be writen as simply as possible
-Because of that try to use C as much as possible. Only use C++ if you need its exclusive features 
- ### Power of ten
-The rules are intended to eliminate certain C coding practices that make code difficult to review or statically analyze.
-The bellow rules have been modified in **bold** to better fit this project
-1. Avoid complex flow constructs, such as goto and recursion.
-2. All loops must have fixed bounds. This prevents runaway code.
-3. **Try to** Avoid heap memory allocation after initialization.
+- Prefer C unless exclusive C++ features are needed. Keep code as simple as possible.
+
+### Power of Ten
+Rules intended to eliminate certain coding practices:
+
+1. Avoid complex flow constructs (goto, recursion).
+2. All loops must have fixed bounds.
+3. **Try to avoid heap memory allocation after initialization.**
 4. Restrict functions to a single printed page.
 5. Use a minimum of two runtime assertions per function.
-6. Restrict the scope of data to the smallest possible.
-7. Check the return value of all non-void functions, or cast to void to indicate the return value is useless.
-8. Use the preprocessor only for header files and simple macros. **macros to enforce project rules are allowed and will be exclusively contained in the standards.h**
-9. Limit pointer use to a single dereference, and do not use function pointers. **They are only allowed in a "static const" context**
-10. Compile with all possible warnings active; all warnings should then be addressed before release of the software.
+6. Restrict scope of data to the smallest possible.
+7. Check all return values of non-void functions.
+8. Use preprocessor only for headers and simple macros. **Project-rule macros are allowed in `standards.h`.**
+9. Limit pointer use to a single dereference; no function pointers except `static const`.
+10. Compile with all warnings active; address all before release.
 
-**Custom**
-1. Use of "prinf" , "fprintf", "vprintf" , and "vfprintf" are forbidden. Use "PrintToPi" Instead
-2. Any change to the Shipping.c and Shipping.h or its instantiation in main.cpp needs to be reviewed by two project managers
-3. Use of c++ strings is banded
-4. Instead of using "malloc" and "free" use "pvPortMalloc" and "vPortFree"
+**Custom Rules**
+1. Forbidden: `printf`, `fprintf`, `vprintf`, `vfprintf`. Use `PrintToPi` instead.
+2. Changes to `Shipping.c`/`Shipping.h` require review by two project managers.
+3. C++ strings are banned.
+4. Use `pvPortMalloc` / `vPortFree` instead of `malloc` / `free`.
 
-   **ALL pull requests must meet these standards!**
+**ALL pull requests must meet these standards!**
+
+---
+
 ## Git Policy
-<pre>
-Git branch policy:<br>
-Main                    # Stable, production-ready<br>
-├── develop            # Integration branch<br>
-├── feature/package-name/feature-description<br>
-├── bugfix/package-name/bug-description<br>
-└── release/v1.2.0    
-</pre>
 
-### Python
-<pre>
-Python Git project structure <br>
-├── README.md<br>
-└── packages<br>
-├── common<br>
-│     └── README.md<br>
-└── foo<br>
-├── README.md<br>
-├── examples<br>
-├── scripts<br>
-│   ├── build.py<br>
-│   ├── release.py<br>
-│   └── test.py<br>
-└── test<br>
-</pre>
-### C/C++
-<pre>
-C/C++ Git project structure <br>
-├──"Project".README<br>
-├──include<br>
-├──lib<br>
-└──src<br>
-    ├──main.cpp<br>
-    └── ...<br>
-</pre>
+**Branch Policy:**
+```
+Main                    # Stable, production-ready
+├── develop              # Integration branch
+├── feature/package-name/feature-description
+├── bugfix/package-name/bug-description
+└── release/v1.2.0
+```
+
+**Python Project Structure:**
+```
+├── README.md
+└── packages
+    ├── common
+    │     └── README.md
+    └── foo
+        ├── README.md
+        ├── examples
+        ├── scripts
+        │   ├── build.py
+        │   ├── release.py
+        │   └── test.py
+        └── test
+```
+
+**C/C++ Project Structure:**
+```
+├── "Project".README
+├── include
+├── lib
+└── src
+    ├── main.cpp
+    └── ...
+```
+
+---
+
 # Crab API
-This API provides many comforts to the user 
-* Abstraction of sending data to the firmware
-* Tools for management of code execution and flow
-  * Chained function will be forced to resolve before execution will continue
-  * Send can be feed functions to be run if and when certain errors occur
-## Function Calls
-`InitUrchin()`
-`Ticket=SEND(Data,Type,LIST[ITEM],Restraints,LIST[Reaction],Chained)`
-`CHECK(Ticket)`
-`DROP(Ticket)`
 
-## Reaction
-* The API has the ability to run functions appon receiving a completion code or error code from the firmware
+The Crab API provides user-friendly abstractions:
 
-##
+- Sends data to firmware easily.
+- Manages code execution and flow:
+    - Chained functions must resolve before continuing.
+    - Send can execute functions on firmware completion or error.
+
+### Function Calls
+```
+InitUrchin()
+Ticket = SEND(Data, Type, LIST[ITEM], Restraints, LIST[Reaction], Chained)
+CHECK(Ticket)
+DROP(Ticket)
+```
+
+### Reaction
+- Functions can be executed upon receiving a completion or error code from the firmware.
+
+---
 
 # Urchin Firmware
-This Firmware is the brains of the operation.
-The Firmware will run Free RTOS ontop of the espidf framework
 
-## Communication
-There are three sides to communication on the esp32
-1. PI and Urchin
-   * These two communicate with packets to send {VPID (Virtual Process identifier), Stream, Data , Checksum}
-   * They use seral UART ports. ESP32 will use UART-0 that is connected to the USB. The PI will use one of there USB ports and will scan to see what "COM" is being used.
-   * In the event of a detached instance/installation of the Firmware bluetooth should be used to send packets with the same packet type
-2. Motors and Sensors
-   * They will use a mix of I2C and Uart
-     *  Dynamixel: Will use there packets to pass down the motor chain
-     *  HerkuleX: Will use there packets to pass down the motor chain
-     *  I2C: 
-3. Peer to Peer
-   * The main Urchin firmware will communicate to other esp32s over CAN
-   * Under the special circumstance of a wireless peer ESPNOW will be used as it has a RTT of ≈6ms 
+The firmware is the brains of the operation, running **FreeRTOS** on top of the **Espidf** framework.
+
+### Communication
+
+1. **PI ↔ Urchin**
+    - Communicate via packets: `{VPID, Stream, Data, Checksum}`
+    - Use UART; ESP32 UART-0 via USB, Raspberry Pi scans available COM ports.
+    - If disconnected, Bluetooth can be used with the same packet structure.
+
+2. **Motors and Sensors**
+    - Communication via I²C and UART.
+        - Dynamixel: uses its native packet system.
+        - HerkuleX: uses its native packet system.
+        - I²C: general sensor/motor communication.
+
+3. **Peer-to-Peer**
+    - Main Urchin firmware communicates with other ESP32s over CAN.
+    - Wireless peers use ESPNOW (~6ms RTT) under special circumstances.
+
+---
+
+# Getting Started
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/KoalbyMQP/Urchin-Framework.git
+cd Urchin-Framework
+```
+
+### 2. Setup Firmware
+- Navigate to the firmware directories (e.g., `Urchin_Firmware`) and follow build instructions.
+
+### 3. Integrate with Software
+- Use the Crab API to control motors and I²C devices programmatically.
+
+### 4. Run Safety Checks
+- Ensure all motors and I²C devices are properly configured.
+
+---
+
+## Documentation
+
+Generate API documentation using **Doxygen**:
+```bash
+doxygen Doxyfile
+```
+Documentation will be available in the `docs/` directory.
+
+---
+
+## License
+
+This project is licensed under the **MIT License** - see the [LICENSE](https://github.com/KoalbyMQP/Urchin-Framework/blob/main/LICENSE) file.

@@ -3,7 +3,7 @@
  * @brief Header file for Herkulex motor drivers
  * @author Alessandro Giacomel
  * @author Gabriel Weaver
- * @date 2025-09-07
+ * @date 09-07-2025
  * @version 1.0
  *
  * @defgroup Herkulex HerkuleX-Drivers
@@ -207,25 +207,7 @@ struct StatusData {
 };
 
 
-/**
- *
- */
-static const RAMInfo ramInfoTable[RAMObjectCount] = {
-        {0x36, 1, "voltage currently received"},
-        {0x37, 1, "Internal temperature in Celcius"},
-        {0x38, 1, "Current Control Method, 0: Position Control, 1: Velocity Turn Control"},
-        {0x39, 1, "Actual Servo Tick time"},
-        {0x3A, 2, "Calibrated Position"},
-        {0x3C, 2, "Absolute Raw Position Data"},
-        {0x3E, 2, "Exponent Showing Speed"},
-        {0x40, 2, "Size of the Energy Output"},
-        {0x42, 2, "Potentiometer Absolute Position Raw Data"},
-        {0x44, 2, "Absolute goal Position Raw Data"},
-        {0x46, 2, "Current goal position based on Speed Profile"},
-        {0x48, 2, "Raw data of desired speed"}
-    };
-// HERKULEX Broadcast Servo ID
-static byte BROADCAST_ID = 0xFE; /**< ID that control's all motors*/
+
 
 
 /**

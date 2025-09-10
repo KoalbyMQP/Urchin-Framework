@@ -34,8 +34,8 @@ extern "C" [[noreturn]] void app_main() {
     // QueueHandle_t SequentialQueue = xQueueCreate(SequentialSize, sizeof(Ticket));
     // Ticket *interrupt;
 
-    printf("MSG_ITEM_SIZE:%d\n",MSG_ITEM_SIZE);
-    printf("MSG_QUEUE_LENGTH:%d\n",MSG_QUEUE_LENGTH);
+    //printf("MSG_ITEM_SIZE:%d\n",MSG_ITEM_SIZE);
+    //printf("MSG_QUEUE_LENGTH:%d\n",MSG_QUEUE_LENGTH);
 
     ExchangeQueue= xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
 
@@ -44,6 +44,7 @@ extern "C" [[noreturn]] void app_main() {
     DebugQueue = xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
 
     if (!ExchangeQueue || !RecationQueue || !DebugQueue) {
+        //rolint: ignore
         printf("One or more queues failed to allocate!\n");
         //abort();
     }

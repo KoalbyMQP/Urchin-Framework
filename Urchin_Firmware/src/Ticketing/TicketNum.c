@@ -6,8 +6,9 @@
 #include "ESP_PI_Communication/MSGQueue.h"
 #include "ESP_PI_Communication/Coms.h"
 
-
+//rolint: ignore
 TapeRoll TicketTape;
+//rolint: ignore
 SemaphoreHandle_t TicketTapeMutex;
 
 unsigned int FindFree(const TapeRoll *Roll){

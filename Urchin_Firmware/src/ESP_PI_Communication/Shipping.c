@@ -7,11 +7,16 @@
 #include "Ticketing/Ticket.h"
 #include "Ticketing/TicketNum.h"
 #include "Conversation/UnPacker.h"
+#include "ESP_PI_Communication/MSGQueue.h"
 
-
+//rolint: ignore
 QueueHandle_t ExchangeQueue;
+//rolint: ignore
 QueueHandle_t RecationQueue;
+//rolint: ignore
 QueueHandle_t DebugQueue;
+
+
 // cppcheck-suppress unusedFunction
 _Noreturn void Shipping(void *pvParameters) {
     //(void) printf("started shipping\n"); //remove later as printf is not thread safe
@@ -21,8 +26,10 @@ _Noreturn void Shipping(void *pvParameters) {
 
 
 
-
+    //rolint: ignore
     printf("<<StartStart>>");
+
+
     //running loop
     while (1) {
 
@@ -40,7 +47,7 @@ _Noreturn void Shipping(void *pvParameters) {
 
 
 void SendQue(QueueHandle_t Queue, char Stream) {
-    MSG received_data_from_queue;
+    MSG received_data_from_queue = {0};
     while(uxQueueMessagesWaiting(Queue)>0){
         if (xQueueReceive(Queue, &received_data_from_queue, portMAX_DELAY)) {
             //int length= strlen((const char *)(data));
@@ -60,11 +67,12 @@ int SendMessage(const uint8_t VPID, const char Stream, const uint8_t buff[], con
     if (strchr("REDFS",Stream)==NULL) return -2; // run time assertion : not a valid stream "REDFS" is a list of chars that are valid streams
 
 
-    Box board;
+    Box board = {0};
     (void) memset(&board,0,sizeof(board));
     board.delimiter='\a';
     board.VPID=VPID;
     board.Stream=Stream;
+
     (void) memset(board.data,0,sizeof(board.data));
     (void) strncpy((char*)board.data,(char*)buff,size);
     (void) uart_write_bytes(UART_NUM, (const void*)&board, sizeof(Box));

@@ -1,6 +1,11 @@
-//
-// Created by gabri on 3/23/2025.
-//
+/**
+ * @file Coms.h
+ * @brief User call for Communication
+ * @author Gabriel Weaver
+ * @date 3-23-2025
+ * @version 1.0
+ * @defgroup coms Coms
+ */
 
 #ifndef COMS_H
 #define COMS_H
@@ -24,6 +29,7 @@
 
 /**
  *Used to send messages to and from PI
+ * @struct Box
  */
 typedef struct {
    /**
