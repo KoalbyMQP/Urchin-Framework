@@ -7,6 +7,8 @@
 
 
 
+
+
 #include "UnPacker.h"
 
 #include <ESP_PI_Communication/Coms.h>
@@ -26,7 +28,7 @@
 
 
 int ReqTicket(const char* buffer){
-(void)PrintfToPI(DebugQueue,0,"\n\nReqTicket called");
+(void)PrintfToPI(DebugQueue,0,"ReqTicket called");
     //PrintTape(&TicketTape);
     //Get Ticket
 
@@ -51,17 +53,14 @@ int ReqTicket(const char* buffer){
 
 
 int PunchTicket(const char* buffer) {
+    (void) PrintfToPI(ExchangeQueue,0,"PunchTicket called");
 
-    /*
-     PrintfToPI(DebugQueue,"Set Led Green");
 
-    Herkulex.setLed(7, LED_GREEN2_HRAMWRITE); //set the led to green
-    PrintfToPI(DebugQueue,"Status:");
-    PrintfToPI(DebugQueue,"",Herkulex.stat(n)); //verify error code
-    Herkulex.end();
-    */
 
-    (void) PrintfToPI(ExchangeQueue,0,"PunchTicket not added");
+
+
+
+
     return 0;
 }
 

@@ -2,39 +2,38 @@ import serial
 import serial.tools.list_ports
 import struct
 
+from typing import *
+
+from serial import Serial
+
 
 class ESPSerial(object):
-    START_MARKER = b'\x07'  # This is the bell character (\a)
+    START_MARKER: bytes = b'\x07'  # This is the bell character (\a)
     # The packet format for VPID (Byte), Stream (char), and data (1024s)
-    PACKET_FORMAT = "<Bc1024s"
-    PACKET_SIZE = struct.calcsize(PACKET_FORMAT)
+    PACKET_FORMAT: str = "<Bc1024s"
+    PACKET_SIZE: int = struct.calcsize(PACKET_FORMAT)
+    serial: Serial
 
-    def __init__(self):
+    def __init__(self) -> None:
+        '''
+
+        '''
         self.serial = serial.Serial(self.find_esp32_ports()[0], 115200, timeout=1)
 
-
-
-    def find_esp32_ports(self):
-        ports = serial.tools.list_ports.comports()
+    def find_esp32_ports(self) -> list[Serial]:
+        ports: list[Serial] = serial.tools.list_ports.comports()
         esp32_ports = []
 
         for port in ports:
 
-
-            if ("CP210" in port.description or
-                    "CH340" in port.description or
-                    "Silicon Labs" in port.manufacturer or
-                    "USB Serial" in port.description or
-                    "FTDI" in port.description or
-                    "UART" in port.description):
+            if port.serial_number == "urchin":
                 esp32_ports.append((port.device, port.description))
         if len(esp32_ports) == 0:
             return False
 
         return esp32_ports[0]
 
-
-    def receive_packet(self):
+    def receive_packet(self) -> bytes:
         # Wait until the start marker is found
         if not self.find_start_marker():
             print("Timeout while waiting for start marker (bell character).")
@@ -51,10 +50,7 @@ class ESPSerial(object):
 
         return packet_data
 
-
-
-
-    def find_start_marker(self):
+    def find_start_marker(self) -> bool:
         while True:
             byte = self.serial.read()
             if not byte:
@@ -64,36 +60,23 @@ class ESPSerial(object):
                 # Marker found
                 return True
 
-   # def send_packet(self, VPID, buff):
-   #     if isinstance(buff, str):
-   #         buff = buff.encode('utf-8')
-    #    buff = buff.ljust(1024, b'\x00')[:1024]
-    #    packed_data = struct.pack("<cBB1024s", b'\a', VPID, ord('N'), buff)
-   #    self.serial.write(packed_data)
-
-    def send_packet(self, VPID, buff):
-        if not isinstance(VPID, int) or not (0 <= VPID <= 255):
+    def send_packet(self, VPID: int, buff: str) -> None:
+        print("send_packet"+buff)
+        if not (0 <= VPID <= 255):
             raise ValueError("VPID must be an integer between 0 and 255")
 
-        if isinstance(buff, str):
-            buff = buff.encode('utf-8')
-
+        buff = buff.encode('utf-8')
         buff = buff.ljust(1024, b'\x00')[:1024]
 
         try:
             packed_data = struct.pack("<cBB1024s", b'\a', VPID, ord('N'), buff)
             self.serial.write(packed_data)
 
-            #print(struct.calcsize("<cBB1024s"))
-            #print("Decode:  "+packed_data.decode())
         except Exception as e:
             print("Error while packing or sending:", e)
 
-
-    def read_packet(self):
-
-
-        packet = self.receive_packet()
+    def read_packet(self) -> dict[str,Any] | None:
+        packet: bytes = self.receive_packet()
 
         if packet:
             try:
@@ -109,8 +92,8 @@ class ESPSerial(object):
             except UnicodeDecodeError:
                 print(f"UnicodeDecodeError, raw data: {repr(raw_data)}")
 
-            return [VPID,Stream,data_str]
+            return {"VPID":VPID, "Stream":Stream, "data_str":data_str}
+        return None
 
-
-    def close(self):
+    def close(self) -> None:
         self.serial.close()
