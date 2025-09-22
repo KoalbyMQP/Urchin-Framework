@@ -102,27 +102,30 @@ class Smart:
 
         #todo
         #Format ticket
-        self.serial.send_packet(0, "FormatTicket" + str(ticket) + "|" + type)
 
+        self.serial.send_packet(0, "FormatTicket" + bytes.struct.pack('i', ticket) + type)
         # Load ticket
-        for item in items:
-            Strip: str = ""
-            Strip += item.motor
-            Strip += "|"
-            Strip += item.command
-            Strip += "|"
-            Strip += len(item.values)
-            Strip += "|"
-            for point in item.values:
-                Strip += str(point)
-                Strip += "|"
 
-            self.serial.send_packet(0, "LoadTicket" + str(ticket) + "|" + Strip)
+        for item in items:
+            Strip: str = "LoadTicket"
+            Strip += struct.pack('I', ticket).decode('latin-1')  # Unsigned int
+            Strip += struct.pack('I', item.motor).decode('latin-1') #Unsigned int
+            Strip += struct.pack('I', item.model).decode('latin-1') #Unsigned int
+            Strip += struct.pack('?', len(item.command)).decode('latin-1') #Int of 1 byte
+            Strip += item.command #string
+            Strip += struct.pack('?', len(item.values)).decode('latin-1')  # Int of 1 byte
+            for point in item.values:
+                Strip += item.Press(point)
+            self.serial.send_packet(0,  Strip)
+
+
+
+
 
 
         # todo
         # punch ticket
-        self.serial.send_packet(0, "PunchTicket"+str(ticket))
+        self.serial.send_packet(0, "PunchTicket"+struct.pack('I', ticket).decode('latin-1'))
 
 
         #todo

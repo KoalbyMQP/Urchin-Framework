@@ -42,8 +42,10 @@ void receiving(void *pvParameters){
 
 
 //setting up conversation
-    static Context Basic[]={
+    static Context Basic[]={//has max size see unpacker.h
             {"ReqTicket",9,ReqTicket,NULL,0},
+            {"FormatTicket",12,FormatTicket,NULL,0},
+            {"LoadTicket",10,LoadTicket,NULL,0},
             {"PunchTicket",11,PunchTicket,NULL,0},
             {"CloseTicket",11,CloseTicket,NULL,0},
             {"TicketInfo",10,TicketInfo,NULL,0},

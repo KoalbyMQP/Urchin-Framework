@@ -62,6 +62,14 @@
 
     //Helpers
     //-------------------------------------------------
+
+    /**
+     *
+     * @param buffer
+     * @return
+     */
+    int StrToInt(const char* buffer);
+
     /**
     * Skips the reader forward by the distace
     * @param buffer Char buffer
@@ -120,6 +128,9 @@
     int GetHealth(const char* buffer);
 
 
+
+    int LoadTicket(const char* buffer);
+    int FormatTicket(const char* buffer);
 
 
     //-----------------------------------

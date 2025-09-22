@@ -1,5 +1,6 @@
 #include <sys/cdefs.h>
 #include "esp_task_wdt.h"
+#include "Ticketing/Ticket.h"
 //
 // Created by gabri on 3/24/2025.
 // !!! do you best you use only C in this file
@@ -21,7 +22,7 @@
 
 #include "Herkulex/Herkulex.h"
 
-
+Ticket* Tickets[MaxTickets];
 
 //Basic statements
 //-----------------------------------------------------------------
@@ -49,6 +50,34 @@ int ReqTicket(const char* buffer){
 
   return 0;
 }
+
+int FormatTicket(const char* buffer) {
+    const char *TicketNumPoint = buffer;
+    const char TicketType = *(buffer+sizeof(int));
+
+
+    int TicketNum = StrToInt(TicketNumPoint);
+
+    void *alloc = pvPortMalloc(sizeof(Ticket));
+    if (alloc == nullptr) {
+        //todo throw error
+        return -1;
+    }else {
+        Ticket* TicketPoint= static_cast<Ticket *>(alloc);
+        TicketPoint->TicketNum = TicketNum;
+        TicketPoint->type = TicketType;
+        Tickets[TicketNum] = TicketPoint;
+    }
+    return 0;
+}
+
+
+
+int LoadTicket(const char* buffer) {
+    (void) PrintfToPI(ExchangeQueue,0,"LoadTicket called");
+    return 0;
+}
+
 
 
 
@@ -113,6 +142,17 @@ return 0;
 
 //Helppers
 //------------------------------------------------------------------------
+
+
+int StrToInt(const char* buffer) {
+    int temp=0;
+    temp |= buffer[0] <<24;
+    temp |= buffer[1] <<16;
+    temp |= buffer[2] <<8;
+    temp |= buffer[3];
+    return temp;
+}
+
 
 int ProcessRequest(Context Commands[],const uint8_t buffer[]) {
         int i=0;

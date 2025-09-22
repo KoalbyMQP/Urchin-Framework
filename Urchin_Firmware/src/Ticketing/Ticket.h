@@ -7,10 +7,14 @@
 
 #include "Packet.h"
 #include "Global/LinkedList.h"
+#include "TicketNum.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+#define MaxTickets 64*StripSize
 
 /**
      * @brief Ticket for the processes ques
@@ -22,6 +26,11 @@ typedef struct{
      * Ticket number
      */
      int TicketNum;
+
+    /**
+     * ticket type
+     */
+     char type;
 
      /**
       *The commands that will be sent
