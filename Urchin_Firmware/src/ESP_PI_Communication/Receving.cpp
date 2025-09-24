@@ -15,18 +15,7 @@
 
 void receiving(void *pvParameters){
 
-    HerkulexClass Herkulex;
-    Herkulex.begin(UART_NUM_1,115200,16,17); //115200 is default for DRS-0601
-    //Herkulex.reboot(7); //reboot
-    //Herkulex.initialize();
-    Herkulex.reboot(7);
-    Herkulex.torqueON(7);
 
-    Herkulex.setLed(7, LED_GREEN_HRAMWRITE);
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
-    Herkulex.setLed(7, LED_BLUE_HRAMWRITE);
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
-    Herkulex.setLed(7, LED_GREEN2_HRAMWRITE);
 
     RollINIT(&TicketTape);
 
@@ -37,7 +26,7 @@ void receiving(void *pvParameters){
     //uint8_t data[COMS_SIZE];
 
 
-
+    (void)UnpackerInit();
 
 
 

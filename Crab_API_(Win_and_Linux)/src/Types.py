@@ -1,11 +1,12 @@
 from typing import List, Union, Callable, Optional
 import struct
+from enum import IntEnum
 
 class Item:
     """
 
     """
-    def __init__(self, motor: int, model: int, command: str, values: List[Union[int, float, str, bool]]) -> None:
+    def __init__(self, motor: int, model: int, command: str, values: List[Union[int, float, bool]]) -> None:
         """
         Makes a smart item
         :param motor: motor ID number
@@ -17,19 +18,24 @@ class Item:
         self.model = model
         self.command = command
         self.values = values
+        for i in range(len(self.values)):
+            if isinstance(self.values[i], IntEnum):
+                self.values[i] = int(self.values[i])
 
-    def Press(self, Instance: Union[int, float, str, bool]) -> Optional[str]:
-        if(type(Instance) == str):
-            return "S"+str(len(Instance))+Instance
+
+    def Press(self, Instance: Union[int, float, bool]) -> Optional[bytes]:
+            # Removed due to complexity
+        # if(type(Instance) == str):
+        #     return "S"+str(len(Instance))+Instance
         if (type(Instance) == int):
             bytes = struct.pack('i', Instance)
-            return "I"+bytes.decode('latin-1')
+            return b"I"+bytes
         if (type(Instance) == float):
             bytes = struct.pack('f', Instance)
-            return "F"+bytes.decode('latin-1')
+            return b"F"+bytes
         if (type(Instance) == bool):
-            bytes = struct.pack('?', Instance)
-            return "B" + bytes.decode('latin-1')
+            bytes = struct.pack('B', Instance)
+            return b"B" + bytes
 
 
 class Reaction:

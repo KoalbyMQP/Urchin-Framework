@@ -1,15 +1,37 @@
-from Smart import *
+from Crab import *
 from Types import *
 import time
+from HerkuleX import *
+import sys
+import signal
 
-# Press the green button in the gutter to run the script.
+
+
+
+
 if __name__ == '__main__':
-   test = Smart()
+   test = Crab(True)
 
 
-   command = Item(7,"MoveOne",[27, 30, "LED_GREEN"])
-   ticket = test.send("A",[command],None,False)
-   print(ticket)
+   command = HerkuleX.MoveOne(7, 6, 3, JogLedColor.LED_RED, HerkulexModel.MODEL_0601)
+   ticket = test.send(TicketType.Asynchronous,[command],None,False)
+   print("Main:ticket"+str(ticket))
 
-   time.sleep(1)
-   test.Thread.join()
+
+   time.sleep(2)
+
+   print("\n\n\n\n")
+
+
+
+   command = HerkuleX.MoveOne(7, 512, 27, JogLedColor.LED_RED, HerkulexModel.MODEL_0601)
+   ticket = test.send(TicketType.Asynchronous, [command], None, False)
+   print("Main:ticket" + str(ticket))
+
+
+
+   test.close()
+
+
+
+

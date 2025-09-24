@@ -18,7 +18,7 @@
 
 
 
-
+int UnpackerInit();
 
 
     typedef struct Context Context;  // Forward declaration

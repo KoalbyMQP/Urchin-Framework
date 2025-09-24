@@ -264,6 +264,7 @@ void HerkulexClass::sendSJog(int servoID, int Target, int pTime, JogLedColor val
 // initialize servos
 void HerkulexClass::initialize()
 {
+		Herkulex.SetIndirect(false);
         conta=0;
 		lenghtString=0;
         delay(100);       
@@ -1634,9 +1635,14 @@ void HerkulexClass::addData(int GoalLSB, int GoalMSB, int set, int servoID)
 }
 
 // Sending the buffer long lenght to Serial port
-void HerkulexClass::sendData(byte* buffer, int lenght){
-	(void) uart_write_bytes(port, buffer, lenght);
-	vTaskDelay(100 / portTICK_PERIOD_MS);
+void HerkulexClass::sendData(byte* buffer, int length) {
+	memcpy(BusPacket,buffer,length);
+	BusPacketLength=length;
+
+	if (!Indirect){
+		(void) uart_write_bytes(port, buffer, length);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+	}
 }
 
 
@@ -1648,10 +1654,13 @@ int HerkulexClass::readData(int size){
 	return i;
 }
 
+void HerkulexClass::SetIndirect(bool indirect) {
+	Indirect=indirect;
+}
 
 
 
 
 
 
- HerkulexClass Herkulex;
+

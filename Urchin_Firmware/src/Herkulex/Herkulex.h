@@ -185,7 +185,7 @@ enum LedColor {
 enum JogLedColor {
   LED_GREEN = 0x02,
   LED_BLUE = 0x03,
-  LED_RED = 0x04,
+  LED_RED = 0x04
 };
 
 /**
@@ -249,6 +249,8 @@ int min(int a, int b);
  */
 class HerkulexClass {
 public:
+
+
   /**
    *
    * @param uart_num
@@ -506,7 +508,7 @@ public:
    * @param buffer
    * @param lenght
    */
-  void sendData(byte* buffer, int lenght);
+  void sendData(byte* buffer, int length);
 
 
   /**
@@ -534,19 +536,30 @@ public:
    */
   uint16_t RAMReadSerial(uint8_t servoID, RAMObject obj);
 
+  /**
+   *
+   * @param indirect
+   */
+  void SetIndirect(bool indirect);
 
-  int pSize; /**< The total size of the packet */
-  int pID; /**< The Motor ID */
-  int cmd; /**< The type of motor command  */
-  int lenghtString; /**< Size of data section of packet */
-  int ck1; /**< Check sum 1 */
-  int ck2; /**< Check sum 2 */
-  byte dataEx[DATA_MOVE+8]; /**< Full packet (ready to send) */
-  byte data[DATA_SIZE];  /**< Parameters only (working buffer)  */
-  byte moveData[DATA_MOVE]; /**< Helper buffer specifically for motion commands.  */
 
 
 private:
+
+    int pSize; /**< The total size of the packet */
+    int pID; /**< The Motor ID */
+    int cmd; /**< The type of motor command  */
+    int lenghtString; /**< Size of data section of packet */
+    int ck1; /**< Check sum 1 */
+    int ck2; /**< Check sum 2 */
+    byte dataEx[DATA_MOVE+8]; /**< Full packet (ready to send) */
+    byte data[DATA_SIZE];  /**< Parameters only (working buffer)  */
+    byte moveData[DATA_MOVE]; /**< Helper buffer specifically for motion commands.  */
+
+    byte BusPacket[233];
+    int BusPacketLength;
+    bool Indirect;
+
 
   /**
    *
