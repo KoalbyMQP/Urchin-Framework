@@ -2,40 +2,30 @@ import queue
 import threading
 
 
-import serial
-from numpy import character
-from pandas.conftest import tick_classes
+
 
 from ESPSerial import *
 from Types import *
-from enum import Enum
 from enum import StrEnum
 
 class TicketType(StrEnum):
-    Sequential = "S"
-    Resolving = "R"
-    Asynchronous = "A"
-    Interrupt = "I"
-
-
+    Sequential:str      = "S"
+    Resolving:str       = "R"
+    Asynchronous:str    = "A"
+    Interrupt:str       = "I"
 
 class Crab:
-    
-
 
     def __init__(self, dev: bool = False) -> None:
 
         self.serial = ESPSerial(dev)
         self.react: list[React] = []
-        #print("before Starting Smart Thread")
+        self.Alive:bool = True
+        self.dev:bool = dev
 
-
-        self.Alive = True
-        self.dev = dev
-
-        self.Exchange = queue.Queue()
-        self.Reaction = queue.Queue()
-        self.Debug = queue.Queue()
+        self.Exchange: queue.Queue[Any] = queue.Queue()
+        self.Reaction: queue.Queue[Any] = queue.Queue()
+        self.Debug: queue.Queue[Any]= queue.Queue()
 
         self.Thread: threading.Thread = threading.Thread(target=self._SmartRuner)
         self.Thread.start()
@@ -46,7 +36,7 @@ class Crab:
             pass
         buffer: str =  queue.get()
 
-        if (Format == b'S'):
+        if Format == b'S':
             return bytes(buffer).decode('utf-8').rstrip('\x00')
 
         buffer: bytes = bytes(buffer[:(struct.calcsize(Format))])
@@ -58,10 +48,6 @@ class Crab:
 
         :return: void
         '''
-
-
-
-
 
         while(self.Alive):
 
@@ -88,7 +74,7 @@ class Crab:
 
 
 
-    def _CheckReaction(self,code: int):
+    def _CheckReaction(self,code: int) -> None:
         for element in self.react:
             print(element)
 
@@ -110,27 +96,27 @@ class Crab:
 
 
         # todo
-        # add restraints later
+        # Add restraints later
 
 
 
         # todo
-        #request ticket
+        # Request ticket
         self.serial.send_packet(0,b"ReqTicket")
 
-        #Check Error
+        # Check Error
         Error: int = self. _QueSmartPop(self.Exchange,"<i")
         if (Error == 1):
             return -1
 
-        #Receve Ticket
+        # Receve Ticket
         ticket = self._QueSmartPop(self.Exchange,"<I")
 
         if self.dev:
             print("Ticket:" + str(ticket))
 
 
-        #Format ticket
+        # Format ticket
         if self.dev:
             print("sending:"+ "FormatTicket" + struct.pack('i', ticket).decode('latin-1') + type)
         self.serial.send_packet(0, b"FormatTicket" + struct.pack('i', ticket) + type.encode('utf-8'))
@@ -155,46 +141,42 @@ class Crab:
 
 
 
-        # punch ticket
+        # Punch ticket
         self.serial.send_packet(0, b"PunchTicket"+struct.pack('I', ticket))
 
 
-        #todo
-        #add resolver to the self.react
+        # todo
+        # Add resolver to the self.react
 
 
 
-        #todo
+        # todo
         return 0
 
 
-    def CloseTicket(self,ticket):
-        if not isinstance(ticket,int):
-            raise TypeError("ticket must be an int")
+    def CloseTicket(self,ticket: int) -> None:
+        print('Closing Ticket')
+        # todo
+        # send "CloseTicket" command to esp32
 
-        #todo
-        #send "CloseTicket" command to esp32
+    def TicketInfo(self,ticket: int) -> None:
+        print('Ticket Info')
+        # todo
+        # request ticket status
 
-    def TicketInfo(self,ticket):
-        if not isinstance(ticket,int):
-            raise TypeError("ticket must be an int")
-
-        #todo
-        #request ticket status
-
-    def GetHealth(self,type):
+    def GetHealth(self,type: str) -> str:
         if not isinstance(type,str):
             raise TypeError("type must be str")
 
         if type not in ["TotalRam","FreeRam","CPU","AckCheck"]:
             raise TypeError("Type must be one of TotalRam,FreeRam,CPU,AckCheck")
 
-        #todo
-        #send "GetHealth" to esp32 along with the type
+        # todo
+        # send "GetHealth" to esp32 along with the type
         self.serial.write(("GetHealth"+type).encode('utf-8'))
 
         return self.serial.readline()
 
-    def close(self):
+    def close(self)->None:
          self.Alive=False
          self.Thread.join()

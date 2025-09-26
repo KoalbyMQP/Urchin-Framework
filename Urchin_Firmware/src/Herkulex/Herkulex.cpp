@@ -258,6 +258,45 @@ void HerkulexClass::sendSJog(int servoID, int Target, int pTime, JogLedColor val
 	sendData(dataEx, pSize);
 }
 
+
+
+//
+// void HerkulexClass::sendIJog(int servoID, int Target, int pTime, JogLedColor valueLed, HerkulexModel model, Int Mode){
+// 	playTime=int((float)pTime/11.2);
+//
+// 	pSize = 0x09; //SJog Command is 9 Bits long, varies with other functions
+// 	cmd   = HSIMULJOG; //Movement functions typically use SJog for simultanenous movement or IJog for indiviual motor movement.
+//
+// 	data[0]=Target & 0xFF;
+// 	data[1]=(Mode << 2) | (valueLed) | ((Target >> 8) & 0x03);
+// 	data[2]=playTime;
+// 	data[3]=servoID;
+//
+// 	pID=servoID^playTime; //Necessary for code to function
+//
+// 	lenghtString=4;             				// lenghtData
+//
+// 	ck1=checksum1(data,lenghtString);			//6. Checksum1
+// 	ck2=checksum2(data,lenghtString);						//7. Checksum2
+//
+// 	pID=servoID;
+//
+// 	dataEx[0] = 0xFF;				// CONST Packet Header
+// 	dataEx[1] = 0xFF;				// CONST Packet Header
+// 	dataEx[2] = pSize;	 		// Packet Size
+// 	dataEx[3] = servoID;
+// 	dataEx[4] = cmd;
+// 	dataEx[5] = ck1;
+// 	dataEx[6] = ck2;
+//
+//
+// 	for (int i = 0; i < lenghtString; i++) {
+// 		dataEx[8 + i] = data[i];
+// 	}
+// 	sendData(dataEx, pSize);
+// }
+
+
 // void sendIJog();
 
 
@@ -1079,6 +1118,7 @@ void HerkulexClass::moveOne(int servoID, int targPosition, int pTime, JogLedColo
 		posLimit = 32767;
 		break;
 	case MODEL_0101:
+  		//TODO add this value
 	case MODEL_0201:
 		posLimit = 1023;
 		break;

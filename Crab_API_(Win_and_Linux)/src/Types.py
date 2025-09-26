@@ -22,18 +22,14 @@ class Item:
             if isinstance(self.values[i], IntEnum):
                 self.values[i] = int(self.values[i])
 
-
     def Press(self, Instance: Union[int, float, bool]) -> Optional[bytes]:
-            # Removed due to complexity
-        # if(type(Instance) == str):
-        #     return "S"+str(len(Instance))+Instance
-        if (type(Instance) == int):
+        if (isinstance(Instance, int)):
             bytes = struct.pack('i', Instance)
             return b"I"+bytes
-        if (type(Instance) == float):
+        if (isinstance(Instance, float)):
             bytes = struct.pack('f', Instance)
             return b"F"+bytes
-        if (type(Instance) == bool):
+        if (isinstance(Instance, bool)):
             bytes = struct.pack('B', Instance)
             return b"B" + bytes
 

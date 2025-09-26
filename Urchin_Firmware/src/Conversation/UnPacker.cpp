@@ -36,6 +36,7 @@ int UnpackerInit() {
 
     Herkulex.initialize();
     Herkulex.reboot(7);
+    Herkulex.ACK(2);
     Herkulex.torqueON(7);
 
     Herkulex.SetIndirect(false);
@@ -201,10 +202,11 @@ int LoadTicket(const char* buffer) {
         //     (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:data:%u",CurrentData->Data.Byte);
         // }
     }
-    Herkulex.moveOne(Header->motor,Variables[0].Data.Int, Variables[1].Data.Int, static_cast<JogLedColor>(Variables[2].Data.Int), static_cast<HerkulexModel>(Header->model));
+    //Herkulex.moveOne(Header->motor,Variables[0].Data.Int, Variables[1].Data.Int, static_cast<JogLedColor>(Variables[2].Data.Int), static_cast<HerkulexModel>(Header->model));
 
-
+    //Herkulex.moveOneAngle(7,(float)6, 3, LED_RED, MODEL_0601,true);
     Herkulex.moveOne(7,6, 3, LED_RED, MODEL_0601);
+    Herkulex.moveOne(7,45, 3, LED_RED, MODEL_0601);
     return 0;
 }
 

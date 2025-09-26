@@ -16,9 +16,29 @@
 extern "C" {
 #endif
 
-    void unsignedIntToBytes(unsigned int value, unsigned char* byteArray);
-    unsigned int BytesToUnsignedInt(const unsigned char* byteArray);
-    int BytesToInt(const unsigned char* byteArray);
+/**
+ *
+ * @param value
+ * @param byteArray
+ */
+void unsignedIntToBytes(unsigned int value, unsigned char* byteArray);
+
+
+/**
+ *
+ * @param byteArray
+ * @return
+ */
+unsigned int BytesToUnsignedInt(const unsigned char* byteArray);
+
+
+/**
+ *
+ * @param byteArray
+ * @return
+ */
+int BytesToInt(const unsigned char* byteArray);
+
 #ifdef __cplusplus
 }
 #endif

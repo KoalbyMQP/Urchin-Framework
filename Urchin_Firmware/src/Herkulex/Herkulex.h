@@ -198,6 +198,12 @@ enum HerkulexModel {
   MODEL_0602
 };
 
+enum MoveMode {
+    POSITION = 0x00,
+    WHEEL = 0x04,
+    STOP = 0x02
+};
+
 /**
  *
  */

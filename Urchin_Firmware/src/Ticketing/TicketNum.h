@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 
-#define Width (sizeof(uint64_t)*8)
+#define Width (sizeof(uint64_t)*StripSize)
 
     /**
      * @brief a data type ment to hold alot of bit flags
