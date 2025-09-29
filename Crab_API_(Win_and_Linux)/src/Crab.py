@@ -79,7 +79,7 @@ class Crab:
             print(element)
 
 
-    def send(self,type: TicketType ,items: List[Item] ,resolver : React | None, chained: bool )-> int:
+    def send(self,type: TicketType ,items: List[Item] ,resolver : Union[React, None], chained: bool )-> int:
         '''
         Used to send a motor control command to the Esp32
         :param type: the Type of command "I" for "Interrupt","S" for "Sequential","R" for "Resolving","A" for "Asynchronous"

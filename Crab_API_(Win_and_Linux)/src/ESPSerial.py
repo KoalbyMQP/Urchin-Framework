@@ -34,8 +34,7 @@ class ESPSerial(object):
         esp32_ports = []
 
         for port in ports:
-
-            if port.serial_number == "urchin":
+            if port.serial_number in ["urchin","URCHIN"]:
                 esp32_ports.append((port.device, port.description))
         if len(esp32_ports) == 0:
             return []
@@ -89,7 +88,7 @@ class ESPSerial(object):
         except Exception as e:
             print("Error while packing or sending:", e)
 
-    def read_packet(self) -> dict[str,Any] | None:
+    def read_packet(self) -> Union[dict[str,Any], None]:
         packet: bytes = self.receive_packet()
 
         if packet:
@@ -98,8 +97,8 @@ class ESPSerial(object):
                 VPID, Stream, *raw_data = struct.unpack(self.PACKET_FORMAT, packet)
 
                 if self.Debug:
-                    print(f"VPID: {VPID}, Stream: {Stream}, Data: {bytes(raw_data).decode('utf-8').rstrip('\x00')}")
-                #print(len(data_str))
+                    decoded: str = bytes(raw_data).decode("utf-8").rstrip("\x00")
+                    print(f"VPID: {VPID}, Stream: {Stream}, Data: {decoded}")
             except struct.error:
                 print("Failed to unpack packet.")
             except UnicodeDecodeError:
