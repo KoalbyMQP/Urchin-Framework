@@ -31,8 +31,8 @@ class HerkuleX():
         if servoID > MaxServoID:
             raise ValueError("servoID less then",str(MaxServoID))
 
-        if ((pTime > 50) or (pTime < 0)):
-            raise ValueError("pTime must be between 50 and 0.")
+        if ((pTime > 500) or (pTime < 0)):
+            raise ValueError("pTime must be between 500 and 0.")
 
         command: Item = Item(servoID,Model,Name,[Goal, pTime, color])
         return command

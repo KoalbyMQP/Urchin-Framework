@@ -22,6 +22,9 @@ uart_config_t uart_config;
 
 
 extern "C" void app_main() {
+    SetUpUart();
+
+
     #ifdef UNIT_TEST
         #include "test/UnitTest.h"
         UnitTests(); }
@@ -30,7 +33,7 @@ extern "C" void app_main() {
 
     esp_log_level_set("*", ESP_LOG_NONE);
     //sets up the seral comuncation
-    SetUpUart();
+
 
     SetUpPins();
 

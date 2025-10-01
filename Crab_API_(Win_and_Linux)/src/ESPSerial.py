@@ -74,8 +74,8 @@ class ESPSerial(object):
                 return True
 
     def send_packet(self, VPID: int, buff: bytes) -> None:
-        if self.Debug:
-            print("send_packet"+buff.decode('utf-8'))
+        #if self.Debug:
+            #print("send_packet"+buff.decode('utf-8'))
         if not (0 <= VPID <= 255):
             raise ValueError("VPID must be an integer between 0 and 255")
 

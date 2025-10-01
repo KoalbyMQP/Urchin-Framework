@@ -33,18 +33,9 @@ Ticket* Tickets[MaxTickets];
 
 int UnpackerInit() {
     Herkulex.begin(UART_NUM_1,115200,16,17); //115200 is default for DRS-0601
-
-    //Herkulex.initialize();
-    Herkulex.reboot(7);
-    //Herkulex.ACK(2);
-    Herkulex.torqueON(7);
-    //Herkulex.moveOne(7,248, 45, LED_RED, MODEL_0601);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    //Herkulex.moveOne(7,1024, 45, LED_BLUE, MODEL_0601);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-    //Herkulex.moveOne(7,1800, 45, LED_GREEN, MODEL_0601);
-    //Herkulex.setLed(7,LED_GREEN_HRAMWRITE);
     Herkulex.SetIndirect(false);
+    Herkulex.initialize();
+
 
 
     return 0;
@@ -207,10 +198,23 @@ int LoadTicket(const char* buffer) {
         //     (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:data:%u",CurrentData->Data.Byte);
         // }
     }
-    //Herkulex.moveOne(Header->motor,Variables[0].Data.Int, Variables[1].Data.Int, static_cast<JogLedColor>(Variables[2].Data.Int), static_cast<HerkulexModel>(Header->model));
-    //Herkulex.moveOneAngle(7,(float)6, 3, LED_RED, MODEL_0601,true);
-    //Herkulex.moveOne(7,6, 3, LED_RED, MODEL_0601);
-    Herkulex.moveOne(7,45, 3, LED_RED, MODEL_0601);
+    //
+
+
+
+    Herkulex.initialize();
+
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    Herkulex.reboot(Header->motor);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    Herkulex.ACK(Header->motor);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    Herkulex.torqueON(Header->motor);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    Herkulex.moveOne(Header->motor,Variables[0].Data.Int, Variables[1].Data.Int, static_cast<JogLedColor>(Variables[2].Data.Int), static_cast<HerkulexModel>(Header->model));
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+
     return 0;
 }
 
