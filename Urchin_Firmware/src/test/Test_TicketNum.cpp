@@ -21,18 +21,20 @@ void Test_FIND() {
 
 
 
-    for (int i = 0; i < MaxTicket; ++i) {
-
-    TEST_ASSERT_EQUAL_UINT32(i,FindFree(&TicketTape));
-        checkOut(&TicketTape,i);
-    }
+  
+   for (unsigned i = 0; i < StripSize; ++i) {
+  for (unsigned j = 0; j < Width; ++j) {
+    unsigned expected = i*Width + j;        
+    TEST_ASSERT_EQUAL_UINT32(expected, FindFree(&TicketTape));
+    checkOut(&TicketTape, expected);
+  }
+}
+TEST_ASSERT_EQUAL_UINT32((unsigned)-1, FindFree(&TicketTape));
 }
 
 void test_checkOut_strip(void){
     
     TapeRoll t_Roll;
-
-   
 
     RollINIT(&t_Roll);  
     RollINIT(&TicketTape);
@@ -43,11 +45,12 @@ void test_checkOut_strip(void){
     unsigned int t_Mod = t_Ticket%Width;
     unsigned int t_Chunk = (t_Ticket-t_Mod)/(Width);
 
-    (TicketTape.strip[t_Chunk]) &= ~(1U<<t_Mod);
+    (TicketTape.strip[t_Chunk]) |= (1U<<t_Mod);
     checkOut(&t_Roll, t_Ticket);
 
-    for(int i = 0; i < StripSize; i++){//Makes sure whole thing is equal not just single index
-        TEST_ASSERT_EQUAL(t_Roll.strip[i],TicketTape.strip[i]);
+    for(int i = 0; i < StripSize; i++){
+        //Makes sure whole thing is equal not just single index
+        TEST_ASSERT_EQUAL(t_Roll.strip[i], TicketTape.strip[i]);
     }
     
 }

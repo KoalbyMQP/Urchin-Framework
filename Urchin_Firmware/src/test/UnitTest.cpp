@@ -38,7 +38,7 @@ extern "C" void UnitTests() {
 
    RUN_TEST(test_ReturnTicket);
    
-   RUN_TEST(test_CheckOut_prints);
+   RUN_TEST(test_checkOut_strip);
 
    RUN_TEST(Test_FIND);
     
