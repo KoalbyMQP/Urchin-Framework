@@ -1,22 +1,7 @@
 ///
 /// Created by Sam Kim 9/27/25
 ///
-
-extern "C" {
-  #include <unity.h>
-  #include "freertos/FreeRTOS.h"
-  #include "freertos/queue.h"
-}
 #include "Test_Coms.h"
-#include "Global/Errors.h"
-#include "Global/GLOBAL.h"
-#include <cstdint>
-#include <cstring>
-#include "ESP_PI_Communication/Coms.h"
-#include "ESP_PI_Communication/Shipping.h"
-
-#include <stdio.h>
-#include <stdarg.h>
 
 
 

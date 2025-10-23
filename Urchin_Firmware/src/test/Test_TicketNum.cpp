@@ -7,12 +7,13 @@
 #include "ESP_PI_Communication/Coms.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "ESP_PI_Communication/Shipping.h"
 
 constexpr int MaxTicket=StripSize*sizeof(uint64_t);
-typedef struct{
+/*typedef struct{
     uint8_t VPID;
     char data[1024];
-}MSG;
+}MSG;*/
 
 
 
@@ -62,7 +63,7 @@ void test_ReturnTicket(void){
     RollINIT(&TicketTape);
 
 
-    unsigned int t_Ticket = 65;
+    unsigned int t_Ticket = 64;
     unsigned int t_Mod = t_Ticket%Width;
     unsigned int t_Chunk = (t_Ticket-t_Mod)/(Width);
     //Width = 64
@@ -75,9 +76,6 @@ void test_ReturnTicket(void){
         TEST_ASSERT_EQUAL(t_Roll.strip[i],TicketTape.strip[i]);
     }
    
-   
-
-
 }
 
 

@@ -37,7 +37,8 @@ extern "C" void UnitTests() {
    RUN_TEST(test_PrintfToPI_Malicious);
 
    RUN_TEST(test_ReturnTicket);
-   
+
+
    RUN_TEST(test_checkOut_strip);
 
    RUN_TEST(Test_FIND);
