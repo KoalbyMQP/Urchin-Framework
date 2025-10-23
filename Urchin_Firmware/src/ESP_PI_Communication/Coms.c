@@ -14,10 +14,10 @@ int PackfToPI(QueueHandle_t MsgQueue, const uint8_t VPID,const char buff[], size
   MSG block = {0};
   block.VPID=VPID;
     strncpy(block.data,buff,COMS_SIZE);
-
+  /*
   if(pdPASS != xQueueSend(MsgQueue,(const void*)&block,portMAX_DELAY)){ //Add message to Que AND check if it was able to fit on the Que
     return QueFull;
-  }
+  }*///Because xQueueSend blocks infinitey until there is space in queue, pdPass will never != xQueueSend
   return Success;
 }
 

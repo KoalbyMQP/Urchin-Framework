@@ -15,7 +15,8 @@ unsigned int FindFree(const TapeRoll *Roll){
     (void)PrintfToPI(DebugQueue,0,"FindFree");
 for(int i=0; i<StripSize; i++){
   for(int j=0; j<Width ; j++){
-    if (!(Roll->strip[i] & (1U<<j))){
+    if (!(Roll->strip[i] & (1ULL<<j))){
+      //Find free bit(!=1) within ticketroll
         (void) PrintfToPI(DebugQueue,0,"Found at bit:%d chunk:%d",j+1,i);
       return i*Width+j;
 
@@ -39,7 +40,7 @@ void checkOut(TapeRoll *Roll, unsigned int Ticket) {
 
 
   if (Chunk<StripSize){
-    (Roll->strip[Chunk]) |= (1U<<Mod);
+    (Roll->strip[Chunk]) |= (1ULL<<Mod);
   }else{/*printf("checkOut error");*/};
 }
 
