@@ -18,19 +18,29 @@
 #include "Ticketing/TicketNum.h"
 #include "ESP_PI_Communication/MSGQueue.h"
 #include "Herkulex/Herkulex.h"
-
+#include "Motor/LimitChecks.h"
 Ticket* Tickets[MaxTickets];
 
 
 
 
-    HerkulexClass Herkulex;
+HerkulexClass Herkulex;
+
+static AngleSet HerkuleXMotorBounds[]={//has max size see Receving.h
+    {0,1023,-166.7f,166.7f}, //MODEL_0101
+    {0,1023,-166.7f,166.7f}, //MODEL_0201
+    {0,2047,-166.7f,166.6f}, //MODEL_0601
+    {0,2047,-166.7f,166.6f} //MODEL_0602
+};
 
 
 int UnpackerInit() {
     Herkulex.begin(UART_NUM_1,115200,16,17); //115200 is default for DRS-0601
     Herkulex.SetIndirect(false);
     Herkulex.initialize();
+
+
+
 
 
 
@@ -42,7 +52,7 @@ int UnpackerInit() {
 //-----------------------------------------------------------------
 
 
-int ReqTicket(const char* buffer){
+int ReqTicket(unsigned char VPID, const char* buffer){
     unsigned char Platter[4]={0};
 
     (void)PrintfToPI(DebugQueue,0,"ReqTicket called");
@@ -80,6 +90,7 @@ int ReqTicket(const char* buffer){
     memset(Platter,0,sizeof(unsigned int));
     (void) PrintfToPI(DebugQueue,0,"ReqTicket:Ticket:%d",Ticket);
     unsignedIntToBytes(Ticket,Platter);
+    (void) PrintfToPI(DebugQueue,0,"ReqTicket:TicketS:%.*s", 4, Platter);
     (void) PackfToPI(ExchangeQueue,0,reinterpret_cast<const char *>(Platter),sizeof(unsigned int));
 
     //Debug Prints
@@ -96,7 +107,7 @@ int ReqTicket(const char* buffer){
   return 0;
 }
 
-int FormatTicket(const char* buffer) {
+int FormatTicket(unsigned char VPID, const char* buffer) {
     const char *TicketNumPoint = buffer;
     const char TicketType = *(buffer+sizeof(unsigned int));
     unsigned int TicketNum = BytesToUnsignedInt(reinterpret_cast<const unsigned char *>(TicketNumPoint));
@@ -124,7 +135,7 @@ int FormatTicket(const char* buffer) {
 
 
 
-int LoadTicket(const char* buffer) {
+int LoadTicket(unsigned char VPID, const char* buffer) {
     (void) PrintfToPI(ExchangeQueue,0,"LoadTicket called");
 
     char command[255]={0};
@@ -196,6 +207,11 @@ int LoadTicket(const char* buffer) {
 
     BridgeMotor* Joint = GetBridge(Header->joint);
 
+    if (Joint == NULL) {// could not find Joint in bridge list
+        (void) PrintfToPI(ExchangeQueue,0,"Valid");
+        return -1;
+    }
+
     //Todo: Add a catch to see if the Joint was found and if not send an error to the Pi that it will pass up to the user.
 
     (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:ServoID:%d",Joint->Num);
@@ -205,15 +221,7 @@ int LoadTicket(const char* buffer) {
 
     int MotorNum = Joint->Num;
     if (strcmp(Joint->Brand,"HerkuleX")==0) {
-        Herkulex.initialize();
 
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        Herkulex.reboot(MotorNum);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        Herkulex.ACK(MotorNum);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        Herkulex.torqueON(MotorNum);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
 
         HerkulexModel Model = MODEL_None;
 
@@ -226,7 +234,17 @@ int LoadTicket(const char* buffer) {
         }else if (strcmp(Joint->Model,"0602")==0) {
              Model = MODEL_0602;
         }
-        Herkulex.moveOne(MotorNum,Variables[0].Data.Int, Variables[1].Data.Int, static_cast<JogLedColor>(Variables[2].Data.Int), Model);
+
+
+        (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:Angle:%f",Variables[0].Data.Float);
+        int Pos = AngleToPoint(HerkuleXMotorBounds[Model],(double)Variables[0].Data.Float);
+        (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:pos:%d",Pos);
+        (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:time:%d",Variables[1].Data.Int);
+
+
+
+
+        Herkulex.moveOne(MotorNum,Pos, Variables[1].Data.Int*PTime, static_cast<JogLedColor>(Variables[2].Data.Int), Model);
         vTaskDelay(1000 / portTICK_PERIOD_MS);
 
 
@@ -245,7 +263,7 @@ int LoadTicket(const char* buffer) {
 
 
 
-int PunchTicket(const char* buffer) {
+int PunchTicket(unsigned char VPID, const char* buffer) {
     (void) PrintfToPI(ExchangeQueue,0,"PunchTicket called");
 
 
@@ -258,7 +276,7 @@ int PunchTicket(const char* buffer) {
 }
 
 
-int CloseTicket(const char* buffer) {
+int CloseTicket(unsigned char VPID, const char* buffer) {
 
     (void) PrintfToPI(ExchangeQueue,0,"CloseTicket not added");
 return 0;
@@ -266,7 +284,7 @@ return 0;
 
 
 
-int TicketInfo(const char* buffer) {
+int TicketInfo(unsigned char VPID, const char* buffer) {
 
     (void) PrintfToPI(ExchangeQueue,0,"TicketInfo not added");
 return 0;
@@ -274,7 +292,7 @@ return 0;
 
 
 
-int GetHealth(const char* buffer) {
+int GetHealth(unsigned char VPID, const char* buffer) {
     Herkulex.stat(7);
     if (0== strcmp("FreeRam",buffer)) {
         (void) PrintfToPI(ExchangeQueue,0,"%d",xPortGetFreeHeapSize());
@@ -298,7 +316,7 @@ return 0;
 }
 
 
-int Bridge(const char* buffer) {
+int Bridge(unsigned char VPID, const char* buffer) {
     (void) PrintfToPI(DebugQueue,0,"Bridge");
 
     if (0 == strncmp("Add",buffer,3)) {
@@ -331,31 +349,3 @@ int Bridge(const char* buffer) {
 //-----------------------------------------------------------------------
 
 
-
-//Helppers
-//------------------------------------------------------------------------
-
-
-
-int ProcessRequest(Context Commands[],const uint8_t buffer[]) {
-        int i=0;
-        int found=0;
-        int error=0;
-
-    //(void) PrintfToPI(DebugQueue,0,"ProcessRequest:%s",buffer);
-        while (i < NumOfActions && !found){
-            if (0==strncmp((char*)buffer,Commands[i].Name,Commands[i].depth)) {
-                error=Commands[i].function(SkipFoward((char*)buffer,Commands[i].depth));
-                found=1;
-            }
-            i++;
-            }
-    if (!found) {return URCHIN_ERROR_CommandNotFound;}
-    return error;
-
-}
-
-
-const char* SkipFoward(const char buffer[],unsigned int distance) {
-    return &buffer[distance];
-}

@@ -306,10 +306,11 @@ void HerkulexClass::initialize()
 		Herkulex.SetIndirect(false);
         conta=0;
 		lenghtString=0;
+		reboot(BROADCAST_ID);
         clearError(BROADCAST_ID);	// clear error for all servos
         ACK(2);						// set ACK
         torqueON(BROADCAST_ID);		// torqueON for all servos
-
+		stat(BROADCAST_ID);
 
 }
 
@@ -1128,7 +1129,7 @@ void HerkulexClass::moveOne(int servoID, int targPosition, int pTime, JogLedColo
     return;              // speed (goal) non correct
   }
   if ((pTime < 0) || (pTime > 2856)) {
-	 PrintfToPI(DebugQueue,0,"HerkulexLib: moveOne: Error playTime out of range");
+	 PrintfToPI(DebugQueue,0,"HerkulexLib: moveOne: Error playTime out of range 0<%d>2856",pTime);
 	return;
   }
   int LSB=targPosition & 0X00FF;								// MSB Pos

@@ -13,13 +13,12 @@ def main() -> None:
     test = Crab("bridge.toml",True)
 
 
-    command = HerkuleX.MoveOne("Sholder", 500, 100, JogLedColor.LED_BLUE)
+    command = HerkuleX.MoveOne("Sholder", float(-45), 40, JogLedColor.LED_BLUE)
     ticket = test.send(TicketType.Asynchronous,[command],None,False)
     print("Main:ticket" + str(ticket))
 
-    print("\n\n\n\n")
-
-    command = HerkuleX.MoveOne("Sholder", 1030, 200, JogLedColor.LED_GREEN)
+    print("\n\n\n\n\n\n")
+    command = HerkuleX.MoveOne("Sholder", float(45), 40, JogLedColor.LED_GREEN)
     ticket = test.send(TicketType.Asynchronous, [command], None, False)
     print("Main:ticket" + str(ticket))
     test.close()

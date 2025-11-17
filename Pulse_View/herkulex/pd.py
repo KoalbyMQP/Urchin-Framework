@@ -788,13 +788,13 @@ class Decoder(srd.Decoder):
             short_text = "No reply"
 
         if (Target.data == 1):
-            long_text = "Only reply to Read CMD"
-            mid_text = "Only reply to Read CMD"
+            long_text = "CMD"
+            mid_text = "Read CMD"
             short_text = "Only reply to Read CMD"
 
         if (Target.data == 2):
-            long_text = "Reply to all Request Packets"
-            mid_text = "Reply to all Request Packets"
+            long_text = "All"
+            mid_text = "Reply to all "
             short_text = "Reply to all Request Packets"
 
         self.put(start, end, self.out_ann, [0, [long_text, mid_text, short_text]])

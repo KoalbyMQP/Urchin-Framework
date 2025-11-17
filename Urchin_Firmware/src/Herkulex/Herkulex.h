@@ -68,7 +68,10 @@
  */
 #define DATA_MOVE  	 50
 
-
+/**
+ * @def Play time scalar
+ */
+#define PTime 11.2f
 
 
 // SERVO HERKULEX COMMAND - See Manual p40

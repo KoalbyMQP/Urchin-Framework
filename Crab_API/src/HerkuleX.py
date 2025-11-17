@@ -23,11 +23,11 @@ class HerkulexModel(IntEnum):
 
 class HerkuleX():
 
-    def MoveOne(JoinyName: str, Goal: int, pTime: int, color: JogLedColor) -> Item:
+    def MoveOne(JoinyName: str, Goal: float, Time_ms: int, color: JogLedColor) -> Item:
         Name: str = "MoveOne"
 
-        if ((pTime > 500) or (pTime < 0)):
+        if ((Time_ms*11.2 > 500) or (Time_ms*11.2 < 0)):
             raise ValueError("pTime must be between 500 and 0.")
 
-        command: Item = Item(JoinyName,Name,[Goal, pTime, color])
+        command: Item = Item(JoinyName,Name,[Goal, Time_ms, color])
         return command

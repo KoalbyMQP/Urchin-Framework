@@ -6,6 +6,7 @@
 #include "Conversation/UnPacker.h"
 #include "Ticketing//TicketNum.h"
 #include "Coms.h"
+#include "Errors.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "Herkulex/Herkulex.h"
@@ -86,7 +87,7 @@ void receiving(void *pvParameters){
 
                         // Process the Box here
 
-                        ProcessRequest(CurrentConext[LocalBox->VPID],(uint8_t*) LocalBox->data);
+                        ProcessRequest(LocalBox->VPID,CurrentConext[LocalBox->VPID],(uint8_t*) LocalBox->data);
 
                         box_pos = 0;
                         syncing = true; // look for next frame
@@ -99,4 +100,32 @@ void receiving(void *pvParameters){
     }
 
 
+}
+
+//Helppers
+//------------------------------------------------------------------------
+
+
+
+int ProcessRequest(unsigned char VPID ,Context Commands[],const uint8_t buffer[]) {
+    int i=0;
+    int found=0;
+    int error=0;
+
+    //(void) PrintfToPI(DebugQueue,0,"ProcessRequest:%s",buffer);
+    while (i < NumOfActions && !found){
+        if (0==strncmp((char*)buffer,Commands[i].Name,Commands[i].depth)) {
+            error=Commands[i].function(VPID,SkipFoward((char*)buffer,Commands[i].depth));
+            found=1;
+        }
+        i++;
+    }
+    if (!found) {return URCHIN_ERROR_CommandNotFound;}
+    return error;
+
+}
+
+
+const char* SkipFoward(const char buffer[],unsigned int distance) {
+    return &buffer[distance];
 }
