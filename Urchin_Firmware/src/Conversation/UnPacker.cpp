@@ -236,6 +236,14 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
         }
 
 
+
+
+        //Bridge bounds check
+        if (Joint->BoundsMin  < Variables[0].Data.Float & Variables[0].Data.Float > Joint->BoundsMin) {
+            (void)(PrintfToPI)(DebugQueue,0,"URCHIN_ERROR_OutOf_Bounds");
+            return URCHIN_ERROR_OutOf_Bounds;
+        }
+
         (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:Angle:%f",Variables[0].Data.Float);
         int Pos = AngleToPoint(HerkuleXMotorBounds[Model],(double)Variables[0].Data.Float);
         (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:pos:%d",Pos);

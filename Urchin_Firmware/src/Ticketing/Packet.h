@@ -34,6 +34,14 @@ typedef struct {
      * The packet itself
      */
     char contance[233];
+
+
+    /**
+     * The function to be called if there is an ACK back
+     * @param VPID The VPID this function was called from
+     * @param buffer[] The contents of the ACK
+     */
+    int (*ACK)(unsigned char VPID ,const char buffer[]);
 }Packet;
 
 

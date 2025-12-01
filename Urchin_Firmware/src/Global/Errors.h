@@ -15,7 +15,8 @@ typedef enum {
     URCHIN_ERROR_CommandNotFound=3,
     URCHIN_ERROR_FailedToAllocate=5,
     URCHIN_ERROR_Malicious=6,
-    URCHIN_ERROR_BadArgs=7
+    URCHIN_ERROR_BadArgs=7,
+    URCHIN_ERROR_OutOf_Bounds=8
 } urchin_error_t;
 
 
