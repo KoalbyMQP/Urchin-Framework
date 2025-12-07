@@ -32,6 +32,14 @@ typedef struct{
      */
      char type;
 
+
+    /**
+     *
+     * This is needed as a return address for commands that want a response
+     */
+    unsigned char VPID;
+
+
      /**
       *The commands that will be sent
       */
@@ -39,6 +47,14 @@ typedef struct{
 
 }Ticket;
 
+
+    /**
+       * @brief A list of tickets made to store tickets still being loaded and ones that are finished
+       */
+    extern Ticket TicketDock[sizeof(TickNumType)*StripSize];
+
+    int TicketFindOpen(Ticket* Tickets[]);
+    void TicketClose(Ticket* ticket);
 
 
 #ifdef __cplusplus

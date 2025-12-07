@@ -9,14 +9,26 @@
 extern "C" {
 #endif
 
-typedef struct {
+#define HerkulexPacketSize 233
+
+
+
+
+    typedef struct Packet Packet; // Forward declaration
+
+typedef struct Packet{
     /**
      * What output connect the data will take and thus what type of command (local,wrist,... )
+     * 0=local
      */
     int dest;
 
     /**
      * (I2C,Dynamixel,Herkulex)
+     * I2C = 0
+     * Dynamixel = 1
+     * Herkulex = 2
+     * CAN = 3
      */
     int protocol;
 
@@ -33,8 +45,14 @@ typedef struct {
     /**
      * The packet itself
      */
-    char contance[233];
+    char contance[HerkulexPacketSize];
 
+
+    /**
+     *
+     * This is needed as a return address for commands that want a response
+     */
+    unsigned char VPID;
 
     /**
      * The function to be called if there is an ACK back
@@ -42,10 +60,21 @@ typedef struct {
      * @param buffer[] The contents of the ACK
      */
     int (*ACK)(unsigned char VPID ,const char buffer[]);
+
+
+    /**
+     * Next Node
+     */
+    Packet *Next;
+
 }Packet;
 
+    Packet* CreateNode(int dest, int protocol,int device, char Check, char contance[], unsigned char VPID, int (*ACK)(unsigned char VPID ,const char buffer[]));
+
+    void InsertionHead(Packet** head, Packet* node);
 
 
+    void RecursiveFree(Packet* head);
 #ifdef __cplusplus
 }
 #endif

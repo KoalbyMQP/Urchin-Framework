@@ -552,7 +552,8 @@ public:
    */
   void SetIndirect(bool indirect);
 
-
+    byte BusPacket[233];
+    int BusPacketLength;
 
 private:
 
@@ -566,8 +567,7 @@ private:
     byte data[DATA_SIZE];  /**< Parameters only (working buffer)  */
     byte moveData[DATA_MOVE]; /**< Helper buffer specifically for motion commands.  */
 
-    byte BusPacket[233];
-    int BusPacketLength;
+
     bool Indirect;
 
 

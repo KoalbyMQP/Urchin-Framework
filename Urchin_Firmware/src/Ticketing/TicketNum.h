@@ -16,13 +16,14 @@
  * @brief sets the strip size to be 8 this will make tape 512 bits long
  */
 #define StripSize 16
+#define TickNumType uint32_t
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-#define Width (sizeof(uint32_t)*StripSize)
+#define Width (sizeof(TickNumType)*StripSize)
 
     /**
      * @brief a data type ment to hold alot of bit flags
@@ -31,7 +32,7 @@ extern "C" {
      */
     typedef struct{
         //512 bits
-       uint32_t strip[StripSize];
+       TickNumType strip[StripSize];
     }TapeRoll;
 
     /**

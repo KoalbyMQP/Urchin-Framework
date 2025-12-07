@@ -79,27 +79,26 @@ class Crab:
         # todo
         # Add restraints later
 
-        # todo
-        # Request ticket
-        self.serial.send_packet(0,b"ReqTicket")
+
+
+
+        # Format ticket
+        if self.dev:
+            print("sending:" + "FormatTicket" + type)
+        self.serial.send_packet(0, b"FormatTicket" + type.encode('utf-8'))
 
         # Check Error
-        Error: int = self. _QueSmartPop(self.Exchange,"<i")
+        Error: int = self._QueSmartPop(self.Exchange, "<i")
         if (Error == 1):
             return -1
 
         # Receve Ticket
-        ticket: int = self._QueSmartPop(self.Exchange,"<I")
+        ticket: int = self._QueSmartPop(self.Exchange, "<I")
 
-        if self.dev:
-            print("Ticket:" + str(ticket))
 
-        # Format ticket
-        if self.dev:
-            print("sending:" + "FormatTicket" + struct.pack('i', ticket).decode('latin-1') + type)
-        self.serial.send_packet(0, b"FormatTicket" + struct.pack('i', ticket) + type.encode('utf-8'))
+
+
         # Load ticket
-
         for item in items:
             Strip: str = b"LoadTicket"
             Strip += struct.pack(b'I', ticket)  # Unsigned int

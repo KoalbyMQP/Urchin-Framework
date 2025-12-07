@@ -303,7 +303,7 @@ void HerkulexClass::sendSJog(int servoID, int Target, int pTime, JogLedColor val
 // initialize servos
 void HerkulexClass::initialize()
 {
-		Herkulex.SetIndirect(false);
+
         conta=0;
 		lenghtString=0;
 		reboot(BROADCAST_ID);

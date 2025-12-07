@@ -33,7 +33,7 @@ void receiving(void *pvParameters){
 
 //setting up conversation
     static Context Basic[]={//has max size see Receving.h
-            {"ReqTicket",9,ReqTicket,NULL,0},
+            /*{"ReqTicket",9,ReqTicket,NULL,0},*/
             {"FormatTicket",12,FormatTicket,NULL,0},
             {"LoadTicket",10,LoadTicket,NULL,0},
             {"PunchTicket",11,PunchTicket,NULL,0},
@@ -97,6 +97,7 @@ void receiving(void *pvParameters){
         }
 
         esp_task_wdt_reset();
+        //taskYIELD();
     }
 
 

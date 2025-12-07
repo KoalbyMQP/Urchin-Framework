@@ -19,7 +19,10 @@
 #include "ESP_PI_Communication/MSGQueue.h"
 #include "Herkulex/Herkulex.h"
 #include "Motor/LimitChecks.h"
-Ticket* Tickets[MaxTickets];
+#include "Ticketing/Packet.h"
+#include "Ticketing/Ticket.h"
+
+Ticket* Tickets[MaxTickets] = {NULL};
 
 
 
@@ -51,7 +54,7 @@ int UnpackerInit() {
 //Basic statements
 //-----------------------------------------------------------------
 
-
+/*
 int ReqTicket(unsigned char VPID, const char* buffer){
     unsigned char Platter[4]={0};
 
@@ -107,29 +110,68 @@ int ReqTicket(unsigned char VPID, const char* buffer){
   return 0;
 }
 
+*/
+
+
 int FormatTicket(unsigned char VPID, const char* buffer) {
-    const char *TicketNumPoint = buffer;
-    const char TicketType = *(buffer+sizeof(unsigned int));
-    unsigned int TicketNum = BytesToUnsignedInt(reinterpret_cast<const unsigned char *>(TicketNumPoint));
+    unsigned char Platter[4]={0};
+
+    PrintfToPI(DebugQueue,VPID,"FormatTicket:%s",buffer);
 
 
-    PrintfToPI(DebugQueue,0,"FormatTicket:%s",buffer);
-
-    PrintfToPI(DebugQueue,0,"FormatTicket:Ticket:%d",TicketNum);
-    PrintfToPI(DebugQueue,0,"FormatTicket:TicketType:%c",TicketNumPoint);
+    const char TicketType = *(buffer);
+    unsigned int TicketNum = TicketFindOpen(Tickets);
 
 
-    void *alloc = pvPortMalloc(sizeof(Ticket));
-    memset(alloc,0,sizeof(Ticket));
-    if (alloc == nullptr) {
+    //send NoFreeTicket if non are found
+    if (TicketNum == -1) {
+        memset(Platter,0,sizeof(int));
+        unsignedIntToBytes(URCHIN_ERROR_NoFreeTicket,Platter);
+        (void) PackfToPI(ExchangeQueue,VPID,reinterpret_cast<const char *>(URCHIN_ERROR_NoFreeTicket),sizeof(int));
+
+        //Debug Prints
+        //(void) PrintfToPI(DebugQueue,0,"URCHIN_ERROR_NoFreeTicket :Bytes: %02X %02X %02X %02X", Platter[0], Platter[1], Platter[2], Platter[3]);
+        //(void) PrintfToPI(DebugQueue,0,"URCHIN_ERROR_NoFreeTicket:%d",sizeof(int));
+        return -1;
+    }
+
+
+
+
+
+
+    PrintfToPI(DebugQueue,VPID,"FormatTicket:TicketType:%c",TicketType);
+
+
+    Ticket *TicketPoint = (Ticket*) pvPortMalloc(sizeof(Ticket));
+    if (TicketPoint == nullptr) {
         //todo throw error
         return -1;
     }else {
-        Ticket* TicketPoint= static_cast<Ticket *>(alloc);
+        memset(TicketPoint,0,sizeof(Ticket));
+
         TicketPoint->TicketNum = TicketNum;
+        TicketPoint->VPID = VPID;
         TicketPoint->type = TicketType;
-        //Tickets[TicketNum] = TicketPoint;
+        Tickets[TicketNum] = TicketPoint;
     }
+
+    //Saving the ticket to the list
+    Tickets[TicketNum] = TicketPoint;
+
+    memset(Platter,0,sizeof(int));
+    unsignedIntToBytes(URCHIN_OK,Platter);
+    (void) PackfToPI(ExchangeQueue,VPID,reinterpret_cast<const char *>(Platter),sizeof(int));
+
+
+
+    (void) PrintfToPI(DebugQueue,VPID,"FormatTicket:Ticket:%d",TicketNum);
+
+    memset(Platter,0,sizeof(unsigned int));
+    unsignedIntToBytes(TicketNum,Platter);
+    (void) PrintfToPI(DebugQueue,VPID,"FormatTicket:TicketS:%.*s", 4, Platter);
+    (void) PackfToPI(ExchangeQueue,VPID,reinterpret_cast<const char *>(Platter),sizeof(unsigned int));
+
     return 0;
 }
 
@@ -167,17 +209,17 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
 
      PacketHeader *Header = (PacketHeader*) buffer;
 
-    (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:ticket:%d",Header->ticket);
-    (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:Joint:%s",Header->joint);
-    (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:command_len:%d",Header->command_len);
-    (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:values_len:%d",Header->values_len);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:ticket:%d",Header->ticket);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Joint:%s",Header->joint);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:command_len:%d",Header->command_len);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:values_len:%d",Header->values_len);
 
 
 
     strncpy(command,buffer+sizeof(PacketHeader),Header->command_len);
 
 
-    (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:command:%s",command);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:command:%s",command);
 
     const char *PostHead = buffer + sizeof(PacketHeader) + Header->command_len;
 
@@ -214,9 +256,9 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
 
     //Todo: Add a catch to see if the Joint was found and if not send an error to the Pi that it will pass up to the user.
 
-    (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:ServoID:%d",Joint->Num);
-    (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:Brand:%s",Joint->Joint);
-    (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:Model:%s",Joint->Model);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:ServoID:%d",Joint->Num);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Brand:%s",Joint->Joint);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Model:%s",Joint->Model);
 
 
     int MotorNum = Joint->Num;
@@ -239,31 +281,28 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
 
 
         //Bridge bounds check
-        if (Joint->BoundsMin  < Variables[0].Data.Float & Variables[0].Data.Float > Joint->BoundsMin) {
+        if ((Joint->BoundsMin  < Variables[0].Data.Float) & (Variables[0].Data.Float > Joint->BoundsMin)) {
             (void)(PrintfToPI)(DebugQueue,0,"URCHIN_ERROR_OutOf_Bounds");
             return URCHIN_ERROR_OutOf_Bounds;
         }
 
-        (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:Angle:%f",Variables[0].Data.Float);
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Angle:%f",Variables[0].Data.Float);
         int Pos = AngleToPoint(HerkuleXMotorBounds[Model],(double)Variables[0].Data.Float);
-        (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:pos:%d",Pos);
-        (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:time:%d",Variables[1].Data.Int);
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:pos:%d",Pos);
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:time:%d",Variables[1].Data.Int);
+
+
 
 
 
 
         Herkulex.moveOne(MotorNum,Pos, Variables[1].Data.Int*PTime, static_cast<JogLedColor>(Variables[2].Data.Int), Model);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
 
 
+        Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),VPID,NULL);
+        InsertionHead(&Tickets[Header->ticket]->Packets,Stamp);
 
     }
-
-
-
-
-
-
 
     return 0;
 }
@@ -355,5 +394,3 @@ int Bridge(unsigned char VPID, const char* buffer) {
 
 
 //-----------------------------------------------------------------------
-
-

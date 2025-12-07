@@ -734,13 +734,15 @@ class Decoder(srd.Decoder):
                 SubStart = self.SubTime(start, end, i + 1, 10)
                 SubEnd = self.SubTime(start, end, i + 2, 10)
 
-                ErrorState = (Byte >> i) & 1
+                ErrorState = (Target.data  >> i) & 1
 
                 if (ErrorState == 1):
                     long_text = ErrorNames[i]
                     mid_text = ErrorNames[i]
                     short_text = ErrorNames[i]
-                    self.put(SubStart, SubEnd, self.out_ann, [0, [long_text, mid_text, short_text]])
+                else:
+                    long_text = mid_text = short_text = ""
+                self.put(SubStart, SubEnd, self.out_ann, [0, [long_text, mid_text, short_text]])
 
     def StatusDetail(self, Index, RecordData):
         Target = RecordData[Index]
@@ -768,7 +770,10 @@ class Decoder(srd.Decoder):
                 long_text = ErrorNames[i]
                 mid_text = ErrorNames[i]
                 short_text = ErrorNames[i]
-                self.put(SubStart, SubEnd, self.out_ann, [0, [long_text, mid_text, short_text]])
+            else:
+                long_text = mid_text = short_text = ""
+
+            self.put(SubStart, SubEnd, self.out_ann, [0, [long_text, mid_text, short_text]])
 
 
 
