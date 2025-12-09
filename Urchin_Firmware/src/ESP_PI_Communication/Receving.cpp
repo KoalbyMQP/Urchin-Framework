@@ -14,7 +14,7 @@
 
 #define HX_UART_NUM UART_NUM_2
 
-void receiving(void *pvParameters){
+[[noreturn]] void receiving(void *pvParameters){
 
 
 
@@ -61,8 +61,8 @@ void receiving(void *pvParameters){
     bool syncing = true;
 
 
-    bool working = true;
-    while (working) {
+
+    while (true) {
         int len = uart_read_bytes(UART_NUM, rx_buffer, sizeof(rx_buffer), pdMS_TO_TICKS(20));
         if (len > 0) { //Check if there was something to receive
 

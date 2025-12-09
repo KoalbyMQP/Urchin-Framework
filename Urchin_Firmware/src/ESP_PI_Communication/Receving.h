@@ -64,7 +64,7 @@ extern "C" {
      * @date 2025-05-29
      * @author Gabriel Weaver
      */
- void receiving(void *pvParameters);
+ [[noreturn]] void receiving(void *pvParameters);
 
 
     /**

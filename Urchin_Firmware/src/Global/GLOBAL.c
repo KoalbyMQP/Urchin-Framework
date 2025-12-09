@@ -57,8 +57,20 @@ void LED() {
     Pulse(LedPin);
 }
 
-void Slap() {
-    Pulse(SlapPin);
+void SlapInit() {
+    // registration of Wake UP pin
+    rtc_gpio_init(SlapPin);
+
+    // Set direction as Input
+    rtc_gpio_set_direction(SlapPin, RTC_GPIO_MODE_INPUT_ONLY);
+
+    //Enable Pull Down so that when connected to 3.3v ESP32 wakes up
+    rtc_gpio_pulldown_en(SlapPin);
+
+    //Disable Pull Up cus we are not using that
+    rtc_gpio_pullup_dis(SlapPin);
+
+    //Pull High to wake up 3.3V
 }
 
 void Pulse(gpio_num_t Pin) {
@@ -66,5 +78,3 @@ void Pulse(gpio_num_t Pin) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
     gpio_set_level(Pin, 0);
 }
-
-
