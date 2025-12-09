@@ -14,7 +14,7 @@ class ESPSerial(object):
         '''
         self.START_MARKER: bytes = b'\x07'  # This is the bell character (\a)
         # The packet format for VPID (Byte), Stream (char), and data (1024s)
-        self.PACKET_FORMAT: str = "<Bc1024B"
+        self.PACKET_FORMAT: str = "<Bc1024s"
         self.PACKET_SIZE: int = struct.calcsize(self.PACKET_FORMAT)
 
         self.New: bool = True
@@ -43,9 +43,8 @@ class ESPSerial(object):
     def receive_packet(self) -> bytes:
         # Wait until the start marker is found
         if not self.find_start_marker():
-            if self.New:
-                if self.Debug:
-                    print("Timeout while waiting for start marker (bell character).")
+            if self.New and self.Debug:
+                print("Timeout while waiting for start marker (bell character).")
             self.New = False
             return None
 
@@ -64,7 +63,7 @@ class ESPSerial(object):
 
     def find_start_marker(self) -> bool:
         while True:
-            byte = self.buss.read()
+            byte = self.buss.read(1)
             if not byte:
                 # Timeout occurred
                 return False
@@ -79,8 +78,8 @@ class ESPSerial(object):
         buff = buff.ljust(1024, b'\x00')[:1024]
 
         try:
-            packed_data = struct.pack("<cBB1024s", b'\a', VPID, ord('N'), buff)
-            self.buss.write(packed_data)
+            packed_data = struct.pack(self.PACKET_FORMAT,  VPID, b'N', buff)
+            self.buss.write(self.START_MARKER + packed_data)
 
         except Exception as e:
             print("Error while packing or sending:", e)
@@ -88,20 +87,30 @@ class ESPSerial(object):
     def read_packet(self) -> Union[dict[str,Any], None]:
         packet: bytes = self.receive_packet()
 
-        if packet:
-            try:
+        if packet is None:
+            return None
 
-                VPID, Stream, *raw_data = struct.unpack(self.PACKET_FORMAT, packet)
+        try:
+            VPID, Stream, data = struct.unpack(self.PACKET_FORMAT, packet)
 
-                if self.Debug:
-                    decoded: str = bytes(raw_data).decode("utf-8").rstrip("\x00")
-                    print(f"VPID: {VPID}, Stream: {Stream}, Data: {decoded}")
-            except struct.error:
-                print("Failed to unpack packet.")
-            except UnicodeDecodeError:
-                print(f"UnicodeDecodeError, raw data: {repr(raw_data)}")
+            # Convert list[int] → bytes
 
-            return {"VPID":VPID, "Stream":Stream, "data_str":raw_data}
+
+            if self.Debug:
+                decoded = data.decode("utf-8", errors="ignore").rstrip("\x00")
+                print(f"VPID: {VPID}, Stream: {Stream}, Data: {decoded}")
+
+            return {
+                "VPID": VPID,
+                "Stream": Stream,
+                "data": data,
+            }
+
+        except struct.error:
+            print("Failed to unpack packet.")
+        except UnicodeDecodeError:
+            print(f"UnicodeDecodeError, raw data: {repr(data)}")
+
         return None
 
     def close(self) -> None:

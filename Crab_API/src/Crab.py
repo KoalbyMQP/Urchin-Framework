@@ -31,13 +31,40 @@ class Crab:
         self.Thread.start()
 
     def _QueSmartPop(self, queue: queue.Queue[Any],Format: str) -> Any:
-        while queue.empty():
-            pass
-        buffer: str = queue.get()
-        if Format == b'S':
-            return bytes(buffer).decode('utf-8').rstrip('\x00')
-        buffer: bytes = bytes(buffer[:(struct.calcsize(Format))])
-        return struct.unpack(Format, buffer)[0]
+        """
+           Blocking pop from queue and unpack according to Format.
+           Format should be a struct format string like '<I' or the single-letter 'S' for full-string.
+           This function is defensive: converts list->bytes, checks lengths, and prints diagnostics on error.
+           """
+        buf = queue.get(block=True)
+
+        # Defensive normalization
+        if isinstance(buf, list):
+            buf = bytes(buf)
+        elif isinstance(buf, bytearray):
+            buf = bytes(buf)
+        elif not isinstance(buf, (bytes, bytearray)):
+            try:
+                buf = bytes(buf)
+            except Exception:
+                raise TypeError(f"Queue payload is not bytes-like: {type(buf)}")
+
+        # Normalize format to string
+        fmt_s = Format.decode() if isinstance(Format, (bytes, bytearray)) else str(Format)
+
+        # If user asked for string
+        if fmt_s.upper() == "S":
+            return buf.decode("utf-8", errors="ignore").rstrip("\x00")
+
+        # Unpack fixed-width binary
+        size = struct.calcsize(fmt_s)
+        if len(buf) < size:
+            # helpful debug: show start of buffer so we can debug quickly
+            print(f"_QueSmartPop: buffer too small for '{fmt_s}' (need {size}, got {len(buf)})")
+            print("  buffer hex:", buf.hex())
+            raise ValueError(f"buffer too small for format {fmt_s}: need {size}, got {len(buf)}")
+
+        return struct.unpack(fmt_s, buf[:size])[0]
 
     def _SmartRuner(self) -> None:
         '''
@@ -51,14 +78,16 @@ class Crab:
 
             if packet is not None:
 
+
+
                 if (packet["Stream"] == b'E'):
-                    self.Exchange.put(packet["data_str"])
+                    self.Exchange.put(packet["data"])
 
                 if (packet["Stream"] == b'R'):
-                    self.Reaction.put(packet["data_str"])
+                    self.Reaction.put(packet["data"])
 
                 if (packet["Stream"] == b'D'):
-                    self.Debug.put(packet["data_str"])
+                    self.Debug.put(packet["data"])
 
         self.serial.close()
 
@@ -88,12 +117,12 @@ class Crab:
         self.serial.send_packet(0, b"FormatTicket" + type.encode('utf-8'))
 
         # Check Error
-        Error: int = self._QueSmartPop(self.Exchange, "<i")
+        Error: int = self._QueSmartPop(self.Exchange, "<i") # int
         if (Error == 1):
             return -1
 
         # Receve Ticket
-        ticket: int = self._QueSmartPop(self.Exchange, "<I")
+        ticket: int = self._QueSmartPop(self.Exchange, "<I") # unsigned int
 
 
 
@@ -142,3 +171,7 @@ class Crab:
     def close(self) -> None:
         self.Alive = False
         self.Thread.join()
+
+class CrabError(Exception):
+    """A simple custom exception."""
+    pass

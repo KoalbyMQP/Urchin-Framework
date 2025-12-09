@@ -10,11 +10,10 @@ extern "C" {
 #endif
 
 #define HerkulexPacketSize 233
+#include "MSGQueue.h"
 
 
-
-
-    typedef struct Packet Packet; // Forward declaration
+typedef struct Packet Packet; // Forward declaration
 
 typedef struct Packet{
     /**
@@ -75,6 +74,12 @@ typedef struct Packet{
 
 
     void RecursiveFree(Packet* head);
+
+    int Length(Packet* head);
+
+    Packet* Get(Packet* head, int index);
+
+    void PrintPackets(QueueHandle_t Queue ,unsigned int VPID ,Packet* head);
 #ifdef __cplusplus
 }
 #endif

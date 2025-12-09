@@ -114,20 +114,20 @@ int ReqTicket(unsigned char VPID, const char* buffer){
 
 
 int FormatTicket(unsigned char VPID, const char* buffer) {
-    unsigned char Platter[4]={0};
+    LED();
+    WebConversion Platter;
 
     PrintfToPI(DebugQueue,VPID,"FormatTicket:%s",buffer);
 
 
     const char TicketType = *(buffer);
-    unsigned int TicketNum = TicketFindOpen(Tickets);
-
-
+    volatile unsigned int TicketNum = TicketFindOpen(Tickets);
+    volatile unsigned int TicketNum2 = TicketFindOpen(Tickets);
+    volatile unsigned int TicketNum3 = TicketFindOpen(Tickets);
     //send NoFreeTicket if non are found
     if (TicketNum == -1) {
-        memset(Platter,0,sizeof(int));
-        unsignedIntToBytes(URCHIN_ERROR_NoFreeTicket,Platter);
-        (void) PackfToPI(ExchangeQueue,VPID,reinterpret_cast<const char *>(URCHIN_ERROR_NoFreeTicket),sizeof(int));
+        Platter.I=URCHIN_ERROR_NoFreeTicket; //unsigned int
+        (void) PackfToPI(ExchangeQueue,VPID,reinterpret_cast<const char *>(Platter.UString),sizeof(int));
 
         //Debug Prints
         //(void) PrintfToPI(DebugQueue,0,"URCHIN_ERROR_NoFreeTicket :Bytes: %02X %02X %02X %02X", Platter[0], Platter[1], Platter[2], Platter[3]);
@@ -153,24 +153,25 @@ int FormatTicket(unsigned char VPID, const char* buffer) {
         TicketPoint->TicketNum = TicketNum;
         TicketPoint->VPID = VPID;
         TicketPoint->type = TicketType;
+
         Tickets[TicketNum] = TicketPoint;
     }
 
     //Saving the ticket to the list
     Tickets[TicketNum] = TicketPoint;
 
-    memset(Platter,0,sizeof(int));
-    unsignedIntToBytes(URCHIN_OK,Platter);
-    (void) PackfToPI(ExchangeQueue,VPID,reinterpret_cast<const char *>(Platter),sizeof(int));
+
+    Platter.I=URCHIN_OK; //unsigned int
+    (void) PackfToPI(ExchangeQueue,VPID,reinterpret_cast<const char *>(Platter.UString),sizeof(int));
 
 
 
     (void) PrintfToPI(DebugQueue,VPID,"FormatTicket:Ticket:%d",TicketNum);
 
-    memset(Platter,0,sizeof(unsigned int));
-    unsignedIntToBytes(TicketNum,Platter);
-    (void) PrintfToPI(DebugQueue,VPID,"FormatTicket:TicketS:%.*s", 4, Platter);
-    (void) PackfToPI(ExchangeQueue,VPID,reinterpret_cast<const char *>(Platter),sizeof(unsigned int));
+    Platter.UI=TicketNum;
+
+    (void) PrintfToPI(DebugQueue,VPID,"FormatTicket:TicketS:%.*s", 4, Platter.UString);
+    (void) PackfToPI(ExchangeQueue,VPID,reinterpret_cast<const char *>(Platter.UString),sizeof(unsigned int));
 
     return 0;
 }
@@ -178,9 +179,8 @@ int FormatTicket(unsigned char VPID, const char* buffer) {
 
 
 int LoadTicket(unsigned char VPID, const char* buffer) {
-    (void) PrintfToPI(ExchangeQueue,0,"LoadTicket called");
+    (void) PrintfToPI(DebugQueue,0,"LoadTicket called");
 
-    char command[255]={0};
 
     #pragma pack(push, 1)  // No padding between fields
         typedef struct{
@@ -205,8 +205,6 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
     #pragma pack(pop)
 
 
-
-
      PacketHeader *Header = (PacketHeader*) buffer;
 
     (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:ticket:%d",Header->ticket);
@@ -214,8 +212,7 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
     (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:command_len:%d",Header->command_len);
     (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:values_len:%d",Header->values_len);
 
-
-
+    char command[255]={0};
     strncpy(command,buffer+sizeof(PacketHeader),Header->command_len);
 
 
@@ -250,7 +247,7 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
     BridgeMotor* Joint = GetBridge(Header->joint);
 
     if (Joint == NULL) {// could not find Joint in bridge list
-        (void) PrintfToPI(ExchangeQueue,0,"Valid");
+        (void) PrintfToPI(DebugQueue,0,"Valid");
         return -1;
     }
 
@@ -301,8 +298,10 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
 
         Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),VPID,NULL);
         InsertionHead(&Tickets[Header->ticket]->Packets,Stamp);
-
-    }
+        if (Tickets[Header->ticket]->Packets==NULL) {
+            (void) PrintfToPI(DebugQueue,VPID,"Load: No packets in ticket");
+        }
+        }
 
     return 0;
 }
@@ -311,7 +310,22 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
 
 
 int PunchTicket(unsigned char VPID, const char* buffer) {
-    (void) PrintfToPI(ExchangeQueue,0,"PunchTicket called");
+    WebConversion TicketConversion;
+    memcpy(TicketConversion.String,buffer,sizeof(unsigned int));
+
+    unsigned int Ticket = TicketConversion.UI;
+
+    (void) PrintfToPI(DebugQueue,VPID,"PunchTicket called");
+
+    if (Tickets[Ticket] == NULL) {(void) PrintfToPI(DebugQueue,VPID,"PunchTicket Error ticket not real, Looking for %d",Ticket);}
+    (void) PrintfToPI(DebugQueue,VPID,"Ticket:%d, Type:%c, VPID:%u",Ticket,Tickets[Ticket]->type,(unsigned int)Tickets[Ticket]->VPID);
+
+    if (Tickets[Ticket]->Packets==NULL) {
+        (void) PrintfToPI(DebugQueue,VPID,"No packets in ticket");
+    }else{
+    PrintPackets(DebugQueue,VPID,Tickets[Ticket]->Packets);
+    }
+
 
 
 
@@ -325,7 +339,7 @@ int PunchTicket(unsigned char VPID, const char* buffer) {
 
 int CloseTicket(unsigned char VPID, const char* buffer) {
 
-    (void) PrintfToPI(ExchangeQueue,0,"CloseTicket not added");
+    (void) PrintfToPI(DebugQueue,0,"CloseTicket not added");
 return 0;
 }
 
@@ -333,7 +347,7 @@ return 0;
 
 int TicketInfo(unsigned char VPID, const char* buffer) {
 
-    (void) PrintfToPI(ExchangeQueue,0,"TicketInfo not added");
+    (void) PrintfToPI(DebugQueue,0,"TicketInfo not added");
 return 0;
 }
 

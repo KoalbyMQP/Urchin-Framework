@@ -47,3 +47,24 @@ int BytesToInt(const unsigned char* byteArray) {
 
     return value;
 }
+
+
+void Chirp() {
+    Pulse(CherpPin);
+}
+
+void LED() {
+    Pulse(LedPin);
+}
+
+void Slap() {
+    Pulse(SlapPin);
+}
+
+void Pulse(gpio_num_t Pin) {
+    gpio_set_level(Pin, 1);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    gpio_set_level(Pin, 0);
+}
+
+
