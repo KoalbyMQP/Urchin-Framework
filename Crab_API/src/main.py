@@ -22,7 +22,7 @@ def main() -> None:
 
     time.sleep(3)
     print("\n\n\n\n\n\n")
-    command = HerkuleX.MoveOne("Hip", float(45), 40, JogLedColor.LED_GREEN)
+    command = HerkuleX.MoveOne("Sholder", float(45), 40, JogLedColor.LED_GREEN)
     ticket = test.send(TicketType.Asynchronous, [command], None, False)
     print("Main:ticket" + str(ticket))
 
