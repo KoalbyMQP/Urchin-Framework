@@ -5,13 +5,7 @@
 #include "Packet.h"
 
 
-#include <string.h>
-
-#include "Coms.h"
-#include "freertos/FreeRTOS.h"
-
-
-Packet* CreateNode(int dest, int protocol,int device, char Check, char contance[], unsigned char VPID, int (*ACK)(unsigned char VPID ,const char buffer[])) {
+Packet* CreateNode(int dest, int protocol,int device, char Check, char contance[], unsigned char contanceSIZE, unsigned char VPID, int (*ACK)(unsigned char VPID ,const char buffer[])) {
     Packet* node = (Packet*) pvPortMalloc(sizeof(Packet));
 
     if (node == NULL){return NULL;}
@@ -24,6 +18,7 @@ Packet* CreateNode(int dest, int protocol,int device, char Check, char contance[
     node->device = device;
     node->Check = Check;
     memcpy(node->contance,contance,HerkulexPacketSize);
+    node->ContanceSize = contanceSIZE;
     node->VPID = VPID;
     node->ACK = ACK;
 
@@ -46,15 +41,15 @@ void RecursiveFree(Packet* head){
 }
 
 
-int Length(Packet* head){
+int PacketLength(Packet* head){
     if (head->Next == NULL) {
         return 1;
     }
-    return Length(head->Next)+ 1;
+    return PacketLength(head->Next)+ 1;
 }
 
 
-Packet* Get(Packet* head, int index) {
+Packet* PacketGet(Packet* head, int index) {
     if (head == NULL) {
         // Base case: list is empty or index out of range
         return NULL;
@@ -64,7 +59,7 @@ Packet* Get(Packet* head, int index) {
         return head;
     }
     // Recur for the next node, decrementing index
-    return Get(head->Next, index - 1);
+    return PacketGet(head->Next, index - 1);
 }
 
 
@@ -74,10 +69,11 @@ void PrintPackets(QueueHandle_t Queue ,unsigned int VPID ,Packet* head){
     }
 
     // Print current packet
-    (void)PrintfToPI(Queue, VPID, "dest:%d, protocol:%d, device:%d, Check:%d, VPID:%d",
+    (void)PrintfToPI(Queue, VPID, "dest:%d, protocol:%d, device:%d, packetLen:%d, Check:%d, VPID:%d",
                      head->dest,
                      head->protocol,
                      head->device,
+                     head->ContanceSize,
                      head->Check,
                      head->VPID);
 

@@ -17,6 +17,7 @@
 #include "ESP_PI_Communication/MSGQueue.h"
 #include "ESP_PI_Communication/Receving.h"
 #include "Global/Bridge.h"
+#include "Ordering/InjectorSpry.h"
 #include "Ordering/Ordering.h"
 
 uart_config_t uart_config;
@@ -83,6 +84,14 @@ extern "C" void app_main() {
         //printf("Receiving Task creation failed!\n");
     }
 
+
+    TaskHandle_t xHandleSpray = nullptr;
+    BaseType_t SprayxReturned = xTaskCreate(Spray, "Spray", 8048, nullptr, 3, &xHandleSpray);
+    if( SprayxReturned == pdPASS ){
+        //printf("Receiving Task creation worked!\n");
+    }else {
+        //printf("Receiving Task creation failed!\n");
+    }
 
     //Shipping(nullptr);
 int nothing=0;

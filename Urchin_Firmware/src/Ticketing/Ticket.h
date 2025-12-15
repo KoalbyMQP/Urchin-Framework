@@ -8,6 +8,7 @@
 #include "Packet.h"
 #include "Global/LinkedList.h"
 #include "TicketNum.h"
+#include "Packet.h"
 
 #ifdef __cplusplus
 extern "C" {

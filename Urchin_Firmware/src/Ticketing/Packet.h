@@ -12,6 +12,9 @@ extern "C" {
 #define HerkulexPacketSize 233
 #include "MSGQueue.h"
 
+#include <string.h>
+#include "Coms.h"
+#include "freertos/FreeRTOS.h"
 
 typedef struct Packet Packet; // Forward declaration
 
@@ -47,6 +50,9 @@ typedef struct Packet{
     char contance[HerkulexPacketSize];
 
 
+    unsigned char ContanceSize;
+
+
     /**
      *
      * This is needed as a return address for commands that want a response
@@ -68,16 +74,16 @@ typedef struct Packet{
 
 }Packet;
 
-    Packet* CreateNode(int dest, int protocol,int device, char Check, char contance[], unsigned char VPID, int (*ACK)(unsigned char VPID ,const char buffer[]));
+    Packet* CreateNode(int dest, int protocol,int device, char Check, char contance[], unsigned char contanceSIZE, unsigned char VPID, int (*ACK)(unsigned char VPID ,const char buffer[]));
 
     void InsertionHead(Packet** head, Packet* node);
 
 
     void RecursiveFree(Packet* head);
 
-    int Length(Packet* head);
+    int PacketLength(Packet* head);
 
-    Packet* Get(Packet* head, int index);
+    Packet* PacketGet(Packet* head, int index);
 
     void PrintPackets(QueueHandle_t Queue ,unsigned int VPID ,Packet* head);
 #ifdef __cplusplus

@@ -19,6 +19,7 @@
 #include "ESP_PI_Communication/MSGQueue.h"
 #include "Herkulex/Herkulex.h"
 #include "Motor/LimitChecks.h"
+#include "Ordering/Ordering.h"
 #include "Ticketing/Packet.h"
 #include "Ticketing/Ticket.h"
 
@@ -296,7 +297,7 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
         Herkulex.moveOne(MotorNum,Pos, Variables[1].Data.Int*PTime, static_cast<JogLedColor>(Variables[2].Data.Int), Model);
 
 
-        Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),VPID,NULL);
+        Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),Herkulex.BusPacketLength,VPID,NULL);
         InsertionHead(&Tickets[Header->ticket]->Packets,Stamp);
         if (Tickets[Header->ticket]->Packets==NULL) {
             (void) PrintfToPI(DebugQueue,VPID,"Load: No packets in ticket");
@@ -323,7 +324,9 @@ int PunchTicket(unsigned char VPID, const char* buffer) {
     if (Tickets[Ticket]->Packets==NULL) {
         (void) PrintfToPI(DebugQueue,VPID,"No packets in ticket");
     }else{
-    PrintPackets(DebugQueue,VPID,Tickets[Ticket]->Packets);
+        PrintPackets(DebugQueue,VPID,Tickets[Ticket]->Packets);
+        PunchToQue(Tickets[Ticket]);
+
     }
 
 
