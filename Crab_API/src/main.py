@@ -16,13 +16,13 @@ def main() -> None:
 
     time.sleep(1)
 
-    command = HerkuleX.MoveOne("Sholder", float(-45), 40, JogLedColor.LED_BLUE)
+    command = HerkuleX.MoveOne("Sholder", float(-23), 40, JogLedColor.LED_BLUE)
     ticket = test.send(TicketType.Asynchronous,[command],None,False)
     print("Main:ticket" + str(ticket))
 
     time.sleep(3)
     print("\n\n\n\n\n\n")
-    command = HerkuleX.MoveOne("Sholder", float(45), 40, JogLedColor.LED_GREEN)
+    command = HerkuleX.MoveOne("Sholder", float(23), 40, JogLedColor.LED_GREEN)
     ticket = test.send(TicketType.Asynchronous, [command], None, False)
     print("Main:ticket" + str(ticket))
 
