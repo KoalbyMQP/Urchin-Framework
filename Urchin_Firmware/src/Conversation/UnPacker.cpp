@@ -248,14 +248,14 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
     BridgeMotor* Joint = GetBridge(Header->joint);
 
     if (Joint == NULL) {// could not find Joint in bridge list
-        (void) PrintfToPI(DebugQueue,0,"Valid");
+        (void) PrintfToPI(DebugQueue,0,"joint not found");
         return -1;
     }
 
     //Todo: Add a catch to see if the Joint was found and if not send an error to the Pi that it will pass up to the user.
 
     (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:ServoID:%d",Joint->Num);
-    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Brand:%s",Joint->Joint);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Brand:%s",Joint->Brand);
     (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Model:%s",Joint->Model);
 
 
@@ -279,8 +279,9 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
 
 
         //Bridge bounds check
-        if ((Joint->BoundsMin  < Variables[0].Data.Float) & (Variables[0].Data.Float > Joint->BoundsMin)) {
-            (void)(PrintfToPI)(DebugQueue,0,"URCHIN_ERROR_OutOf_Bounds");
+        if (Variables[0].Data.Float < (float)Joint->BoundsMin || Variables[0].Data.Float > (float)Joint->BoundsMax) {
+            (void)(PrintfToPI)(DebugQueue, VPID, "ERROR: %f is out of range (%d to %d)",
+                                Variables[0].Data.Float, Joint->BoundsMin, Joint->BoundsMax);
             return URCHIN_ERROR_OutOf_Bounds;
         }
 
@@ -297,11 +298,11 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
         Herkulex.moveOne(MotorNum,Pos, Variables[1].Data.Int*PTime, static_cast<JogLedColor>(Variables[2].Data.Int), Model);
 
 
-        Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),Herkulex.BusPacketLength,VPID,NULL);
-        InsertionHead(&Tickets[Header->ticket]->Packets,Stamp);
-        if (Tickets[Header->ticket]->Packets==NULL) {
-            (void) PrintfToPI(DebugQueue,VPID,"Load: No packets in ticket");
-        }
+        //Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),Herkulex.BusPacketLength,VPID,NULL);
+       // InsertionHead(&Tickets[Header->ticket]->Packets,Stamp);
+       // if (Tickets[Header->ticket]->Packets==NULL) {
+      //      (void) PrintfToPI(DebugQueue,VPID,"Load: No packets in ticket");
+       // }
         }
 
     return 0;
@@ -386,6 +387,15 @@ int Bridge(unsigned char VPID, const char* buffer) {
     if (0 == strncmp("Add",buffer,3)) {
         (void) PrintfToPI(DebugQueue,0,"BridgeAdd");
         BridgeMotor *motor = (BridgeMotor*)(buffer+3);
+        (void) PrintfToPI(DebugQueue,0,"Bridge:Printing joint");
+        (void) PrintfToPI(DebugQueue,0,"Bridge: Num %d", motor->Num);
+        (void) PrintfToPI(DebugQueue,0,"Bridge: Brand %s", motor->Brand);
+        (void) PrintfToPI(DebugQueue,0,"Bridge: Model %s", motor->Model);
+        (void) PrintfToPI(DebugQueue,0,"Bridge: Joint %s", motor->Joint);
+        (void) PrintfToPI(DebugQueue,0,"Bridge: Bounds Min %d", motor->BoundsMin);
+        (void) PrintfToPI(DebugQueue,0,"Bridge: Bounds Max %d", motor->BoundsMax);
+        (void) PrintfToPI(DebugQueue,0,"Bridge: AlignmentAngle %d", motor->AlignmentAngle);
+
 
         AddBridge(motor);
 
