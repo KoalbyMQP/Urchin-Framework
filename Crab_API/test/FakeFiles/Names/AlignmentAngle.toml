@@ -1,0 +1,11 @@
+[meta]
+Version = "0.1"
+
+[[Motor]]
+MotorNum = 7 #Motor number  (printed on motor)
+MotorBrand = "HerkuleX" #Motor Brand
+MotorModel = "0601" #Motor Model
+JointName = "Sholder" #Name of Joint from URDF file EXACTLY
+Bound = [-45,45] #Bounds from CAD software
+AlignmentoooAngle = 0 #Angle the motor should be in for assembly
+

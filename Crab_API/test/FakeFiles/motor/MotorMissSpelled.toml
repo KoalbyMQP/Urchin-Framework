@@ -1,0 +1,11 @@
+[meta]
+Version = "0.1"
+
+
+[[Moter]]
+MotorNum = 8
+MotorBrand = "HerkuleX"
+MotorModel = "0602" #Motor Model
+JointName = "Hip" #Name of Joint from URDF file EXACTLY
+Bounds = [-45,45] #Bounds from CAD software
+AlignmentAngle = 0 #Angle the motor should be in for assembly

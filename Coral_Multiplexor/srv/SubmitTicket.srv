@@ -1,9 +1,0 @@
-uint32 session_id
-string ticket_type
-CommandItem[] items
-bool chained
----
-bool ok
-uint32 ticket_id
-int32 firmware_error
-string message

@@ -1,5 +1,0 @@
-string client_name
----
-bool ok
-uint32 session_id
-string message

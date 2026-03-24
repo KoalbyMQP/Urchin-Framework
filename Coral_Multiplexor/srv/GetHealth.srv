@@ -1,6 +1,0 @@
-uint32 session_id
-string metric
----
-bool ok
-string value
-string message
