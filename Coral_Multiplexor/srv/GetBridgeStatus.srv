@@ -1,0 +1,7 @@
+uint32 session_id
+---
+bool loaded
+string bridge_version
+uint32 motor_count
+string source_path
+string message

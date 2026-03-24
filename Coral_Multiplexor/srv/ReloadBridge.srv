@@ -1,0 +1,5 @@
+uint32 session_id
+string bridge_path
+---
+bool ok
+string message
