@@ -56,6 +56,7 @@
 #include <stdexcept>
 
 RAMInfo ramInfoTable[RAMObjectCount] = {
+	{0x34, 1, "Torque Control"},
 	{0x36, 1, "voltage currently received"},
 	{0x37, 1, "Internal temperature in Celcius"},
 	{0x38, 1, "Current Control Method, 0: Position Control, 1: Velocity Turn Control"},
@@ -669,10 +670,12 @@ void HerkulexClass::motor_stop(int servoID){
 
 }
 
+
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ Test RamRead Function Starts +++++++++++++++++++++++++++++++++++++++++++
 
 uint16_t HerkulexClass::RAMReadSerial(uint8_t servoID, RAMObject obj) {
     static const RAMInfo ramInfoTable[RAMObjectCount] = {
+	    {0x34, 1, "Torque Control"},
         {0x36, 1, "voltage currently received"},
         {0x37, 1, "Internal temperature in Celcius"},
         {0x38, 1, "Current Control Method, 0: Position Control, 1: Velocity Turn Control"},
@@ -685,13 +688,14 @@ uint16_t HerkulexClass::RAMReadSerial(uint8_t servoID, RAMObject obj) {
         {0x44, 2, "Absolute goal Position Raw Data"},
         {0x46, 2, "Current goal position based on Speed Profile"},
         {0x48, 2, "Raw data of desired speed"}
+
     };
 
 
 	if (obj == StatusAll) {
         int count = 0;  // Counter to track the number of items printed per line
         const char* labels[RAMObjectCount] = {
-            "Volt: ", "Temp: ", "Mode: ", "Tic: ", "CalPos: ", "RawPos: ",
+            "Torque ", "Volt: ", "Temp: ", "Mode: ", "Tic: ", "CalPos: ", "RawPos: ",
             "ExpSpd: ", "PWM: ", "PotPos: ", "GoalPos: ", "DesireTraj: ", "DesireSpd: "
         };
 

@@ -294,15 +294,16 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
 
 
 
-
+        Herkulex.torqueON(MotorNum);
+        Herkulex.RAMRead(MotorNum,Torque);
         Herkulex.moveOne(MotorNum,Pos, Variables[1].Data.Int*PTime, static_cast<JogLedColor>(Variables[2].Data.Int), Model);
 
 
-        //Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),Herkulex.BusPacketLength,VPID,NULL);
-       // InsertionHead(&Tickets[Header->ticket]->Packets,Stamp);
-       // if (Tickets[Header->ticket]->Packets==NULL) {
-      //      (void) PrintfToPI(DebugQueue,VPID,"Load: No packets in ticket");
-       // }
+        Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),Herkulex.BusPacketLength,VPID,NULL);
+       InsertionHead(&Tickets[Header->ticket]->Packets,Stamp);
+        if (Tickets[Header->ticket]->Packets==NULL) {
+            (void) PrintfToPI(DebugQueue,VPID,"Load: No packets in ticket");
+        }
         }
 
     return 0;

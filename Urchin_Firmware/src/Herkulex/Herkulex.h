@@ -142,6 +142,7 @@
  * @brief Brief description of the enum
  */
 enum RAMObject {
+    Torque,
   Voltage, /**< Description of VALUE_ONE */
   Temperature, /**< Description of VALUE_ONE */
   ControlMode, /**< Description of VALUE_ONE */
