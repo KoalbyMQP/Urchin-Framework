@@ -26,9 +26,9 @@ torqueOFF    	KEYWORD2
 moveAll	     	KEYWORD2
 actionAll	KEYWORD2
 moveSpeedOne   	KEYWORD2
-moveOne		KEYWORD2	
+moveOne		KEYWORD2
 moveOneAngle  	KEYWORD2
-getPosition	KEYWORD2	
+getPosition	KEYWORD2
 getAngle	KEYWORD2
 getSpeed	KEYWORD2
 reboot		KEYWORD2

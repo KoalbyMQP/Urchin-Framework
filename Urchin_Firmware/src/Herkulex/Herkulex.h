@@ -10,29 +10,29 @@
  */
 
 /*
- Hekulex.h - Library for Dongbu Herkulex DRS-0101/DRS-0201 
+ Hekulex.h - Library for Dongbu Herkulex DRS-0101/DRS-0201
  Copyright (c) 2012 - http://robottini.altervista.org
  Refactored by Gabriel Weaver 6/23/2025
  Original Created by Alessandro on 09/12/2012.
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
- This library is distributed in the hope that it will be useful,  
+
+ This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- 
+
  Herkulex.h
     PLEASE START READING: Herkulex Servo Manual (http://www.hovis.co.kr/guide/herkulexeng.pdf)
  *****************************************************************************
- 
+
  IMPORTANT:
   This library only works for ESP-IDF
  *****************************************************************************
@@ -43,7 +43,7 @@
  Contact: alegiaco@gmail.com
  Web:     http://robottini.altervista.org
 
- *****************************************************************************  
+ *****************************************************************************
 */
 
 #ifdef __cplusplus
@@ -51,6 +51,8 @@
 #ifndef Herkulex_h
 #define Herkulex_h
 
+
+#include <optional>
 
 #include "freertos/FreeRTOS.h"
 #include "driver/uart.h"
@@ -68,7 +70,10 @@
  */
 #define DATA_MOVE  	 50
 
-
+/**
+ * @def Play time scalar
+ */
+#define PTime 11.2f
 
 
 // SERVO HERKULEX COMMAND - See Manual p40
@@ -139,6 +144,7 @@
  * @brief Brief description of the enum
  */
 enum RAMObject {
+    Torque,
   Voltage, /**< Description of VALUE_ONE */
   Temperature, /**< Description of VALUE_ONE */
   ControlMode, /**< Description of VALUE_ONE */
@@ -192,10 +198,11 @@ enum JogLedColor {
  * @enum HerkulexModel
  */
 enum HerkulexModel {
-  MODEL_0101,
-  MODEL_0201,
-  MODEL_0601,
-  MODEL_0602
+    MODEL_0101,
+    MODEL_0201,
+    MODEL_0601,
+    MODEL_0602,
+    MODEL_None
 };
 
 enum MoveMode {
@@ -284,7 +291,7 @@ public:
    * @param servoID
    * @return
    */
-  StatusData  stat(int servoID);
+  std::optional<StatusData>  stat(int servoID);
 
 
   /**
@@ -548,7 +555,8 @@ public:
    */
   void SetIndirect(bool indirect);
 
-
+    byte BusPacket[233];
+    int BusPacketLength;
 
 private:
 
@@ -562,8 +570,7 @@ private:
     byte data[DATA_SIZE];  /**< Parameters only (working buffer)  */
     byte moveData[DATA_MOVE]; /**< Helper buffer specifically for motion commands.  */
 
-    byte BusPacket[233];
-    int BusPacketLength;
+
     bool Indirect;
 
 
@@ -612,7 +619,7 @@ private:
   uart_port_t port; /**< The UART port for motor movement */
   int conta; /**< Packet buffer index (used when filling dataEx[] with bytes) */
   int playTime; /**< Motion duration in units of 11.2 ms (0–255) */
- 
+
 };
 
 extern HerkulexClass Herkulex;

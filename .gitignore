@@ -13,12 +13,12 @@
 /Mollusk_Firmware/.pio
 
 #Crab API
-/Crab_API_(Win_and_Linux)/.idea
-/Crab_API_(Win_and_Linux)/.vscode
+/Crab_API/.idea
+/Crab_API/.vscode
 
 # Coral Multiplexor
-/Coral_Multiplexor_(Win_and_Linux)/.idea
-/Coral_Multiplexor_(Win_and_Linux)/.vscode
+/Coral_Multiplexor/.idea
+/Coral_Multiplexor/.vscode
 
 # Dev container
 /.devcontainer/.idea

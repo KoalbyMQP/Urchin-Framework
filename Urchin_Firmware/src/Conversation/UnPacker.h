@@ -6,12 +6,12 @@
 
 #include <string.h>
 #include "Global/GLOBAL.h"
+#include "ESP_PI_Communication/Receving.h"
 
 
+#define MAX_VALUES_LEN 20
 
 
-#define ContextWordSize 15
-#define NumOfActions 11
 
 
 
@@ -21,38 +21,7 @@
 int UnpackerInit();
 
 
-    typedef struct Context Context;  // Forward declaration
-    /**
-     *@brief A context is a function to be called when a word is seen in message from the PI
-     */
-    typedef struct Context{
-        /**
-         * The word or phrase that will signal a kind of action
-         */
-        const char Name[ContextWordSize];
 
-        /**
-         * The length of Name
-         */
-        const unsigned short int depth;
-
-        /**
-         * The function to be called when the name was mentioned
-         * @param buffer[] The remaining string after the "Name"
-         */
-         int (*function)(const char buffer[]);
-
-        /**
-         * list contexts to branch to
-         */
-         Context* branch;
-
-        /**
-         * Number of contexts in list
-         */
-        const unsigned int size;
-
-    }Context;
 
 
 
@@ -70,21 +39,7 @@ int UnpackerInit();
      */
     int StrToInt(const char* buffer);
 
-    /**
-    * Skips the reader forward by the distace
-    * @param buffer Char buffer
-    * @param distance Distance to truncate
-    * @return New begging of string
-    */
-    const char* SkipFoward(const char buffer[],unsigned int distance);
 
-    /**
-    * This goes through a set of Commands calling its fucntion on the buffer
-    * @param Commands Array of Contexts
-    * @param buffer The char buffer that was receved
-    * @return An arror code
-    */
-    int ProcessRequest(Context Commands[],const uint8_t buffer[]);
     //--------------------------------------------------------------------
 
 
@@ -97,40 +52,59 @@ int UnpackerInit();
     * @param buffer buffer after the "ReqTicket" command (Not Used)
     * @return An error code
     */
-    int ReqTicket(const char* buffer);
+    int ReqTicket(unsigned char VPID, const char* buffer);
 
     /**
     * To be called when the PI is asking for a ticket to be punched(sending a command)
     * @param buffer the constance of the punch
     * @return An error
     */
-    int PunchTicket(const char* buffer);
+    int PunchTicket(unsigned char VPID, const char* buffer);
 
     /**
     * To be called when the Pi wants to close a ticket early
     * @param buffer buffer after the "ReqTicket" command (Not Used)
     * @return An error
     */
-    int CloseTicket(const char* buffer);
+    int CloseTicket(unsigned char VPID, const char* buffer);
 
     /**
     * To be called when the Pi wants to know the status of a Ticket
     * @param buffer Ticket number
     * @return Error code
     */
-    int TicketInfo(const char* buffer);
+    int TicketInfo(unsigned char VPID, const char* buffer);
 
     /**
     * To be called when the Pi wants a health update from the esp32
     * @param buffer the Type of health
     * @return An Error
     */
-    int GetHealth(const char* buffer);
+    int GetHealth(unsigned char VPID, const char* buffer);
 
 
+    /**
+    * To be called when the Pi wants to add a motor entry from the bridge file
+    * @param buffer the Type of health
+    * @return An Error
+    */
+    int Bridge(unsigned char VPID, const char* buffer);
 
-    int LoadTicket(const char* buffer);
-    int FormatTicket(const char* buffer);
+
+    /**
+    * To be called when the Pi wants to Load a ticket
+    * @param buffer Data for loading
+    * @return An Error
+    */
+    int LoadTicket(unsigned char VPID, const char* buffer);
+
+
+    /**
+    * To be called when the Pi wants to format a new ticket
+    * @param buffer format information
+    * @return An Error
+    */
+    int FormatTicket(unsigned char VPID, const char* buffer);
 
 
     //-----------------------------------

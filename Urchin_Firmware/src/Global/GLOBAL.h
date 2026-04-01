@@ -7,11 +7,22 @@
 
 
 
+#define LedPin GPIO_NUM_2
+#define CherpPin GPIO_NUM_5
+#define SlapPin GPIO_NUM_4
 
-#define CherpPin 2
+
+
+
 #define PIDNUM 256
+#include <soc/gpio_num.h>
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "driver/gpio.h"
+#include "driver/rtc_io.h"
+#include "esp_sleep.h"
+#include "esp_log.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -38,6 +49,20 @@ unsigned int BytesToUnsignedInt(const unsigned char* byteArray);
  * @return
  */
 int BytesToInt(const unsigned char* byteArray);
+
+    void Pulse(gpio_num_t Pin);
+    void Slap();
+    void LED();
+    void Chirp();
+
+typedef union {
+    unsigned int UI;
+    int I;
+    char String[4];
+    unsigned char UString[4];
+    float F;
+}WebConversion;
+
 
 #ifdef __cplusplus
 }

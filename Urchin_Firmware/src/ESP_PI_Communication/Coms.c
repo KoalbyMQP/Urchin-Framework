@@ -49,6 +49,3 @@ int PrintfToPI(QueueHandle_t MsgQueue, const uint8_t VPID,const char *format, ..
   va_end(args);
   return ReturnValue;
 }
-
-
-

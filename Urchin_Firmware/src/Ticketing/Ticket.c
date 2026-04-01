@@ -3,3 +3,23 @@
 //
 
 #include "Ticket.h"
+
+void TicketInit() {
+
+
+
+}
+
+int TicketFindOpen(Ticket* Tickets[]) {
+    for (int i = 0; i < MaxTickets; i++) {
+        if (Tickets[i] == NULL){return i;}
+    }
+    return -1;
+}
+
+void TicketClose(Ticket* ticket){
+//Recursive free the packets
+    RecursiveFree(ticket->Packets);
+    vPortFree(ticket);
+
+}

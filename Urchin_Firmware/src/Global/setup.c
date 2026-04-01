@@ -24,21 +24,30 @@ void SetUpUart() {
     uart_param_config(UART_NUM, &uart_config);
 
     // Install UART driver
-    uart_driver_install(UART_NUM,  sizeof(Box)*12, sizeof(Box)*2, 0, NULL, 0);
+    uart_driver_install(UART_NUM,  sizeof(Box)*24, sizeof(Box)*2, 0, NULL, 0);
 
 }
 
 
 
 void SetUpPins() {
-    gpio_config_t io_conf = {
-        .pin_bit_mask = (1ULL << CherpPin),
-        .mode = GPIO_MODE_OUTPUT,
-        .pull_up_en = GPIO_PULLUP_DISABLE,
-        .pull_down_en = GPIO_PULLDOWN_DISABLE,
-        .intr_type = GPIO_INTR_DISABLE
-};
-    gpio_config(&io_conf);
+//     gpio_config_t io_conf = {
+//         .pin_bit_mask = (1ULL << CherpPin),
+//         .mode = GPIO_MODE_OUTPUT,
+//         .pull_up_en = GPIO_PULLUP_DISABLE,
+//         .pull_down_en = GPIO_PULLDOWN_DISABLE,
+//         .intr_type = GPIO_INTR_DISABLE
+// };
+//     gpio_config(&io_conf);
+
+    //Led
+    gpio_set_direction(LedPin, GPIO_MODE_OUTPUT);
+
+    //Chirp
+    gpio_set_direction(CherpPin, GPIO_MODE_OUTPUT);
+
+    //Slap
+    gpio_set_direction(SlapPin, GPIO_MODE_INPUT);
 
 
 }

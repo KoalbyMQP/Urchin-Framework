@@ -1,40 +1,40 @@
 /*
- Hekulex.cpp - Library for Dongbu Herkulex DRS-0101/DRS-0201 
+ Hekulex.cpp - Library for Dongbu Herkulex DRS-0101/DRS-0201
  Copyright (c) 2012 - http://robottini.altervista.org
  Created by Alessandro on 09/12/2012.
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
- This library is distributed in the hope that it will be useful,  
+
+ This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- 
+
  *****************************************************************************
     PLEASE START READING: Herkulex Servo Manual (http://www.hovis.co.kr/guide/herkulexeng.pdf)
  *****************************************************************************
- 
+
  IMPORTANT:
 
   The library works on Arduino UNO/2009 - Arduino Mega.
   Please with Arduino UNO/2009 works with SoftwareSerial library modified with baud rate 57.600.
   Use this begin type:
 		begin(57600, int rx, int tx);
- 
+
   For Arduino Mega, please use baud rate 115.200
 
  *****************************************************************************
  Contact: alegiaco@gmail.com
  Web:     http://robottini.altervista.org
  Autor:   Alessandro Giacomel
- *****************************************************************************  
+ *****************************************************************************
 */
 #include "Herkulex.h"
 
@@ -46,11 +46,11 @@
 
 
 // Macro for the Serial port selection
-#define HSerial1     1 		// Write in Serial 1 port Arduino Mega - Pin 19(rx) - 18 (tx) 
-#define HSerial2     2   	// Write in Serial 2 port Arduino Mega - Pin 17(rx) - 16 (tx) 
+#define HSerial1     1 		// Write in Serial 1 port Arduino Mega - Pin 19(rx) - 18 (tx)
+#define HSerial2     2   	// Write in Serial 2 port Arduino Mega - Pin 17(rx) - 16 (tx)
 #define HSerial3     3   	// Write in Serial 3 port Arduino Mega - Pin 15(rx) - 14 (tx)
 #define Serial      4   	// Write in SoftSerial Arduino with 328p or Mega
- 
+
 extern SoftwareSerial SwSerial(0, 1);
 
 // Herkulex begin with Arduino Uno
@@ -115,7 +115,7 @@ void HerkulexClass::sendRamWrite(byte* data, int lenghtString){
 	ck2=checksum2(ck1);					//7. Checksum2
 
 	dataEx[0] = 0xFF;			// Packet Header
-	dataEx[1] = 0xFF;			// Packet Header	
+	dataEx[1] = 0xFF;			// Packet Header
 	dataEx[2] = pSize;	 		// Packet Size
 	dataEx[3] = pID;			// Servo ID
 	dataEx[4] = cmd;			// Command Ram Write
@@ -202,38 +202,38 @@ void HerkulexClass::sendSJog(int servoID, int Target, int pTime, JogLedColor val
 	if(Mode == true){
 		Mode = 1;
 		SetValue = (1<<Mode) | (1<<valueLed);
-	} 
+	}
 	else{
 		SetValue = (1<<valueLed);
 	}
 	// int SetValue = (1<<Mode) | (1<<valueLed); //shifts the value by the mode and the LED. A multi-command
-	playTime=int((float)pTime/11.2);	
-  
+	playTime=int((float)pTime/11.2);
+
 	pSize = 0x0C; //SJog Command is 12 Bits long, varies with other functions
-	cmd   = HSIMULJOG; //Movement functions typically use SJog for simultanenous movement or IJog for indiviual motor movement.        		
-  
-	data[0]=LSB; 
-	data[1]=MSB; 
-	data[2]=SetValue;                         
-	data[3]=servoID;                    		
-  
+	cmd   = HSIMULJOG; //Movement functions typically use SJog for simultanenous movement or IJog for indiviual motor movement.
+
+	data[0]=LSB;
+	data[1]=MSB;
+	data[2]=SetValue;
+	data[3]=servoID;
+
 	pID=servoID^playTime; //Necessary for code to function
-  
+
 	lenghtString=4;             				// lenghtData
-  
+
 	ck1=checksum1(data,lenghtString);			//6. Checksum1
 	ck2=checksum2(ck1);						//7. Checksum2
-  
-	pID=servoID; 
-  
+
+	pID=servoID;
+
 	dataEx[0] = 0xFF;				// CONST Packet Header
-	dataEx[1] = 0xFF;				// CONST Packet Header	
+	dataEx[1] = 0xFF;				// CONST Packet Header
 	dataEx[2] = pSize;	 		// Packet Size
 	dataEx[3] = servoID;
 	dataEx[4] = cmd;
 	dataEx[5] = ck1;
 	dataEx[6] = ck2;
-	dataEx[7] = playTime; 	
+	dataEx[7] = playTime;
 
 	for (int i = 0; i < lenghtString; i++) {
 		dataEx[8 + i] = data[i];
@@ -249,14 +249,14 @@ void HerkulexClass::initialize()
 {
         conta=0;
 		lenghtString=0;
-        delay(100);       
+        delay(100);
         clearError(BROADCAST_ID);	// clear error for all servos
         delay(10);
         ACK(1);						// set ACK
         delay(10);
         torqueON(BROADCAST_ID);		// torqueON for all servos
         delay(10);
-		
+
 }
 
 // stat
@@ -266,17 +266,17 @@ StatusData HerkulexClass::stat(int servoID)
 	const char* StatusErrorMessages[] = {
 		"Exceed Allowed Input Voltage Limit", //Exceeding the Voltage Limit Input of the Motors, 7.4V for 0101/0201, 12V for the 0401/0601
 		"Exceed Allowed Position", //Exceeded allowed Position, This only counts for non full-range motors. Change Limits in Herkulex Manager
-		"Exceed Allowed Temperature", //Exceeded Temperature Limit motor interally 
+		"Exceed Allowed Temperature", //Exceeded Temperature Limit motor interally
 		"Invalid Packet: Multiple Possible Errors, See Status Detail", //Invalid Packet Sent, Refer to Status2 for detailed Explaination of Error
 		"Overload Error Detected", //Overload Detected
 		"Reserved Bit", //Reserved Bit
 		"EEP REG Distorted", //EEP Register distorted
-		"Reserved Bit", //Reserved Bit 
+		"Reserved Bit", //Reserved Bit
 	};
 	const char* StatusDetailMessage[] = {
 		"Moving Flag Active", //Moving Flag, the Motor is moving. Read Only
 		"InPosition Flag Active", //The motor is within the position limits. Read Only
-		"Checksum Error Occured", //Checksum did not equal up. 
+		"Checksum Error Occured", //Checksum did not equal up.
 		"Unknown Command Sent", //The motor did not understand the command sent. Was not in the approved list of commands
 		"Exceeded Register Range", //Too much information was sent and exceeded the register range
 		"Garbage Detected", //Garbage Data Detected.
@@ -288,23 +288,23 @@ StatusData HerkulexClass::stat(int servoID)
 	pSize    = 0x07;			//3.Packet size
 	pID      = servoID;			//4.Servo ID - 0XFE=All servos
 	cmd      = HSTAT;			//5.CMD
-	
+
 	ck1=(pSize^pID^cmd)&0xFE;
-        ck2=(~(pSize^pID^cmd))&0xFE ; 
-  
+        ck2=(~(pSize^pID^cmd))&0xFE ;
+
 	dataEx[0] = 0xFF;			// Packet Header
-	dataEx[1] = 0xFF;			// Packet Header	
+	dataEx[1] = 0xFF;			// Packet Header
 	dataEx[2] = pSize;	 		// Packet Size
 	dataEx[3] = pID;			// Servo ID
 	dataEx[4] = cmd;			// Command Ram Write
 	dataEx[5] = ck1;			// Checksum 1
 	dataEx[6] = ck2;			// Checksum 2
-	     
+
 	sendData(dataEx, pSize);
 	delay(2);
 	readData(9); 				// read 9 bytes from serial
 
-	
+
 	pSize = dataEx[2];           // 3.Packet size 7-58
 	pID   = dataEx[3];           // 4. Servo ID
 	cmd   = dataEx[4];           // 5. CMD
@@ -312,13 +312,13 @@ StatusData HerkulexClass::stat(int servoID)
     data[1]=dataEx[8];
     lenghtString=2;
 
-	
+
     ck1 = (dataEx[2]^dataEx[3]^dataEx[4]^dataEx[7]^dataEx[8]) & 0xFE;
-	ck2=checksum2(ck1);			
-	
+	ck2=checksum2(ck1);
+
 	if (ck1 != dataEx[5]) return {static_cast<byte>(-1), 0};
     if (ck2 != dataEx[6]) return {static_cast<byte>(-2), 0};
-	
+
 	byte status1 = dataEx[7];
 	byte status2 = dataEx[8];
 	String StatusMessage = "Status Errors: ";
@@ -354,7 +354,7 @@ StatusData HerkulexClass::stat(int servoID)
 	}
 }
 
-// torque on - 
+// torque on -
 void HerkulexClass::torqueON(int servoID)
 {
 	pSize = 0x0A;               // 3.Packet size 7-58
@@ -392,7 +392,7 @@ void HerkulexClass::ACK(int valueACK)
 	data[1]=0x01;               // 9. Lenght
 	data[2]=valueACK;           // 10.Value. 0=No Replay, 1=Only reply to READ CMD, 2=Always reply
 	lenghtString=3;             // lenghtData
-  	
+
 	sendRamWrite(data, lenghtString);
 }
 
@@ -405,12 +405,12 @@ byte HerkulexClass::model()
 	data[0]=0x00;               // 8. Address
 	data[1]=0x01;               // 9. Lenght
 	lenghtString=2;             // lenghtData
-  	
+
 	ck1=checksum1(data,lenghtString);	//6. Checksum1
 	ck2=checksum2(ck1);					//7. Checksum2
 
 	dataEx[0] = 0xFF;			// Packet Header
-	dataEx[1] = 0xFF;			// Packet Header	
+	dataEx[1] = 0xFF;			// Packet Header
 	dataEx[2] = pSize;	 		// Packet Size
 	dataEx[3] = pID;			// Servo ID
 	dataEx[4] = cmd;			// Command Ram Write
@@ -423,19 +423,19 @@ byte HerkulexClass::model()
 
 	delay(1);
 	readData(9);
-	
+
 	pSize = dataEx[2];           // 3.Packet size 7-58
 	pID   = dataEx[3];           // 4. Servo ID
 	cmd   = dataEx[4];           // 5. CMD
 	data[0]=dataEx[7];           // 8. 1st byte
 	lenghtString=1;              // lenghtData
-  	
+
 	ck1=checksum1(data,lenghtString);	//6. Checksum1
 	ck2=checksum2(ck1);					//7. Checksum2
 
 	if (ck1 != dataEx[5]) return -1; //checksum verify
 	if (ck2 != dataEx[6]) return -2;
-		
+
 	return dataEx[7];			// return status
 
 }
@@ -450,12 +450,12 @@ void HerkulexClass::set_ID(int ID_Old, int ID_New)
 	data[1]=0x01;               // 9. Lenght
 	data[2]=ID_New;             // 10. ServoID NEW
 	lenghtString=3;             // lenghtData
-  	
+
 	ck1=checksum1(data,lenghtString);	//6. Checksum1
 	ck2=checksum2(ck1);					//7. Checksum2
 
 	dataEx[0] = 0xFF;			// Packet Header
-	dataEx[1] = 0xFF;			// Packet Header	
+	dataEx[1] = 0xFF;			// Packet Header
 	dataEx[2] = pSize;	 		// Packet Size
 	dataEx[3] = pID;			// Servo ID
 	dataEx[4] = cmd;			// Command Ram Write
@@ -479,7 +479,7 @@ void HerkulexClass::clearError(int servoID)
 	data[1]=0x02;               // 9. Lenght
 	data[2]=0x00;               // 10. Write error=0
 	data[3]=0x00;               // 10. Write detail error=0
-	
+
 	lenghtString=4;             // lenghtData
 
 	sendRamWrite(data, lenghtString);
@@ -494,28 +494,28 @@ int HerkulexClass::getPosition(int servoID, bool is0601) {
 	cmd   = HRAMREAD;           // 5. CMD
 	data[0]=0x3A;               // 8. Address
 	data[1]=0x02;               // 9. Lenght
-	
+
 	lenghtString=2;             // lenghtData
-  	
+
 	ck1=checksum1(data,lenghtString);	//6. Checksum1
 	ck2=checksum2(ck1);					//7. Checksum2
 
 	dataEx[0] = 0xFF;			// Packet Header
-	dataEx[1] = 0xFF;			// Packet Header	
+	dataEx[1] = 0xFF;			// Packet Header
 	dataEx[2] = pSize;	 		// Packet Size
 	dataEx[3] = pID;			// Servo ID
 	dataEx[4] = cmd;			// Command Ram Write
 	dataEx[5] = ck1;			// Checksum 1
 	dataEx[6] = ck2;			// Checksum 2
-	dataEx[7] = data[0];      	// Address  
+	dataEx[7] = data[0];      	// Address
 	dataEx[8] = data[1]; 		// Length
-	
+
 	sendData(dataEx, pSize);
 
     delay(1);
 	readData(13);
 
-        	
+
 	pSize = dataEx[2];           // 3.Packet size 7-58
 	pID   = dataEx[3];           // 4. Servo ID
 	cmd   = dataEx[4];           // 5. CMD
@@ -537,7 +537,7 @@ int HerkulexClass::getPosition(int servoID, bool is0601) {
 
 	Position = ((dataEx[10]&maxMSB)<<8) | dataEx[9];
         return Position;
-	
+
 }
 */
 
@@ -549,26 +549,26 @@ int HerkulexClass::getPosition(int servoID, bool is0601) {
 
 // reboot single servo - pay attention 253 - all servos doesn't work!
 void HerkulexClass::reboot(int servoID) {
-        
+
     pSize = 0x07;               // 3.Packet size 7-58
 	pID   = servoID;     	    // 4. Servo ID - 253=all servos
 	cmd   = HREBOOT;            // 5. CMD
     ck1=(pSize^pID^cmd)&0xFE;
-    ck2=(~(pSize^pID^cmd))&0xFE ; ;	
+    ck2=(~(pSize^pID^cmd))&0xFE ; ;
 
 	dataEx[0] = 0xFF;			// Packet Header
-	dataEx[1] = 0xFF;			// Packet Header	
+	dataEx[1] = 0xFF;			// Packet Header
 	dataEx[2] = pSize;	 		// Packet Size
 	dataEx[3] = pID;			// Servo ID
 	dataEx[4] = cmd;			// Command Ram Write
 	dataEx[5] = ck1;			// Checksum 1
 	dataEx[6] = ck2;			// Checksum 2
-	
+
 	sendData(dataEx, pSize);
 
 }
 
-// LED  - see table of colors 
+// LED  - see table of colors
 void HerkulexClass::setLed(int servoID, LedColor valueLed)
 {
 	pSize   = 0x0A;               // 3.Packet size 7-58
@@ -587,7 +587,7 @@ int HerkulexClass::getSpeed(int servoID) {
   int speedy  = 0;
 
   pSize = 0x09;               // 3.Packet size 7-58
-  pID   = servoID;     	   	  // 4. Servo ID 
+  pID   = servoID;     	   	  // 4. Servo ID
   cmd   = HRAMREAD;           // 5. CMD
   data[0]=0x40;               // 8. Address
   data[1]=0x02;               // 9. Lenght
@@ -598,13 +598,13 @@ int HerkulexClass::getSpeed(int servoID) {
   ck2=checksum2(ck1);					//7. Checksum2
 
   dataEx[0] = 0xFF;			// Packet Header
-  dataEx[1] = 0xFF;			// Packet Header	
+  dataEx[1] = 0xFF;			// Packet Header
   dataEx[2] = pSize;		// Packet Size
   dataEx[3] = pID;			// Servo ID
   dataEx[4] = cmd;			// Command Ram Write
   dataEx[5] = ck1;			// Checksum 1
   dataEx[6] = ck2;			// Checksum 2
-  dataEx[7] = data[0]; 	    // Address  
+  dataEx[7] = data[0]; 	    // Address
   dataEx[8] = data[1]; 		// Length
 
   sendData(dataEx, pSize);
@@ -671,18 +671,18 @@ float HerkulexClass::getAngle(int servoID, HerkulexModel model) {
 void HerkulexClass::test_stop(void){
 
     dataEx[0] = 0xFF;				// Packet Header
-    dataEx[1] = 0xFF;				// Packet Header	
+    dataEx[1] = 0xFF;				// Packet Header
     dataEx[2] = 0x0C;	 		// Packet Size
     dataEx[3] = 0x0B;				// Servo ID
     dataEx[4] = 0x06;				// Command Ram Write
     dataEx[5] = 0x6C;				// Checksum 1
     dataEx[6] = 0x92;				// Checksum 2
-    dataEx[7] = 0x64;  		// Execution time	
+    dataEx[7] = 0x64;  		// Execution time
     dataEx[8] = 0x00;
     dataEx[9] = 0x00;
     dataEx[10] = 0x02;
     dataEx[11] = 0x0B;
-  
+
     sendData(dataEx, 0x0C);
 
 }
@@ -692,7 +692,7 @@ void HerkulexClass::test_stop(void){
 void HerkulexClass::motor_stop(int servoID){
 
 	pSize = 0x0C;               // 3.Packet size 7-58
-	pID   = servoID;     	   	  // 4. Servo ID 
+	pID   = servoID;     	   	  // 4. Servo ID
 	cmd   = HSIMULJOG;           // 5. CMD
 	data[0]=0x00;               // 8. Address
 	data[1]=0x00;               // 9. Lenght
@@ -705,13 +705,13 @@ void HerkulexClass::motor_stop(int servoID){
 	Serial.println(ck2);
 
     dataEx[0] = 0xFF;				// Packet Header
-    dataEx[1] = 0xFF;				// Packet Header	
+    dataEx[1] = 0xFF;				// Packet Header
     dataEx[2] = pSize;	 		// Packet Size
     dataEx[3] = pID;				// Servo ID
     dataEx[4] = cmd;				// Command Ram Write
     dataEx[5] = 0x08;				// Checksum 1
     dataEx[6] = 0xF6;				// Checksum 2
-    dataEx[7] = data[0];  		// Execution time	
+    dataEx[7] = data[0];  		// Execution time
     dataEx[8] = data[1];
     dataEx[9] = 0x00;
     dataEx[10] = 0x02;
@@ -733,7 +733,7 @@ void HerkulexClass::motor_stop(int servoID){
     // }
 
     // Serial.println("==========================");
-  
+
     sendData(dataEx, 0x0C);
 
 }-
@@ -852,7 +852,7 @@ uint16_t HerkulexClass::RAMReadSerial(uint8_t servoID, RAMObject obj) {
 			Serial.println(result /10.0f);  // Display as float, e.g., 12.3
 		} else {
 			Serial.println(result);
-		}	
+		}
 
 		return result;
 	}
@@ -1032,17 +1032,17 @@ void HerkulexClass::moveSpeedOne(int servoID, int targSpeed, int totalTime, JogL
 {
 	// if (targSpeed > 1023 || targSpeed < -1023) return;              // speed (goal) non correct
 	// if ((pTime <0) || (pTime > 2856)) return;
-  
+
 	int GoalSpeedSign;
 	if (targSpeed < 0) {
 	  GoalSpeedSign = (-1)* targSpeed ;
-	  GoalSpeedSign |= 0x4000;  //bit number 14 
-	} 
+	  GoalSpeedSign |= 0x4000;  //bit number 14
+	}
 	else {
 	  GoalSpeedSign = targSpeed;
 	}
-	int LSB=GoalSpeedSign & 0X00FF; 		       // MSB speedGoal 
-	int MSB=(GoalSpeedSign & 0xFF00) >> 8;      // LSB speedGoal 
+	int LSB=GoalSpeedSign & 0X00FF; 		       // MSB speedGoal
+	int MSB=(GoalSpeedSign & 0xFF00) >> 8;      // LSB speedGoal
 
 	const bool Mode = true;
     const int maxTick = 254;
@@ -1050,7 +1050,7 @@ void HerkulexClass::moveSpeedOne(int servoID, int targSpeed, int totalTime, JogL
 	timeRemaining = min(int((float)totalTime /11.2), 255);
 
     // Read the starting tick count from motor RAM (Tick address is usually 52)
-    uint8_t startTick = RAMRead(servoID, Tick);	
+    uint8_t startTick = RAMRead(servoID, Tick);
     unsigned long startMillis = millis(); // for backup timing
 
     while (timeRemaining > 0) {
@@ -1104,44 +1104,44 @@ void HerkulexClass::moveSpeedOne(int servoID, int targSpeed, int totalTime, JogL
 	// Move back to the snapped angle
 	moveOneAngle(servoID, snappedAngle, 2000,  valueLed, model, false);
 }
-	// int SetValue = (1<<1) | (1<<valueLed);// | valueLed; //iGreen*4+iBlue*8+iRed*16;		//assign led value 
-  
+	// int SetValue = (1<<1) | (1<<valueLed);// | valueLed; //iGreen*4+iBlue*8+iRed*16;		//assign led value
+
 	// playTime=int((float)pTime/11.2);				// 8. Execution time
-  
+
 	// pSize = 0x0C;              					// 3.Packet size 7-58
 	// cmd   = HSIMULJOG;      					        // 5. CMD
-  
+
 	// data[0]=speedGoalLSB;            			    // 8. speedLSB
 	// data[1]=speedGoalMSB;              			// 9. speedMSB
 	// data[2]=SetValue;                          	// 10. Mode=0;
 	// data[3]=servoID;                    			// 11. ServoID
-  
+
 	// pID=servoID^playTime;
-  
+
 	// lenghtString=4;             					// lenghtData
-  
+
 	// ck1=checksum1(data,lenghtString);				//6. Checksum1
 	// ck2=checksum2(ck1);							//7. Checksum2
 
 	// Serial.println("Check 1 and 2 ");
 	// Serial.println(ck1);
 	// Serial.println(ck2);
-  
+
 	// pID=servoID;
-  
+
 	// dataEx[0] = 0xFF;				// Packet Header
-	// dataEx[1] = 0xFF;				// Packet Header	
+	// dataEx[1] = 0xFF;				// Packet Header
 	// dataEx[2] = pSize;	 		// Packet Size
 	// dataEx[3] = pID;				// Servo ID
 	// dataEx[4] = cmd;				// Command Ram Write
 	// dataEx[5] = ck1;				// Checksum 1
 	// dataEx[6] = ck2;				// Checksum 2
-	// dataEx[7] = playTime;  		// Execution time	
+	// dataEx[7] = playTime;  		// Execution time
 	// dataEx[8] = data[0];
 	// dataEx[9] = data[1];
 	// dataEx[10] = data[2];
 	// dataEx[11] = data[3];
-	
+
 	// sendData(dataEx, pSize);
 
 	// Serial.print("DataPacket playTime: ");
@@ -1152,7 +1152,7 @@ void HerkulexClass::moveSpeedOne(int servoID, int targSpeed, int totalTime, JogL
 	// Serial.println(pID);
 
 	// unsigned long startTime = millis();
-	
+
 	// while ((millis() - startTime) < pTime) {
 	// 	delay(1);  // Small delay to prevent CPU overload
 	// }
@@ -1194,7 +1194,7 @@ void HerkulexClass::moveOne(int servoID, int targPosition, int pTime, JogLedColo
 
   bool Mode = false;
 
-  int SetValue = (1<<valueLed);	//assign led value 
+  int SetValue = (1<<valueLed);	//assign led value
 
   playTime=int((float)pTime/11.2);			// 8. Execution time
 
@@ -1219,13 +1219,13 @@ void HerkulexClass::moveOne(int servoID, int targPosition, int pTime, JogLedColo
 //   pID=servoID;
 
 //   dataEx[0] = 0xFF;				// Packet Header
-//   dataEx[1] = 0xFF;				// Packet Header	
+//   dataEx[1] = 0xFF;				// Packet Header
 //   dataEx[2] = pSize;	 		// Packet Size
 //   dataEx[3] = pID;				// Servo ID
 //   dataEx[4] = cmd;				// Command Ram Write
 //   dataEx[5] = ck1;				// Checksum 1
 //   dataEx[6] = ck2;				// Checksum 2
-//   dataEx[7] = playTime;  		// Execution time	
+//   dataEx[7] = playTime;  		// Execution time
 //   dataEx[8] = data[0];
 //   dataEx[9] = data[1];
 //   dataEx[10] = data[2];
@@ -1285,7 +1285,7 @@ void HerkulexClass::moveOneAngle(int servoID, float angle, int pTime, JogLedColo
             lastUpdate = millis();
 
 			if(showStatus){
-				RAMReadSerial(servoID, StatusAll); //optional to print out the statuses of the motor being called 
+				RAMReadSerial(servoID, StatusAll); //optional to print out the statuses of the motor being called
 			}
             // Read the current position
             currentPos = RAMRead(servoID, AbsolutePosition);
@@ -1392,14 +1392,14 @@ void HerkulexClass::moveSpeedAll(int servoID, int Goal, JogLedColor valueLed, He
 	  int GoalSpeedSign;
 	  if (Goal < 0) {
 		GoalSpeedSign = (-1)* Goal ;
-		GoalSpeedSign |= 0x4000;  //bit n�14 
-	  } 
+		GoalSpeedSign |= 0x4000;  //bit n�14
+	  }
 	  else {
 		GoalSpeedSign = Goal;
 	  }
 
-	  int speedGoalLSB=GoalSpeedSign & 0X00FF; 	      		 // MSB speedGoal 
-	  int speedGoalMSB=(GoalSpeedSign & 0xFF00) >> 8;        // LSB speedGoal 
+	  int speedGoalLSB=GoalSpeedSign & 0X00FF; 	      		 // MSB speedGoal
+	  int speedGoalMSB=(GoalSpeedSign & 0xFF00) >> 8;        // LSB speedGoal
 
 	  addData(speedGoalLSB, speedGoalMSB, SetValue, servoID);		//add servo data to list, speed mode
 }
@@ -1494,21 +1494,21 @@ void HerkulexClass::actionAll(int pTime, bool showStatus)
     pSize = 0x08 + conta;     	    // 3.Packet size 7-58
 	cmd   = HSIMULJOG;		 			// 5. CMD SJOG Write n servo with same execution time
 	playTime=int((float)pTime/11.2);// 8. Execution time
- 
+
     pID=0xFE^playTime;
     ck1=checksum1(moveData,conta);	//6. Checksum1
 	ck2=checksum2(ck1);				//7. Checksum2
 
     pID=0xFE;
 	dataEx[0] = 0xFF;				// Packet Header
-	dataEx[1] = 0xFF;				// Packet Header	
+	dataEx[1] = 0xFF;				// Packet Header
 	dataEx[2] = pSize;	 			// Packet Size
 	dataEx[3] = pID;				// Servo ID
 	dataEx[4] = cmd;				// Command Ram Write
 	dataEx[5] = ck1;				// Checksum 1
 	dataEx[6] = ck2;				// Checksum 2
-	dataEx[7] = playTime;			// Execution time	
-	
+	dataEx[7] = playTime;			// Execution time
+
 	// Serial.println("Sending motor movement data:");
     // for (int i = 0; i < conta; i++) {
     //     Serial.print("Data[");
@@ -1518,9 +1518,9 @@ void HerkulexClass::actionAll(int pTime, bool showStatus)
     // }
 
 	for (int i=0; i < conta; i++)
-		dataEx[i+8]=moveData[i];	// Variable servo data	
+		dataEx[i+8]=moveData[i];	// Variable servo data
 	sendData(dataEx, pSize);
-	
+
 
 	const unsigned long updateInterval = 20;
     unsigned long lastUpdate = millis();
@@ -1565,7 +1565,7 @@ void HerkulexClass::actionAll(int pTime, bool showStatus)
 // void HerkulexClass::moveOneAngle(int servoID, float angle, int pTime, JogLedColor valueLed, HerkulexModel model) {
 //     // int conversionFactor = is0601 ? 2 : 1; // 0601 ranges from 0-2047, 2x that of 0201/0101
 // 	// int position = (int)(conversionFactor * (angle/0.325 + 512));
-	
+
 // 	// moveOne(servoID, position, pTime, valueLed, is0601);
 // 	int center = 0;
 //     float degreesPerUnit = 0.0;
@@ -1586,7 +1586,7 @@ void HerkulexClass::actionAll(int pTime, bool showStatus)
 //         case MODEL_0201:
 //             center = 512;
 //             degreesPerUnit = 0.325;
-// 			posLimit = 1023; 
+// 			posLimit = 1023;
 //             break;
 //     }
 
@@ -1615,7 +1615,7 @@ void HerkulexClass::actionAll(int pTime, bool showStatus)
 // 		}
 // }
 
-// write registry in the RAM: one byte 
+// write registry in the RAM: one byte
 // void HerkulexClass::writeRegistryRAM(int servoID, int address, int writeByte)
 // {
 //   pSize = 0x0A;               	// 3.Packet size 7-58
@@ -1624,14 +1624,14 @@ void HerkulexClass::actionAll(int pTime, bool showStatus)
 //   data[0]=address;              // 8. Address
 //   data[1]=0x01;               	// 9. Lenght
 //   data[2]=writeByte;            // 10. Write error=0
- 
+
 //   lenghtString=3;             	// lenghtData
 
 //   ck1=checksum1(data,lenghtString);	//6. Checksum1
 //   ck2=checksum2(ck1);				//7. Checksum2
 
 //   dataEx[0] = 0xFF;			// Packet Header
-//   dataEx[1] = 0xFF;			// Packet Header	
+//   dataEx[1] = 0xFF;			// Packet Header
 //   dataEx[2] = pSize;	 	// Packet Size
 //   dataEx[3] = pID;			// Servo ID
 //   dataEx[4] = cmd;			// Command Ram Write
@@ -1646,7 +1646,7 @@ void HerkulexClass::actionAll(int pTime, bool showStatus)
 
 // }
 
-// // write registry in the EEP memory (ROM): one byte 
+// // write registry in the EEP memory (ROM): one byte
 // void HerkulexClass::writeRegistryEEP(int servoID, int address, int writeByte)
 // {
 //   pSize = 0x0A;                  // 3.Packet size 7-58
@@ -1655,14 +1655,14 @@ void HerkulexClass::actionAll(int pTime, bool showStatus)
 //   data[0]=address;               // 8. Address
 //   data[1]=0x01;                  // 9. Lenght
 //   data[2]=writeByte;             // 10. Write error=0
- 
+
 //   lenghtString=3;           	 // lenghtData
 
 //   ck1=checksum1(data,lenghtString);	//6. Checksum1
 //   ck2=checksum2(ck1);				//7. Checksum2
 
 //   dataEx[0] = 0xFF;			// Packet Header
-//   dataEx[1] = 0xFF;			// Packet Header	
+//   dataEx[1] = 0xFF;			// Packet Header
 //   dataEx[2] = pSize;		// Packet Size
 //   dataEx[3] = pID;			// Servo ID
 //   dataEx[4] = cmd;			// Command Ram Write
@@ -1684,11 +1684,11 @@ void HerkulexClass::actionAll(int pTime, bool showStatus)
 // checksum1
 int HerkulexClass::checksum1(byte* data, int lenghtString)
 {
-  XOR = 0;	
+  XOR = 0;
   XOR = XOR ^ pSize ^ pID ^ cmd;
 //   XOR = XOR ^ pID;
 //   XOR = XOR ^ cmd;
-  for (int i = 0; i < lenghtString; i++) 
+  for (int i = 0; i < lenghtString; i++)
   {
     XOR = XOR ^ data[i];
   }
@@ -1705,7 +1705,7 @@ int HerkulexClass::checksum2(int XOR)
 // add data to variable list servo for syncro execution
 void HerkulexClass::addData(int GoalLSB, int GoalMSB, int set, int servoID)
 {
-  moveData[conta++]=GoalLSB;  
+  moveData[conta++]=GoalLSB;
   moveData[conta++]=GoalMSB;
   moveData[conta++]=set;
   moveData[conta++]=servoID;
@@ -1783,7 +1783,7 @@ int HerkulexClass::readData(int size)
         		Time_Counter++;
         		delayMicroseconds(1000);
 		}
-        	
+
 		while (Serial2.available() > 0){
 			byte inchar = (byte)Serial2.read();
 			if ( (inchar == 0xFF) & ((byte)Serial2.peek() == 0xFF) ){

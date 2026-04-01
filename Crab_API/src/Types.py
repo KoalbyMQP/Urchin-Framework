@@ -6,16 +6,14 @@ class Item:
     """
 
     """
-    def __init__(self, motor: int, model: int, command: str, values: List[Union[int, float, bool]]) -> None:
+    def __init__(self, joint: str, command: str, values: List[Union[int, float, bool]]) -> None:
         """
         Makes a smart item
-        :param motor: motor ID number
-        :param model: model ID number
+        :param joint: motor joint name
         :param command: Command name
         :param values: list of values for command
         """
-        self.motor = motor
-        self.model = model
+        self.joint = joint
         self.command = command
         self.values = values
         for i in range(len(self.values)):
@@ -25,10 +23,10 @@ class Item:
     def Press(self, Instance: Union[int, float, bool]) -> Optional[bytes]:
         if (isinstance(Instance, int)):
             bytes = struct.pack('i', Instance)
-            return b"I"+bytes
+            return b"I" + bytes
         if (isinstance(Instance, float)):
             bytes = struct.pack('f', Instance)
-            return b"F"+bytes
+            return b"F" + bytes
         if (isinstance(Instance, bool)):
             bytes = struct.pack('B', Instance)
             return b"B" + bytes
@@ -49,9 +47,7 @@ class React:
 class Restraints:
     type: str
     value: int
-    def __init__(self,type:str, value: int) -> None:
+
+    def __init__(self, type:str, value: int) -> None:
         self.type = type
         self.value = value
-
-
-

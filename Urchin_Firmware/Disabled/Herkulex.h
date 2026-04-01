@@ -1,35 +1,35 @@
 
 /*
 
- Hekulex.h - Library for Dongbu Herkulex DRS-0101/DRS-0201 
+ Hekulex.h - Library for Dongbu Herkulex DRS-0101/DRS-0201
  Copyright (c) 2012 - http://robottini.altervista.org
  Created by Alessandro on 09/12/2012.
- 
+
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
  License as published by the Free Software Foundation; either
  version 2.1 of the License, or (at your option) any later version.
- 
- This library is distributed in the hope that it will be useful,  
+
+ This library is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  Lesser General Public License for more details.
- 
+
  You should have received a copy of the GNU Lesser General Public
  License along with this library; if not, write to the Free Software
  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
- 
+
  Herkulex.h.ignore
     PLEASE START READING: Herkulex Servo Manual (http://www.hovis.co.kr/guide/herkulexeng.pdf)
  *****************************************************************************
- 
+
  IMPORTANT:
 
   The library works on Arduino UNO/2009 - Arduino Mega.
   Please with Arduino UNO/2009 works with SoftwareSerial library modified with baud rate 57.600.
   Use this begin type:
 		begin(57600, int rx, int tx);
- 
+
   For Arduino Mega, please use baud rate 115.200
 
  *****************************************************************************
@@ -37,7 +37,7 @@
  Web:     http://robottini.altervista.org
  Autor:   Alessandro Giacomel
  Updater: Gabriel Weaver 6/23/2025
- *****************************************************************************  
+ *****************************************************************************
 */
 
 #ifdef __cplusplus
@@ -172,17 +172,17 @@ public:
   void  beginSerial2(long baud);
   void  beginSerial3(long baud);
   void  end();
-  
+
   void  initialize();
   StatusData  stat(int servoID);
   void  ACK(int valueACK);
   byte  model();
   void  set_ID(int ID_Old, int ID_New);
   void  clearError(int servoID);
-  
+
   void  torqueON(int servoID);
   void  torqueOFF(int servoID);
-  
+
   void  moveAll(int servoID, int Goal, JogLedColor valueLed, HerkulexModel model);
   void  moveSpeedAll(int servoID, int Goal, JogLedColor valueLed, HerkulexModel model);
   void  moveAllAngle(int servoID, float angle, JogLedColor valueLed, HerkulexModel model);
@@ -203,12 +203,12 @@ public:
   int   getPosition(int servoID);
   float getAngle(int servoID, HerkulexModel model);
   int   getSpeed(int servoID);
-		
+
   void  reboot(int servoID);
   void  setLed(int servoID, LedColor valueLed);
   void  test_stop(void);
   void  motor_stop(int servoID);
- 
+
   void  writeRegistryRAM(int servoID, int address, int writeByte);
   void  writeRegistryEEP(int servoID, int address, int writeByte);
 
@@ -219,7 +219,7 @@ public:
   uint16_t RAMRead(uint8_t servoID, RAMObject obj);
   uint16_t RAMReadSerial(uint8_t servoID, RAMObject obj);
 
-  
+
   int pSize;
   int pID;
   int cmd;
@@ -227,27 +227,27 @@ public:
   int ck1;
   int ck2;
   byte dataEx[DATA_MOVE+8];
-  byte data[DATA_SIZE]; 
+  byte data[DATA_SIZE];
   byte moveData[DATA_MOVE];
 
-// private area  
+// private area
 private:
-  
-  
+
+
   void addData(int GoalLSB, int GoalMSB, int set, int servoID);
   int  checksum1(byte* data, int lenghtString);
-  
+
   void clearBuffer();
   void printHexByte(byte x);
 
   uart_port_t port;
-  
-  
+
+
   int conta;
-  
+
   int XOR;
   int playTime;
- 
+
 };
 
 extern HerkulexClass Herkulex;

@@ -60,10 +60,3 @@ void RollINIT(TapeRoll *Roll){
     Roll->strip[i]=0U;
   }
 }
-
-
-
-
-
-
-
