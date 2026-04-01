@@ -164,9 +164,21 @@ class Crab:
 
         # todo
         # send "GetHealth" to esp32 along with the type
-        self.serial.write(("GetHealth" + type).encode('utf-8'))
+        self.serial.send_packet(0,("GetHealth" + type).encode('utf-8'))
 
-        return self.serial.readline()
+        #if (type == "AckCheck"):
+
+           # AckCheckRead = self.serial.readline()
+            #while (not AckCheckRead == b'AckCheck:done'):
+
+
+
+
+
+
+
+
+
 
     def close(self) -> None:
         self.Alive = False

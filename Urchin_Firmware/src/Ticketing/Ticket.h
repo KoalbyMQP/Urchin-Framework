@@ -54,8 +54,18 @@ typedef struct{
        */
     extern Ticket TicketDock[sizeof(TickNumType)*StripSize];
 
-    int TicketFindOpen(Ticket* Tickets[]);
-    void TicketClose(Ticket* ticket);
+/**
+ *
+ * @param Tickets
+ * @return
+ */
+int TicketFindOpen(Ticket* Tickets[]);
+
+/**
+ *
+ * @param ticket
+ */
+void TicketClose(Ticket* ticket);
 
 
 #ifdef __cplusplus

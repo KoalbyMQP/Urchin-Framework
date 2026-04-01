@@ -52,6 +52,8 @@
 #define Herkulex_h
 
 
+#include <optional>
+
 #include "freertos/FreeRTOS.h"
 #include "driver/uart.h"
 #include "DataTypes.h"
@@ -289,7 +291,7 @@ public:
    * @param servoID
    * @return
    */
-  StatusData  stat(int servoID);
+  std::optional<StatusData>  stat(int servoID);
 
 
   /**

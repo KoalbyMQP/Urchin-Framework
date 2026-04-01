@@ -316,8 +316,7 @@ void HerkulexClass::initialize()
 }
 
 // stat
-StatusData HerkulexClass::stat(int servoID)
-{
+std::optional<StatusData> HerkulexClass::stat(int servoID){
 	// int TotalBits = 8; //Total Bits sent in the status byte
 	const char* StatusErrorMessages[] = {
 		"Exceed Allowed Input Voltage Limit", //Exceeding the Voltage Limit Input of the Motors, 7.4V for 0101/0201, 12V for the 0401/0601
@@ -358,8 +357,11 @@ StatusData HerkulexClass::stat(int servoID)
 
 	sendData(dataEx, pSize);
 	delay(2);
-	readData(9); 				// read 9 bytes from serial
+	int bytesRead = readData(9); 				// read 9 bytes from serial
 
+		if (bytesRead != 9) {
+			return std::nullopt;   // no response
+		}
 
 	pSize = dataEx[2];           // 3.Packet size 7-58
 	pID   = dataEx[3];           // 4. Servo ID
@@ -372,8 +374,8 @@ StatusData HerkulexClass::stat(int servoID)
     ck1 = (dataEx[2]^dataEx[3]^dataEx[4]^dataEx[7]^dataEx[8]) & 0xFE;
 	ck2=~(ck1);
 
-	if (ck1 != dataEx[5]) return {static_cast<byte>(-1), 0};
-    if (ck2 != dataEx[6]) return {static_cast<byte>(-2), 0};
+	if (ck1 != dataEx[5]) return StatusData{static_cast<byte>(-1), 0};
+    if (ck2 != dataEx[6]) return StatusData{static_cast<byte>(-2), 0};
 
 	byte status1 = dataEx[7];
 	byte status2 = dataEx[8];
@@ -406,7 +408,7 @@ StatusData HerkulexClass::stat(int servoID)
 		}
 		PrintfToPI(DebugQueue,0,(StatusMessage+"\n").c_str());
 		PrintfToPI(DebugQueue,0,(StatusDetail+"\n").c_str());
-		return {status1, status2};
+		return StatusData{status1, status2};
 	}
 }
 
@@ -1689,11 +1691,10 @@ void HerkulexClass::sendData(byte* buffer, int length) {
 
 
 int HerkulexClass::readData(int size){
-	int i = 0;
-	byte* bpt = &dataEx[9];
-	(void) uart_read_bytes(port, bpt, size, pdMS_TO_TICKS(10));
-	vTaskDelay(10 / portTICK_PERIOD_MS);
-	return i;
+	byte* bpt = &dataEx[0];
+	int bytesRead = uart_read_bytes(port, bpt, size, pdMS_TO_TICKS(50));
+	vTaskDelay(5 / portTICK_PERIOD_MS);
+	return bytesRead;
 }
 
 void HerkulexClass::SetIndirect(bool indirect) {

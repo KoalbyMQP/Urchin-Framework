@@ -35,11 +35,36 @@ typedef struct{
     extern unsigned char BRIDGEsize;
     //extern SemaphoreHandle_t BRIDGEMutex;
 
-    void BridgeInit();
+/**
+ *
+ */
+void BridgeInit();
 
-    void AddBridge(BridgeMotor* mem);
+/**
+ *
+ * @param mem
+ */
+void AddBridge(BridgeMotor* mem);
 
-    BridgeMotor* GetBridge(const char joint[]);
+/**
+ *
+ * @param joint
+ * @return
+ */
+BridgeMotor* GetBridge(const char joint[]);
+
+/**
+ *
+ * @return
+ */
+int GetBridgeMotorSize();
+
+/**
+ *
+ * @param index
+ * @return
+ */
+BridgeMotor* GetBridgeN(int index);
 
 #ifdef __cplusplus
 }

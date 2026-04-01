@@ -34,7 +34,7 @@ static AngleSet HerkuleXMotorBounds[]={//has max size see Receving.h
     {0,1023,-166.7f,166.7f}, //MODEL_0101
     {0,1023,-166.7f,166.7f}, //MODEL_0201
     {0,2047,-166.7f,166.6f}, //MODEL_0601
-    {0,2047,-166.7f,166.6f} //MODEL_0602
+    {0,32767,-456.2f,456.2f} //MODEL_0602
 };
 
 
@@ -123,8 +123,7 @@ int FormatTicket(unsigned char VPID, const char* buffer) {
 
     const char TicketType = *(buffer);
     volatile unsigned int TicketNum = TicketFindOpen(Tickets);
-    volatile unsigned int TicketNum2 = TicketFindOpen(Tickets);
-    volatile unsigned int TicketNum3 = TicketFindOpen(Tickets);
+
     //send NoFreeTicket if non are found
     if (TicketNum == -1) {
         Platter.I=URCHIN_ERROR_NoFreeTicket; //unsigned int
@@ -146,7 +145,7 @@ int FormatTicket(unsigned char VPID, const char* buffer) {
 
     Ticket *TicketPoint = (Ticket*) pvPortMalloc(sizeof(Ticket));
     if (TicketPoint == nullptr) {
-        //todo throw error
+        PrintfToPI(DebugQueue,VPID,"FormatTicket:pvPortMalloc Failed");
         return -1;
     }else {
         memset(TicketPoint,0,sizeof(Ticket));
@@ -182,7 +181,6 @@ int FormatTicket(unsigned char VPID, const char* buffer) {
 int LoadTicket(unsigned char VPID, const char* buffer) {
     (void) PrintfToPI(DebugQueue,0,"LoadTicket called");
 
-
     #pragma pack(push, 1)  // No padding between fields
         typedef struct{
             unsigned int ticket;
@@ -206,109 +204,201 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
     #pragma pack(pop)
 
 
-     PacketHeader *Header = (PacketHeader*) buffer;
+    PacketHeader Header;
+    memcpy(&Header, buffer, sizeof(PacketHeader));
 
-    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:ticket:%d",Header->ticket);
-    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Joint:%s",Header->joint);
-    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:command_len:%d",Header->command_len);
-    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:values_len:%d",Header->values_len);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:ticket:%d",Header.ticket);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Joint:%s",Header.joint);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:command_len:%d",Header.command_len);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:values_len:%d",Header.values_len);
 
     char command[255]={0};
-    strncpy(command,buffer+sizeof(PacketHeader),Header->command_len);
 
-
-    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:command:%s",command);
-
-    const char *PostHead = buffer + sizeof(PacketHeader) + Header->command_len;
-
-
-    Data Variables[Header->values_len];
-
-    for (int i = 0; i < Header->values_len; ++i) {
-        //(void)(PrintfToPI)(DebugQueue,0,"LoadTicket:data Run:%d",i);
-        Data *CurrentData = (Data*)(PostHead+(sizeof(Data)*i));
-        memcpy(&Variables[i],CurrentData,sizeof(Data));
-
-        // (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:data type:%c",CurrentData->Type);
-        //
-        // if (CurrentData->Type=='I') {
-        //     (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:data:%d",CurrentData->Data.Int);
-        // }
-        //
-        // if (CurrentData->Type=='F') {
-        //     (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:data:%F",CurrentData->Data.Float);
-        // }
-        //
-        // if (CurrentData->Type=='B') {
-        //     (void)(PrintfToPI)(DebugQueue,0,"LoadTicket:data:%u",CurrentData->Data.Byte);
-        // }
-    }
-    //
-
-    BridgeMotor* Joint = GetBridge(Header->joint);
-
-    if (Joint == NULL) {// could not find Joint in bridge list
-        (void) PrintfToPI(DebugQueue,0,"joint not found");
+    if (Header.command_len >= sizeof(command)) {
         return -1;
     }
 
-    //Todo: Add a catch to see if the Joint was found and if not send an error to the Pi that it will pass up to the user.
+    memset(command, 0, sizeof(command));
+    memcpy(command, buffer + sizeof(PacketHeader), Header.command_len);
+    command[Header.command_len] = '\0';
 
-    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:ServoID:%d",Joint->Num);
-    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Brand:%s",Joint->Brand);
-    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Model:%s",Joint->Model);
+    (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:command:%s",command);
 
-
-    int MotorNum = Joint->Num;
-    if (strcmp(Joint->Brand,"HerkuleX")==0) {
+    const char *PostHead = buffer + sizeof(PacketHeader) + Header.command_len;
 
 
-        HerkulexModel Model = MODEL_None;
+    if (Header.values_len > MAX_VALUES_LEN) {
+       (void) PrintfToPI(DebugQueue, VPID, "ERROR: values_len too large: %d (max %d)", Header.values_len, MAX_VALUES_LEN);
+        return -1;
+    }
 
-        if (strcmp(Joint->Model,"0101")==0) {
-             Model = MODEL_0101;
-        }else if (strcmp(Joint->Model,"0201")==0) {
-             Model = MODEL_0201;
-        }else if (strcmp(Joint->Model,"0601")==0) {
-             Model = MODEL_0601;
-        }else if (strcmp(Joint->Model,"0602")==0) {
-             Model = MODEL_0602;
+    Data Variables[MAX_VALUES_LEN];
+    memset(Variables, 0, sizeof(Variables));
+
+    for (int i = 0; i < Header.values_len; ++i) {
+        memcpy(&Variables[i], PostHead + (sizeof(Data) * i), sizeof(Data));
+    }
+
+    if (strncmp(command,"MoveOne",8) == 0) {
+        BridgeMotor* Joint = GetBridge(Header.joint);
+
+        if (Joint == NULL) {// could not find Joint in bridge list
+            (void) PrintfToPI(DebugQueue,0,"joint not found");
+            return -1;
         }
 
+        //Todo: Add a catch to see if the Joint was found and if not send an error to the Pi that it will pass up to the user.
+
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:ServoID:%d",Joint->Num);
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Brand:%s",Joint->Brand);
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Model:%s",Joint->Model);
+
+
+        int MotorNum = Joint->Num;
+        if (strcmp(Joint->Brand,"HerkuleX")==0) {
+
+
+            HerkulexModel Model = MODEL_None;
+
+            if (strcmp(Joint->Model,"0101")==0) {
+                Model = MODEL_0101;
+            }else if (strcmp(Joint->Model,"0201")==0) {
+                Model = MODEL_0201;
+            }else if (strcmp(Joint->Model,"0601")==0) {
+                Model = MODEL_0601;
+            }else if (strcmp(Joint->Model,"0602")==0) {
+                Model = MODEL_0602;
+            }
 
 
 
-        //Bridge bounds check
-        if (Variables[0].Data.Float < (float)Joint->BoundsMin || Variables[0].Data.Float > (float)Joint->BoundsMax) {
-            (void)(PrintfToPI)(DebugQueue, VPID, "ERROR: %f is out of range (%d to %d)",
-                                Variables[0].Data.Float, Joint->BoundsMin, Joint->BoundsMax);
-            return URCHIN_ERROR_OutOf_Bounds;
+
+            //Bridge bounds check
+            if (Variables[0].Data.Float < (float)Joint->BoundsMin || Variables[0].Data.Float > (float)Joint->BoundsMax) {
+                (void)(PrintfToPI)(DebugQueue, VPID, "ERROR: %f is out of range (%d to %d)",
+                                    Variables[0].Data.Float, Joint->BoundsMin, Joint->BoundsMax);
+                return URCHIN_ERROR_OutOf_Bounds;
+            }
+
+            (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Angle:%f",Variables[0].Data.Float);
+            int Pos = AngleToPoint(HerkuleXMotorBounds[Model],(double)Variables[0].Data.Float);
+            (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:pos:%d",Pos);
+            (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:time:%d",Variables[1].Data.Int);
+
+
+
+
+
+            Herkulex.torqueON(MotorNum);
+            //Herkulex.RAMRead(MotorNum,Torque);
+            Herkulex.moveOne(MotorNum,Pos, Variables[1].Data.Int*PTime, static_cast<JogLedColor>(Variables[2].Data.Int), Model);
+
+
+            //Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),Herkulex.BusPacketLength,VPID,NULL);
+            //InsertionHead(&Tickets[Header.ticket]->Packets,Stamp);
+            //if (Tickets[Header.ticket] == NULL) {
+            //    PrintfToPI(DebugQueue, VPID, "Invalid ticket");
+            //    return -1;
+            //}
+
+            //if (Tickets[Header.ticket]->Packets == NULL) {
+            //    (void) PrintfToPI(DebugQueue,VPID,"Load: No packets in ticket");
+            //}
+        }
+    }
+
+
+    if (strncmp(command,"GetAngle",9) == 0) {
+        BridgeMotor* Joint = GetBridge(Header.joint);
+
+        if (Joint == NULL) {// could not find Joint in bridge list
+            (void) PrintfToPI(DebugQueue,0,"joint not found");
+            return -1;
         }
 
-        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Angle:%f",Variables[0].Data.Float);
-        int Pos = AngleToPoint(HerkuleXMotorBounds[Model],(double)Variables[0].Data.Float);
-        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:pos:%d",Pos);
-        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:time:%d",Variables[1].Data.Int);
+        //Todo: Add a catch to see if the Joint was found and if not send an error to the Pi that it will pass up to the user.
+
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:ServoID:%d",Joint->Num);
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Brand:%s",Joint->Brand);
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Model:%s",Joint->Model);
 
 
+        int MotorNum = Joint->Num;
+        if (strcmp(Joint->Brand,"HerkuleX")==0) {
 
 
+            HerkulexModel Model = MODEL_None;
 
-        Herkulex.torqueON(MotorNum);
-        Herkulex.RAMRead(MotorNum,Torque);
-        Herkulex.moveOne(MotorNum,Pos, Variables[1].Data.Int*PTime, static_cast<JogLedColor>(Variables[2].Data.Int), Model);
+            if (strcmp(Joint->Model,"0101")==0) {
+                Model = MODEL_0101;
+            }else if (strcmp(Joint->Model,"0201")==0) {
+                Model = MODEL_0201;
+            }else if (strcmp(Joint->Model,"0601")==0) {
+                Model = MODEL_0601;
+            }else if (strcmp(Joint->Model,"0602")==0) {
+                Model = MODEL_0602;
+            }
+
+            int RawAngle = Herkulex.getPosition(MotorNum);
+            double Angle = PointToAngle(HerkuleXMotorBounds[Model],RawAngle);
+            PrintfToPI(DebugQueue,VPID,"RawTicket:%lf",Angle);
 
 
-        Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),Herkulex.BusPacketLength,VPID,NULL);
-       InsertionHead(&Tickets[Header->ticket]->Packets,Stamp);
-        if (Tickets[Header->ticket]->Packets==NULL) {
-            (void) PrintfToPI(DebugQueue,VPID,"Load: No packets in ticket");
         }
+    }
+
+
+    if (strncmp(command,"SetTorque",10) == 0) {
+        BridgeMotor* Joint = GetBridge(Header.joint);
+
+        if (Joint == NULL) {// could not find Joint in bridge list
+            (void) PrintfToPI(DebugQueue,0,"joint not found");
+            return -1;
         }
+
+        //Todo: Add a catch to see if the Joint was found and if not send an error to the Pi that it will pass up to the user.
+
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:ServoID:%d",Joint->Num);
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Brand:%s",Joint->Brand);
+        (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:Model:%s",Joint->Model);
+
+
+        int MotorNum = Joint->Num;
+        if (strcmp(Joint->Brand,"HerkuleX")==0) {
+
+
+            HerkulexModel Model = MODEL_None;
+
+            if (strcmp(Joint->Model,"0101")==0) {
+                Model = MODEL_0101;
+            }else if (strcmp(Joint->Model,"0201")==0) {
+                Model = MODEL_0201;
+            }else if (strcmp(Joint->Model,"0601")==0) {
+                Model = MODEL_0601;
+            }else if (strcmp(Joint->Model,"0602")==0) {
+                Model = MODEL_0602;
+            }
+
+
+            if (Variables[0].Data.Int == 0) {
+                Herkulex.torqueOFF(MotorNum);
+            }
+            if (Variables[0].Data.Int == 1) {
+                Herkulex.torqueON(MotorNum);
+
+            }
+            if (Variables[0].Data.Int == 2) {
+                Herkulex.torqueOFF(0xFE);
+            }
+            if (Variables[0].Data.Int == 3) {
+                Herkulex.torqueON(0xFE);
+            }
+
+        }
+    }
 
     return 0;
 }
-
 
 
 
@@ -357,7 +447,6 @@ return 0;
 }
 
 
-
 int GetHealth(unsigned char VPID, const char* buffer) {
     Herkulex.stat(7);
     if (0== strcmp("FreeRam",buffer)) {
@@ -372,14 +461,32 @@ int GetHealth(unsigned char VPID, const char* buffer) {
 
     }
     if (0== strcmp("AckCheck",buffer)) {
+        (void) PrintfToPI(DebugQueue,VPID,"GetHealth:AckCheck");
+        for (int i = 0; i < GetBridgeMotorSize(); ++i) {
+            BridgeMotor* motor = GetBridgeN(i);
+            auto data = Herkulex.stat(motor->Num);
+            (void) PrintfToPI(DebugQueue,VPID,"GetHealth:AckCheck:Checking %d",motor->Num);
+            if (!data.has_value()) {
+                (void) PrintfToPI(DebugQueue,VPID,"HM%d00",motor->Num);
+            }else {
+                (void) PrintfToPI(DebugQueue,VPID,"HF%d%c%c",motor->Num,data->StatusDetail,data->StatusError);
+            }
+        }
+        (void) PrintfToPI(DebugQueue,VPID,"AckCheck:done");
+        }
 
-    }
+
+
+
 
 
     //(void) PrintfToPI(ExchangeQueue,"GetHealth is being added");
     //DoSomething();
 return 0;
 }
+
+
+int SetHealth(unsigned char VPID, const char* buffer) {return 0;}
 
 
 int Bridge(unsigned char VPID, const char* buffer) {

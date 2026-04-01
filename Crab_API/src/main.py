@@ -16,19 +16,49 @@ def main() -> None:
 
     time.sleep(1)
 
-    command = HerkuleX.MoveOne("Sholder", float(-23), 40, JogLedColor.LED_BLUE)
-    ticket = test.send(TicketType.Asynchronous,[command],None,False)
-    print("Main:ticket" + str(ticket))
 
-    time.sleep(3)
-    print("\n\n\n\n\n\n")
-    command = HerkuleX.MoveOne("Sholder", float(23), 40, JogLedColor.LED_GREEN)
-    ticket = test.send(TicketType.Asynchronous, [command], None, False)
-    print("Main:ticket" + str(ticket))
+    while True:
+
+        test.GetHealth("AckCheck")
 
 
 
-    time.sleep(4)
+
+
+        #command = HerkuleX.SetTorque(True,"",True)
+        #ticket = test.send(TicketType.Asynchronous, [command], None, False)
+        #print("Main:ticket" + str(ticket))
+
+        time.sleep(1)
+        command = HerkuleX.MoveOne("Shoulder", float(-23), 40, JogLedColor.LED_BLUE)
+        ticket = test.send(TicketType.Asynchronous,[command],None,False)
+        print("Main:ticket" + str(ticket))
+
+        time.sleep(1)
+        print("\n\n\n\n\n\n")
+        command = HerkuleX.MoveOne("Hip", float(-23), 40, JogLedColor.LED_BLUE)
+        ticket = test.send(TicketType.Asynchronous, [command], None, False)
+        print("Main:ticket" + str(ticket))
+
+        time.sleep(1)
+        print("\n\n\n\n\n\n")
+        command = HerkuleX.MoveOne("Shoulder", float(23), 40, JogLedColor.LED_RED)
+        ticket = test.send(TicketType.Asynchronous, [command], None, False)
+        print("Main:ticket" + str(ticket))
+
+        time.sleep(1)
+        print("\n\n\n\n\n\n")
+        command = HerkuleX.MoveOne("Hip", float(23), 40, JogLedColor.LED_RED)
+        ticket = test.send(TicketType.Asynchronous, [command], None, False)
+        print("Main:ticket" + str(ticket))
+
+
+        time.sleep(1)
+        test.GetHealth("AckCheck")
+
+        time.sleep(1)
+
+
     test.close()
 
 

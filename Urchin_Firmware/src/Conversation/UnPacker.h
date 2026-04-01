@@ -9,7 +9,7 @@
 #include "ESP_PI_Communication/Receving.h"
 
 
-
+#define MAX_VALUES_LEN 20
 
 
 

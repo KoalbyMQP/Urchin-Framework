@@ -85,13 +85,13 @@ extern "C" void app_main() {
     }
 
 
-    TaskHandle_t xHandleSpray = nullptr;
-    BaseType_t SprayxReturned = xTaskCreate(Spray, "Spray", 8048, nullptr, 3, &xHandleSpray);
-    if( SprayxReturned == pdPASS ){
+    //TaskHandle_t xHandleSpray = nullptr;
+    //BaseType_t SprayxReturned = xTaskCreate(Spray, "Spray", 8048, nullptr, 3, &xHandleSpray);
+    //if( SprayxReturned == pdPASS ){
         //printf("Receiving Task creation worked!\n");
-    }else {
+    //}else {
         //printf("Receiving Task creation failed!\n");
-    }
+    //}
 
     //Shipping(nullptr);
 int nothing=0;

@@ -23,11 +23,45 @@ class HerkulexModel(IntEnum):
 
 class HerkuleX():
 
-    def MoveOne(JoinyName: str, Goal: float, Time_ms: int, color: JogLedColor) -> Item:
+    def MoveOne(JointName: str, Goal: float, Time_ms: int, color: JogLedColor) -> Item:
+        """
+        Prepares a command that moves one motor
+        :param JointName: The joint name
+        :param Goal: goal position of the motor in degrees
+        :param Time_ms: Time in milliseconds that the motor is moving
+        :param color: Color of the motor LED
+        :return: The Item to send to Urchin framework
+        """
         Name: str = "MoveOne"
 
         if ((Time_ms*11.2 > 500) or (Time_ms*11.2 < 0)):
             raise ValueError("pTime must be between 500 and 0.")
 
-        command: Item = Item(JoinyName,Name,[Goal, Time_ms, color])
+        command: Item = Item(JointName,Name,[Goal, Time_ms, color])
         return command
+
+    def GetAngle(JointName: str)-> Item:
+        """
+        Prepares a command that gets the angle of the motor
+        :return: The Item to send to Urchin framework
+        """
+        Name: str = "GetAngle"
+        return Item(JointName,Name)
+
+    def SetTorque(value: bool, JointName: str = "", BrodcastFlag: bool = False) -> Item:
+        """
+        Sets the torque to a value
+        :param value: Torque setting
+        :param JointName: The joint name
+        :param BrodcastFlag: If SetTorque is targeting one motor or all motors
+        :return:
+        """
+        # 0 = JointName OFF, 1 = JointName ON, 2 = All OFF, 3 = All ON
+
+        if not BrodcastFlag:
+            output = 1 if value else 0
+        else:
+            output = 3 if value else 2
+
+        Name: str = "SetTorque"
+        return Item(JointName, Name, [output])

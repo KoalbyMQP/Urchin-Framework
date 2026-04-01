@@ -40,26 +40,29 @@ int AngleToPoint(AngleSet motor, double angle) {
     if (normalizedAngle < 0.0) normalizedAngle = 0.0;
     if (normalizedAngle > 1.0) normalizedAngle = 1.0;
 
-    double ABS = (double)(motor.RLower + motor.RUpper);
-    int value = (int)((normalizedAngle*ABS)+0.5f);
-    return value;
+    double range = (double)(motor.RUpper - motor.RLower);
+    return (int)(motor.RLower + normalizedAngle * range + 0.5);
 }
 
 
 
 double PointToAngle(AngleSet motor, int point) {
-    if (point < 0 || point > 2047) {
+    if (point < motor.RLower || point > motor.RUpper) {
         return NAN;
     }
-    double ABS = (double)(motor.RLower + motor.RUpper);
-    double normalizedAngle = point / ABS;
+    double range = (double)(motor.RUpper - motor.RLower);
+    if (range <= 0) return NAN;
+
+    double normalized =
+        (point - motor.RLower) / range;
+
     // Clamp
-    if (normalizedAngle < 0.0) normalizedAngle = 0.0;
-    if (normalizedAngle > 1.0) normalizedAngle = 1.0;
+    if (normalized < 0.0) normalized = 0.0;
+    if (normalized > 1.0) normalized = 1.0;
 
 
-    double angle = motor.ALower + normalizedAngle * (motor.AUpper - motor.ALower);
+    double angle =motor.ALower + normalized * (motor.AUpper - motor.ALower);
 
-    return RoundPress(angle,1);
+    return RoundPress(angle, 1);
 
 }
