@@ -6,6 +6,11 @@ from Types import Item, React
 from enum import StrEnum
 from typing import Union, Any, List
 from Bridge import Bridge
+from Reaction import Reaction
+import struct
+from typing import List, Tuple, Any
+BRIDGEMaxName = 32  # must match C
+
 
 class TicketType(StrEnum):
     Sequential:str = "S"
@@ -19,7 +24,7 @@ class Crab:
         self.serial = ESPSerial(dev)
         self.bridge = Bridge(bridge,self.serial)
         self.bridge.SendAll()
-        self.react: list[React] = []
+        self.react: list[Reaction] = []
         self.Alive:bool = True
         self.dev:bool = dev
 
@@ -86,6 +91,26 @@ class Crab:
                 if (packet["Stream"] == b'R'):
                     self.Reaction.put(packet["data"])
 
+                    parsed = self.parse_reaction_packet(packet["data"])
+
+                    values = [v for _, v in parsed["values"]]
+
+                    expected_params = self._values_to_expected_params(parsed["values"])
+
+                    for react in self.react:
+                        if react.CompareIncomeing(
+                                TicketNum=parsed["ticket"],
+                                Joint=parsed["joint"],
+                                CommandName=parsed["command_name"],
+                                CommandCode=parsed["code"],
+                                expected_params=expected_params
+                        ):
+                            try:
+                                react.Function(*values)
+                            except Exception as e:
+                                print(f"Reaction execution failed: {e}")
+
+
                 if (packet["Stream"] == b'D'):
                     self.Debug.put(packet["data"])
 
@@ -94,6 +119,74 @@ class Crab:
     def _CheckReaction(self,code: int) -> None:
         for element in self.react:
             print(element)
+
+
+
+    def parse_reaction_packet(buffer: bytes):
+        """
+        Parse raw packet from SendReaction into structured Python data.
+        """
+
+
+        header_fmt = f"<II{BRIDGEMaxName}sBB"
+        header_size = struct.calcsize(header_fmt)
+
+        ticket, code, joint_raw, cmd_len, values_len = struct.unpack(
+            header_fmt, buffer[:header_size]
+        )
+
+        joint = joint_raw.split(b'\x00', 1)[0].decode()
+
+        offset = header_size
+
+
+        command_name = buffer[offset:offset + cmd_len].decode()
+        offset += cmd_len
+
+
+        values = []
+
+        for _ in range(values_len):
+            value_type = chr(buffer[offset])
+            offset += 1
+
+            if value_type == 'i':
+                value = struct.unpack_from("<i", buffer, offset)[0]
+                offset += 4
+
+            elif value_type == 'f':
+                value = struct.unpack_from("<f", buffer, offset)[0]
+                offset += 4
+
+            elif value_type == 'b':
+                value = struct.unpack_from("<b", buffer, offset)[0]
+                offset += 1
+
+            else:
+                raise ValueError(f"Unknown type: {value_type}")
+
+            values.append((value_type, value))
+
+        return {
+            "ticket": ticket,
+            "code": code,
+            "joint": joint,
+            "command_name": command_name,
+            "values": values
+        }
+
+    def _values_to_expected_params(self, values):
+        type_map = {
+            'i': int,
+            'f': float,
+            'b': int,  # or bool if you prefer
+        }
+
+        return [
+            (type_map[t], f"param{idx}")
+            for idx, (t, _) in enumerate(values)
+        ]
+
 
     def send(self, type: TicketType, items: List[Item], resolver: Union[React, None], chained: bool) -> int:
         '''

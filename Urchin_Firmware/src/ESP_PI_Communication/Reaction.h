@@ -1,0 +1,8 @@
+//
+// Created by gabri on 4/13/2026.
+//
+
+#ifndef URCHIN_FIRMWARE_REACTION_H
+#define URCHIN_FIRMWARE_REACTION_H
+
+#endif //URCHIN_FIRMWARE_REACTION_H
