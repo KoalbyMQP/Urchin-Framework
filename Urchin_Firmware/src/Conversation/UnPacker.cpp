@@ -114,6 +114,14 @@ int ReqTicket(unsigned char VPID, const char* buffer){
 */
 
 
+
+
+int Validate(unsigned char VPID, const char* buffer) {
+    PrintfToPI(DebugQueue,VPID,"URCHIN");
+    return 0;
+}
+
+
 int FormatTicket(unsigned char VPID, const char* buffer) {
     LED();
     WebConversion Platter;
@@ -397,6 +405,21 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
         }
     }
 
+
+    if (strncmp(command,"TestReact",9) == 0) {
+        (void) PrintfToPI(DebugQueue, VPID, "Sending Reaction");
+        BridgeMotor* Joint = GetBridge(Header.joint);
+
+        if (Joint == NULL) {// could not find Joint in bridge list
+            (void) PrintfToPI(DebugQueue,0,"joint not found");
+            return -1;
+        }
+
+        SendReaction(VPID,Header.ticket,Joint->Joint,"TestReact",strlen("TestReact"),0,"%i",Variables[0].Data.Int);
+
+
+
+    }
     return 0;
 }
 
@@ -490,24 +513,52 @@ int SetHealth(unsigned char VPID, const char* buffer) {return 0;}
 
 
 int Bridge(unsigned char VPID, const char* buffer) {
-    (void) PrintfToPI(DebugQueue,0,"Bridge");
+    (void) PrintfToPI(DebugQueue,0,"Bridge called! look here");
+    return 0;
+}
+
+/*
+int Bridge(unsigned char VPID, const char* buffer) {
+    (void) PrintfToPI(DebugQueue,0,"Bridge called! look here");
 
     if (0 == strncmp("Add",buffer,3)) {
-        (void) PrintfToPI(DebugQueue,0,"BridgeAdd");
-        BridgeMotor *motor = (BridgeMotor*)(buffer+3);
-        (void) PrintfToPI(DebugQueue,0,"Bridge:Printing joint");
-        (void) PrintfToPI(DebugQueue,0,"Bridge: Num %d", motor->Num);
-        (void) PrintfToPI(DebugQueue,0,"Bridge: Brand %s", motor->Brand);
-        (void) PrintfToPI(DebugQueue,0,"Bridge: Model %s", motor->Model);
-        (void) PrintfToPI(DebugQueue,0,"Bridge: Joint %s", motor->Joint);
-        (void) PrintfToPI(DebugQueue,0,"Bridge: Bounds Min %d", motor->BoundsMin);
-        (void) PrintfToPI(DebugQueue,0,"Bridge: Bounds Max %d", motor->BoundsMax);
-        (void) PrintfToPI(DebugQueue,0,"Bridge: AlignmentAngle %d", motor->AlignmentAngle);
+        (void) PrintfToPI(DebugQueue,VPID,"BridgeAdd");
 
 
-        AddBridge(motor);
+        uint32_t len;
+        memcpy(&len, buffer + 3, sizeof(uint32_t));
 
-        (void) PrintfToPI(DebugQueue,0,"%s",motor->Joint);
+        const uint8_t* data = (const uint8_t*)(buffer + 3 + 4);
+
+        // SAFETY CHECK
+        if (len < sizeof(BridgeMotor)) {
+            PrintfToPI(DebugQueue, VPID,
+                "Bridge: packet too small (%d < %d)",
+                len, (int)sizeof(BridgeMotor));
+            return -1;
+        }
+
+        BridgeMotor motor;
+        memcpy(&motor, data, sizeof(BridgeMotor));
+
+        motor.Joint[BRIDGEMaxName - 1] = '\0';
+        motor.Brand[BRIDGEMaxBrand - 1] = '\0';
+        motor.Model[BRIDGEMaxModel - 1] = '\0';
+
+
+
+        (void) PrintfToPI(DebugQueue,VPID,"Bridge:Printing joint");
+        (void) PrintfToPI(DebugQueue,VPID,"Bridge: Num %d", motor.Num);
+        (void) PrintfToPI(DebugQueue,VPID,"Bridge: Brand %s", motor.Brand);
+        (void) PrintfToPI(DebugQueue,VPID,"Bridge: Model %s", motor.Model);
+        (void) PrintfToPI(DebugQueue,VPID,"Bridge: Joint %s", motor.Joint);
+        (void) PrintfToPI(DebugQueue,VPID,"Bridge: Bounds Min %d", motor.BoundsMin);
+        (void) PrintfToPI(DebugQueue,VPID,"Bridge: Bounds Max %d", motor.BoundsMax);
+        (void) PrintfToPI(DebugQueue,VPID,"Bridge: AlignmentAngle %d", motor.AlignmentAngle);
+
+
+        AddBridge(&motor);
+
 
     }
     if (0 == strncmp("Rem",buffer,3)) {
@@ -520,11 +571,10 @@ int Bridge(unsigned char VPID, const char* buffer) {
 
 
 
-    //(void) PrintfToPI(ExchangeQueue,"GetHealth is being added");
-    //DoSomething();
+
     return 0;
 }
-
+*/
 
 
 

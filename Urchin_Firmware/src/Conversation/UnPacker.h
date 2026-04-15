@@ -7,7 +7,7 @@
 #include <string.h>
 #include "Global/GLOBAL.h"
 #include "ESP_PI_Communication/Receving.h"
-
+#include "ESP_PI_Communication/Reaction.h"
 
 #define MAX_VALUES_LEN 20
 
@@ -46,6 +46,14 @@ int UnpackerInit();
 
     //Context functions
     //-----------------------------------
+
+    /**
+    * To be called when the PI is looking for teh board
+    * @param buffer buffer after the "Validate" command (Not Used)
+    * @return An error code
+    */
+    int Validate(unsigned char VPID, const char* buffer);
+
 
     /**
     * To be called when the PI is asking for a ticket

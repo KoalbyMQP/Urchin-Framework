@@ -2,7 +2,7 @@ import queue
 import threading
 import struct
 from ESPSerial import ESPSerial
-from Types import Item, React
+from Types import Item
 from enum import StrEnum
 from typing import Union, Any, List
 from Bridge import Bridge
@@ -31,6 +31,8 @@ class Crab:
         self.Exchange: queue.Queue[Any] = queue.Queue()
         self.Reaction: queue.Queue[Any] = queue.Queue()
         self.Debug: queue.Queue[Any] = queue.Queue()
+
+        self.OurTickets: list[int] = []
 
         self.Thread: threading.Thread = threading.Thread(target=self._SmartRuner)
         self.Thread.start()
@@ -89,6 +91,7 @@ class Crab:
                     self.Exchange.put(packet["data"])
 
                 if (packet["Stream"] == b'R'):
+                    print("got react")
                     self.Reaction.put(packet["data"])
 
                     parsed = self.parse_reaction_packet(packet["data"])
@@ -188,7 +191,7 @@ class Crab:
         ]
 
 
-    def send(self, type: TicketType, items: List[Item], resolver: Union[React, None], chained: bool) -> int:
+    def send(self, type: TicketType, items: List[Item], resolver: Union[Reaction, None], chained: bool) -> int:
         '''
         Used to send a motor control command to the Esp32
         :param type: the Type of command "I" for "Interrupt","S" for "Sequential","R" for "Resolving","A" for "Asynchronous"
@@ -217,9 +220,15 @@ class Crab:
         # Receve Ticket
         ticket: int = self._QueSmartPop(self.Exchange, "<I") # unsigned int
 
+        self.OurTickets.append(ticket)
+        if resolver is not None:
+            for rect in resolver:
+                rect.SetTicket(ticket)
+                self.react.append(rect)
 
 
 
+        print("got here")
         # Load ticket
         for item in items:
             Strip: str = b"LoadTicket"

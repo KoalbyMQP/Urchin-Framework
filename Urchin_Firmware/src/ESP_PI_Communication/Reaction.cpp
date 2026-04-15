@@ -4,14 +4,10 @@
 
 
 #include "Reaction.h"
-#include "Global//Bridge.h"
-#include "ESP_PI_Communication/MSGQueue.h"
-#include "ESP_PI_Communication/Coms.h"
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <string.h>
-#include "freertos/FreeRTOS.h"
+
+//int SendReaction(const uint8_t VPID, unsigned int Ticket, const char* Joint, const char* CommandName, unsigned int CommandNameSize, unsigned int Code, const char *format, ...) {return 0;}
+
+
 
 int SendReaction(const uint8_t VPID, unsigned int Ticket, const char* Joint, const char* CommandName, unsigned int CommandNameSize, unsigned int Code, const char *format, ...) {
 
@@ -91,7 +87,7 @@ int SendReaction(const uint8_t VPID, unsigned int Ticket, const char* Joint, con
             PrintfToPI(DebugQueue, 0,
                 "Error: expected '%%' at position %d\n", i);
             va_end(args);
-            pvPortFree(values);
+            vPortFree(values);
             return -1;
         }
 
@@ -99,7 +95,7 @@ int SendReaction(const uint8_t VPID, unsigned int Ticket, const char* Joint, con
 
         if (format[i] == '\0') {
             va_end(args);
-            pvPortFree(values);
+            vPortFree(values);
             return -2;
         }
 
@@ -134,7 +130,7 @@ int SendReaction(const uint8_t VPID, unsigned int Ticket, const char* Joint, con
 
             default:
                 va_end(args);
-                pvPortFree(values);
+                vPortFree(values);
                 return -3;
         }
     }
@@ -150,14 +146,15 @@ int SendReaction(const uint8_t VPID, unsigned int Ticket, const char* Joint, con
 
     char *buffer = (char *)pvPortMalloc(size);
     if (!buffer) {
-        pvPortFree(values);
+        vPortFree(values);
         return -99;
     }
 
     char *ptr = buffer;
 
     // Packet header
-    PacketHeader Header = {0};
+    PacketHeader Header;
+    memset(&Header, 0, sizeof(Header));
     Header.ticket = Ticket;
     Header.Code = Code;
 
@@ -180,8 +177,8 @@ int SendReaction(const uint8_t VPID, unsigned int Ticket, const char* Joint, con
 
     int error = PackfToPI(RecationQueue, VPID, buffer, size);
 
-    pvPortFree(buffer);
-    pvPortFree(values);
+    vPortFree(buffer);
+    vPortFree(values);
 
     return error;
 }

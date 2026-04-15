@@ -34,10 +34,16 @@ void AddBridge(BridgeMotor* mem){
 }
 
 BridgeMotor* GetBridge(const char joint[]) {
-    if (joint == NULL || joint[0] == '\0') {
-        PrintfToPI(DebugQueue, 0, "GetBridge: invalid joint (NULL or empty)");
+    if (joint == NULL) {
+        PrintfToPI(DebugQueue, 0, "GetBridge: joint is NULL");
         return NULL;
     }
+
+    if (strnlen(joint, BRIDGEMaxName) == 0) {
+        PrintfToPI(DebugQueue, 0, "GetBridge: joint is empty or unterminated");
+        return NULL;
+    }
+    PrintfToPI(DebugQueue, 0,"BRIDGEsize: %d",BRIDGEsize);
     for(int i = 0; i < BRIDGEsize; i++) {
         // Log what we are comparing for every entry
         const char* regJoint = BRIDGE[i].Joint;
@@ -45,11 +51,11 @@ BridgeMotor* GetBridge(const char joint[]) {
             "Comparing Target: %s to Registered: %s",
             joint, regJoint);
 
-        if (BRIDGE[i].Joint[0] != '\0' && strcmp(joint, BRIDGE[i].Joint) == 0) {
+        if (BRIDGE[i].Joint[0] != '\0' && strncmp(joint, BRIDGE[i].Joint, BRIDGEMaxName) == 0) {
             return &BRIDGE[i];
             }
     }
-    PrintfToPI(DebugQueue, 0, "GetBridge: No match found for %s", joint);
+    PrintfToPI(DebugQueue, 0, "GetBridge: No match found for \"%s\"", joint);
     return NULL;
 }
 

@@ -1,4 +1,4 @@
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 from Types import Item
 
 class LedColor(IntEnum):
@@ -21,6 +21,12 @@ class HerkulexModel(IntEnum):
     MODEL_0601: int = 2
     MODEL_0602: int = 3
 
+class HerkuleXCommandNames(StrEnum):
+    MoveOne: str = "MoveOne"
+    GetAngle: str = "GetAngle"
+    SetTorque: str = "SetTorque"
+    TestReact: str = "TestReact"
+
 class HerkuleX():
 
     def MoveOne(JointName: str, Goal: float, Time_ms: int, color: JogLedColor) -> Item:
@@ -32,7 +38,7 @@ class HerkuleX():
         :param color: Color of the motor LED
         :return: The Item to send to Urchin framework
         """
-        Name: str = "MoveOne"
+        Name: str = HerkuleXCommandNames.MoveOne
 
         if ((Time_ms*11.2 > 500) or (Time_ms*11.2 < 0)):
             raise ValueError("pTime must be between 500 and 0.")
@@ -45,7 +51,7 @@ class HerkuleX():
         Prepares a command that gets the angle of the motor
         :return: The Item to send to Urchin framework
         """
-        Name: str = "GetAngle"
+        Name: str = HerkuleXCommandNames.GetAngle
         return Item(JointName,Name)
 
     def SetTorque(value: bool, JointName: str = "", BrodcastFlag: bool = False) -> Item:
@@ -63,5 +69,14 @@ class HerkuleX():
         else:
             output = 3 if value else 2
 
-        Name: str = "SetTorque"
+        Name: str = HerkuleXCommandNames.SetTorque
         return Item(JointName, Name, [output])
+
+    def TestReact(JointName: str, value: int) -> Item:
+        """
+        Sets the torque to a value
+        :param JointName: The joint name
+        :return:
+        """
+        Name: str = HerkuleXCommandNames.TestReact
+        return Item(JointName, Name, [value])

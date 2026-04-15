@@ -4,16 +4,15 @@ from typing import Callable, Any, List, Tuple, get_origin
 
 class Reaction:
 
-    def __init__(self, TicketNum: int, Joint: str, commandName: str, CommandCodes: list[int], function: Callable[[Any], Any]) -> None:
+    def __init__(self, Joint: str, commandName: str, CommandCodes: list[int], function: Callable[[Any], Any]) -> None:
         """
 
-        :param TicketNum:
         :param Joint:
         :param commandName:
         :param CommandCodes:
         :param function:
         """
-        self.TicketNum = TicketNum
+
         self.Joint = Joint
         self.CommandCodes = CommandCodes
         self.CommandName = commandName
@@ -21,6 +20,8 @@ class Reaction:
 
 
 
+    def SetTicket(self,TicketNum: int) -> None:
+        self.TicketNum = TicketNum
 
     def CompareIncomeing(self, TicketNum: int, Joint: str, CommandName: str, CommandCode: int, expected_params: List[Tuple[type, str]]) -> bool:
         if (self.TicketNum != TicketNum):

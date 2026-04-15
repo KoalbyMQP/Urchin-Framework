@@ -40,7 +40,8 @@
             {"CloseTicket",11,CloseTicket,NULL,0},
             {"TicketInfo",10,TicketInfo,NULL,0},
             {"GetHealth",9,GetHealth,NULL,0},
-            {"Bridge",6,Bridge,NULL,0}
+            {"Bridge",6,Bridge,NULL,0},
+            {"Validate",6,Validate,NULL,0}
     };
 
 
