@@ -13,7 +13,7 @@ int PackfToPI(QueueHandle_t MsgQueue, const uint8_t VPID,const char buff[], size
   if (buff_size > COMS_SIZE){return COMS_SIZE - buff_size;} //Check against the size of the message buffer with size of COMS_SIZE
   MSG block = {0};
   block.VPID=VPID;
-    strncpy(block.data,buff,COMS_SIZE);
+  memcpy(block.data, buff, buff_size);
 
   if(pdPASS != xQueueSend(MsgQueue,(const void*)&block,portMAX_DELAY)){ //Add message to Que AND check if it was able to fit on the Que
     return QueFull;

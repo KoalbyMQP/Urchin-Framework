@@ -41,7 +41,7 @@
             {"TicketInfo",10,TicketInfo,NULL,0},
             {"GetHealth",9,GetHealth,NULL,0},
             {"Bridge",6,Bridge,NULL,0},
-            {"Validate",6,Validate,NULL,0}
+            {"Validate",8,Validate,NULL,0}
     };
 
 
@@ -119,6 +119,8 @@ int ProcessRequest(unsigned char VPID ,Context Commands[],const uint8_t buffer[]
         if (0==strncmp((char*)buffer,Commands[i].Name,Commands[i].depth)) {
             error=Commands[i].function(VPID,SkipFoward((char*)buffer,Commands[i].depth));
             found=1;
+        }else{
+        //    PrintfToPI(DebugQueue, VPID,"Command |%.*s| not found",ContextWordSize,buffer);
         }
         i++;
     }

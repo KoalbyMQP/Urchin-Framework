@@ -1,3 +1,5 @@
+import time
+
 import serial
 import serial.tools.list_ports
 import struct
@@ -88,7 +90,7 @@ class ESPSerial(object):
             raise ValueError("VPID must be an integer between 0 and 255")
 
         buff = buff.ljust(1024, b'\x00')[:1024]
-
+        print("Sending: |"+str(buff)+"|")
         try:
             packed_data = struct.pack(self.PACKET_FORMAT,  VPID, b'N', buff)
             bus.write(self.START_MARKER + packed_data)
@@ -131,25 +133,53 @@ class ESPSerial(object):
     def close(self) -> None:
         self.buss.close()
 
-
     def WhoaAreYou(self, COM: str) -> bool:
-        # Set const
         print("checking a com port")
         VPID: int = 0
 
-        # Prep seral buss
-        bus = serial.Serial(COM, 115200, timeout=1)
+        try:
+            #Open COM connection
+            bus = serial.Serial(
+                COM,
+                115200,
+                timeout=1,
+                dsrdtr=False,
+                rtscts=False
+            )
 
-        # Prep message
-        message = b'Validate'
-        if self.Debug:
-            print("sending Validate")
-        self.send_packet_internal(VPID,message,bus)
+            time.sleep(0.5)  # give CP2102 + MCU time to settle
 
-        # reads until newline or timeout
-        output = self.CheckForValidate(bus)
-        bus.close()
-        return output
+            # flush any garbage from boot/reset
+            bus.reset_input_buffer()
+            bus.reset_output_buffer()
+
+            message = b'Validate'
+
+            if self.Debug:
+                print("sending Validate")
+
+            # retry a few times (devices often miss first packet after connect)
+            for _ in range(3):
+                self.send_packet_internal(VPID, message, bus)
+
+                output = self.CheckForValidate(bus)
+                if output:
+                    return True
+
+                time.sleep(0.2)
+
+            return False
+
+        except serial.SerialException as e:
+            if self.Debug:
+                print(f"Serial error on {COM}: {e}")
+            return False
+
+        finally:
+            try:
+                bus.close()
+            except:
+                pass
 
 
     def CheckForValidate(self, bus) -> bool:
@@ -163,4 +193,3 @@ class ESPSerial(object):
         if (packet["VPID"] == 0 and packet["Stream"] == b'D' and packet["data"].startswith(self.BoardTag) ):
             return True
         return False
-

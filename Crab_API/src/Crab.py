@@ -123,13 +123,10 @@ class Crab:
         for element in self.react:
             print(element)
 
-
-
-    def parse_reaction_packet(buffer: bytes):
+    def parse_reaction_packet(self, buffer: bytes):
         """
         Parse raw packet from SendReaction into structured Python data.
         """
-
 
         header_fmt = f"<II{BRIDGEMaxName}sBB"
         header_size = struct.calcsize(header_fmt)
@@ -142,33 +139,35 @@ class Crab:
 
         offset = header_size
 
-
         command_name = buffer[offset:offset + cmd_len].decode()
         offset += cmd_len
-
 
         values = []
 
         for _ in range(values_len):
-            value_type = chr(buffer[offset])
-            offset += 1
+            base = offset
+
+            # Read type
+            value_type = chr(buffer[base])
+
+            # Read full 4-byte union (always at +4)
+            raw = buffer[base + 4: base + 8]
 
             if value_type == 'i':
-                value = struct.unpack_from("<i", buffer, offset)[0]
-                offset += 4
+                value = struct.unpack("<i", raw)[0]
 
             elif value_type == 'f':
-                value = struct.unpack_from("<f", buffer, offset)[0]
-                offset += 4
+                value = struct.unpack("<f", raw)[0]
 
             elif value_type == 'b':
-                value = struct.unpack_from("<b", buffer, offset)[0]
-                offset += 1
+                value = struct.unpack("<b", raw[:1])[0]
 
             else:
                 raise ValueError(f"Unknown type: {value_type}")
 
             values.append((value_type, value))
+
+            offset += 8  # move to next struct
 
         return {
             "ticket": ticket,

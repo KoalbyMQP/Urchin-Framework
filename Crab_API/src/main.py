@@ -19,7 +19,6 @@ def main() -> None:
 
 
     while True:
-
         test.GetHealth("AckCheck")
 
 
@@ -29,21 +28,21 @@ def main() -> None:
         #command = HerkuleX.SetTorque(True,"",True)
         #ticket = test.send(TicketType.Asynchronous, [command], None, False)
         #print("Main:ticket" + str(ticket))
-        time.sleep(3)
-        def ReactFunction(code: int, value: int) -> None:
-            print("Got code "+str(code)+" back "+str(value))
+        #time.sleep(3)
+        #def ReactFunction(code: int, value: int) -> None:
+        #    print("Got code "+str(code)+" back "+str(value))
 
-        TestReact = Reaction("Shoulder",HerkuleXCommandNames.TestReact, 0,ReactFunction)
+        #TestReact = Reaction("Shoulder",HerkuleXCommandNames.TestReact, 0,ReactFunction)
 
-        print("testing react")
+        #print("testing react")
         #time.sleep(1)
-        command = HerkuleX.TestReact("Shoulder", 69)
-        ticket = test.send(TicketType.Asynchronous, [command], [TestReact], False)
-        print("Main:ticket" + str(ticket))
+        #command = HerkuleX.TestReact("Shoulder", 69)
+        #ticket = test.send(TicketType.Asynchronous, [command], [TestReact], False)
+        #print("Main:ticket" + str(ticket))
 
-        print("end testing react")
+        #print("end testing react")
 
-        time.sleep(10)
+        time.sleep(3)
         command = HerkuleX.MoveOne("Shoulder", float(-23), 40, JogLedColor.LED_BLUE)
         ticket = test.send(TicketType.Asynchronous,[command],None,False)
         print("Main:ticket" + str(ticket))

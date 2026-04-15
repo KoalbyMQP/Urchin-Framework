@@ -415,7 +415,7 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
             return -1;
         }
 
-        SendReaction(VPID,Header.ticket,Joint->Joint,"TestReact",strlen("TestReact"),0,"%i",Variables[0].Data.Int);
+        SendReaction(VPID,Header.ticket,Joint->Joint,"TestReact",strlen("TestReact"),45,"%i",Variables[0].Data.Int);
 
 
 
@@ -511,16 +511,17 @@ return 0;
 
 int SetHealth(unsigned char VPID, const char* buffer) {return 0;}
 
-
+/*
 int Bridge(unsigned char VPID, const char* buffer) {
     (void) PrintfToPI(DebugQueue,0,"Bridge called! look here");
     return 0;
 }
+*/
 
-/*
+
 int Bridge(unsigned char VPID, const char* buffer) {
     (void) PrintfToPI(DebugQueue,0,"Bridge called! look here");
-
+    (void) PrintfToPI(DebugQueue, VPID,"Bridge Then|%.*s|",3,buffer);
     if (0 == strncmp("Add",buffer,3)) {
         (void) PrintfToPI(DebugQueue,VPID,"BridgeAdd");
 
@@ -571,10 +572,10 @@ int Bridge(unsigned char VPID, const char* buffer) {
 
 
 
+    (void) PrintfToPI(DebugQueue,0,"Bridge called ending! look here");
 
     return 0;
 }
-*/
 
 
 

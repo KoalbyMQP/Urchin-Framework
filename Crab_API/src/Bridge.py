@@ -225,8 +225,8 @@ class Bridge:
         print("Sending bridge"+ str(motor.Joint))
         payload = struct.pack(self.DataStruct, motor.Number, motor.Brand, motor.Model, motor.Joint, motor.Bounds[0], motor.Bounds[1], motor.AlignmentAngle, last)
         packet = b'BridgeAdd' + struct.pack("<I", len(payload)) + payload
-        #self.Serial.send_packet(0, packet)
-        self.Serial.send_packet(0, b'Bridge')
+        self.Serial.send_packet(0, packet)
+        #self.Serial.send_packet(0, b'Bridge')
 
 # class FileVersionError(Exception):
 #     """Raised when a file has an unsupported or incorrect version."""

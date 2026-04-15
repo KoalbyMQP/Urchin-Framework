@@ -156,13 +156,19 @@ int SendReaction(const uint8_t VPID, unsigned int Ticket, const char* Joint, con
     PacketHeader Header;
     memset(&Header, 0, sizeof(Header));
     Header.ticket = Ticket;
+    PrintfToPI(DebugQueue, VPID, "Reaction: Setting Ticket to:%d",Ticket);
     Header.Code = Code;
+    PrintfToPI(DebugQueue, VPID, "Reaction: Setting code to:%d",Code);
 
     memset(Header.joint, 0, BRIDGEMaxName);
     strncpy(Header.joint, Joint, BRIDGEMaxName - 1);
+    PrintfToPI(DebugQueue, VPID, "Reaction: Setting Joint to:%s",Header.joint);
 
     Header.command_len = CommandNameSize;
+    PrintfToPI(DebugQueue, VPID, "Reaction: Setting Command Len to:%d",CommandNameSize);
+
     Header.values_len = count;
+    PrintfToPI(DebugQueue, VPID, "Reaction: Setting values_len  to:%d",count);
 
     memcpy(ptr, &Header, sizeof(PacketHeader));
     ptr += sizeof(PacketHeader);
@@ -170,6 +176,7 @@ int SendReaction(const uint8_t VPID, unsigned int Ticket, const char* Joint, con
     // command name
     memcpy(ptr, CommandName, CommandNameSize);
     ptr += CommandNameSize;
+    PrintfToPI(DebugQueue, VPID, "Reaction: Setting command name to:%s",CommandName);
 
     // values
     memcpy(ptr, values, sizeof(Data) * count);
