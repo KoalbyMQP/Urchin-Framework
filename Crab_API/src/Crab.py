@@ -2,10 +2,15 @@ import queue
 import threading
 import struct
 from ESPSerial import ESPSerial
-from Types import Item, React
+from Types import Item
 from enum import StrEnum
 from typing import Union, Any, List
 from Bridge import Bridge
+from Reaction import Reaction
+import struct
+from typing import List, Tuple, Any
+BRIDGEMaxName = 32  # must match C
+
 
 class TicketType(StrEnum):
     Sequential:str = "S"
@@ -19,13 +24,15 @@ class Crab:
         self.serial = ESPSerial(dev)
         self.bridge = Bridge(bridge,self.serial)
         self.bridge.SendAll()
-        self.react: list[React] = []
+        self.react: list[Reaction] = []
         self.Alive:bool = True
         self.dev:bool = dev
 
         self.Exchange: queue.Queue[Any] = queue.Queue()
         self.Reaction: queue.Queue[Any] = queue.Queue()
         self.Debug: queue.Queue[Any] = queue.Queue()
+
+        self.OurTickets: list[int] = []
 
         self.Thread: threading.Thread = threading.Thread(target=self._SmartRuner)
         self.Thread.start()
@@ -84,7 +91,28 @@ class Crab:
                     self.Exchange.put(packet["data"])
 
                 if (packet["Stream"] == b'R'):
+                    print("got react")
                     self.Reaction.put(packet["data"])
+
+                    parsed = self.parse_reaction_packet(packet["data"])
+
+                    values = [v for _, v in parsed["values"]]
+
+                    expected_params = self._values_to_expected_params(parsed["values"])
+
+                    for react in self.react:
+                        if react.CompareIncomeing(
+                                TicketNum=parsed["ticket"],
+                                Joint=parsed["joint"],
+                                CommandName=parsed["command_name"],
+                                CommandCode=parsed["code"],
+                                expected_params=expected_params
+                        ):
+                            try:
+                                react.Function(*values)
+                            except Exception as e:
+                                print(f"Reaction execution failed: {e}")
+
 
                 if (packet["Stream"] == b'D'):
                     self.Debug.put(packet["data"])
@@ -95,7 +123,74 @@ class Crab:
         for element in self.react:
             print(element)
 
-    def send(self, type: TicketType, items: List[Item], resolver: Union[React, None], chained: bool) -> int:
+    def parse_reaction_packet(self, buffer: bytes):
+        """
+        Parse raw packet from SendReaction into structured Python data.
+        """
+
+        header_fmt = f"<II{BRIDGEMaxName}sBB"
+        header_size = struct.calcsize(header_fmt)
+
+        ticket, code, joint_raw, cmd_len, values_len = struct.unpack(
+            header_fmt, buffer[:header_size]
+        )
+
+        joint = joint_raw.split(b'\x00', 1)[0].decode()
+
+        offset = header_size
+
+        command_name = buffer[offset:offset + cmd_len].decode()
+        offset += cmd_len
+
+        values = []
+
+        for _ in range(values_len):
+            base = offset
+
+            # Read type
+            value_type = chr(buffer[base])
+
+            # Read full 4-byte union (always at +4)
+            raw = buffer[base + 4: base + 8]
+
+            if value_type == 'i':
+                value = struct.unpack("<i", raw)[0]
+
+            elif value_type == 'f':
+                value = struct.unpack("<f", raw)[0]
+
+            elif value_type == 'b':
+                value = struct.unpack("<b", raw[:1])[0]
+
+            else:
+                raise ValueError(f"Unknown type: {value_type}")
+
+            values.append((value_type, value))
+
+            offset += 8  # move to next struct
+
+        return {
+            "ticket": ticket,
+            "code": code,
+            "joint": joint,
+            "command_name": command_name,
+            "values": values
+        }
+
+    def _values_to_expected_params(self, values):
+        type_map = {
+            'i': int,
+            'f': float,
+            'b': int,  # or bool if you prefer
+        }
+
+        return [
+            (type_map[t], f"param{idx}")
+            for idx, (t, _) in enumerate(values)
+        ]
+
+
+    def send(self, type: TicketType, items: List[Item], resolver: Union[Reaction, None], chained: bool) -> int:
         '''
         Used to send a motor control command to the Esp32
         :param type: the Type of command "I" for "Interrupt","S" for "Sequential","R" for "Resolving","A" for "Asynchronous"
@@ -124,9 +219,15 @@ class Crab:
         # Receve Ticket
         ticket: int = self._QueSmartPop(self.Exchange, "<I") # unsigned int
 
+        self.OurTickets.append(ticket)
+        if resolver is not None:
+            for rect in resolver:
+                rect.SetTicket(ticket)
+                self.react.append(rect)
 
 
 
+        print("got here")
         # Load ticket
         for item in items:
             Strip: str = b"LoadTicket"

@@ -32,16 +32,6 @@ class Item:
             return b"B" + bytes
 
 
-class Reaction:
-    def __init__(self, codes: List[int], function: Callable[[str],int]) -> None:
-        self.codes = codes
-        self.function = function
-
-
-class React:
-    def __init__(self, ticket: int, resolver: List[Reaction]) -> None:
-        self.ticket = ticket
-        self.resolver = resolver
 
 
 class Restraints:

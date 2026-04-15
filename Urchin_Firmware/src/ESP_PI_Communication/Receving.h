@@ -19,7 +19,7 @@ extern "C" {
 
 
 #define ContextWordSize 15
-#define NumOfActions 11
+#define NumOfActions 8
 
 
     typedef struct Context Context;  // Forward declaration
