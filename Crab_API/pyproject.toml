@@ -1,0 +1,13 @@
+[project]
+name = "crab-api"
+version = "0.1.0"
+description = "Crab API — host-side controller that talks to Urchin firmware over USB serial"
+requires-python = ">=3.11"
+dependencies = [
+    "tomlkit",
+    "tomlkit-extras",
+    "pyserial",
+]
+
+[tool.uv]
+package = false
