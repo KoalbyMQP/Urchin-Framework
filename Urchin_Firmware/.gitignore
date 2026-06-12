@@ -25,3 +25,7 @@ yarn-debug.log*
 Thumbs.db          # Windows thumbnail cache
 ehthumbs.db        # Windows Explorer thumbnails
 Desktop.ini        # Windows folder properties
+
+
+#The temp files for adaptability
+/src/Adaptability/*

@@ -3,15 +3,15 @@
 //
 
 #include "Receving.h"
-#include "Adaptability/Binder.h"
+
 #include "Ticketing//TicketNum.h"
 #include "Coms.h"
 #include "Errors.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "Herkulex/Herkulex.h"
-
-#include "Adaptability/pointer.h"
+#include "Adaptability/UnPacker.h"
+#include "Global/Binder.h"
 
 
 #define HX_UART_NUM UART_NUM_2
@@ -29,6 +29,7 @@
     //uint8_t data[COMS_SIZE];
 
 
+    (void)BinderInit();
     (void)UnpackerInit();
 
 
@@ -90,7 +91,7 @@
 
                         // Process the Box here
 
-                        ProcessRequest(LocalBox->VPID,Conversation[LocalBox->VPID],(uint8_t*) LocalBox->data);
+                        ProcessRequest(LocalBox->VPID,*Conversation[LocalBox->VPID],(uint8_t*) LocalBox->data);
 
                         box_pos = 0;
                         syncing = true; // look for next frame
@@ -117,7 +118,7 @@ int ProcessRequest(unsigned char VPID ,Context Commands[],const uint8_t buffer[]
     int error=0;
 
     //(void) PrintfToPI(DebugQueue,0,"ProcessRequest:%s",buffer);
-    while (i < NumOfActions && !found){
+    while (i < ConversationLength && !found){
         if (0==strncmp((char*)buffer,Commands[i].Name,Commands[i].depth)) {
             error=Commands[i].function(VPID,SkipFoward((char*)buffer,Commands[i].depth));
             found=1;

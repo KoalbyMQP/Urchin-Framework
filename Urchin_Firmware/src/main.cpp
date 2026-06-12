@@ -9,6 +9,7 @@
 
 // Local headers
 #include "Global/GLOBAL.h"
+#include "Global/Binder.h"
 #include "Global/setup.h"
 #include "ESP_PI_Communication/Coms.h"
 #include "ESP_PI_Communication/Shipping.h"
@@ -39,9 +40,25 @@ extern "C" void app_main() {
 
     SetUpPins();
 
+
+    Identifier = nullptr;
+
+    ConversationLength = 0;
+
+    for (int i = 0; i < MaxVPIDs; i++) {
+        Conversation[i] = nullptr;
+    }
+
     BridgeInit();
 
     ActionQueINIT();
+
+
+
+
+
+
+
 
 
     // QueueHandle_t AsyncQueue = xQueueCreate(AsyncSize, sizeof(Ticket));

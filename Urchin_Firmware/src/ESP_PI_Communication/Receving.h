@@ -6,7 +6,7 @@
 #define URCHIN_FIRMWARE_RECEVING_H
 
 #include "Global/GLOBAL.h"
-#include "Adaptability/Binder.h"
+#include "../Global/Binder.h"
 #include "driver/uart.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

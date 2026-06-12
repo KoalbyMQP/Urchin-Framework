@@ -10,6 +10,7 @@
 
 #define ContextWordSize 15
 #define NumOfActions 8
+#define MaxVPIDs 256
 
 
     typedef struct Context Context;  // Forward declaration
@@ -48,10 +49,10 @@ typedef struct Context{
 }Context;
 
 
-extern Context Conversation[256][NumOfActions];
+extern Context (*Conversation[MaxVPIDs])[NumOfActions];
+extern int ConversationLength;
+extern Context* Identifier;
 
-
-extern Context Identifier;
 
 int BinderInit();
 

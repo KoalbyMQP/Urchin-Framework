@@ -3,15 +3,24 @@
 //
 
 
-#include "Adaptability/Binder.h"
+
 #include "Conversation/Urchin/UnPacker.h"
+#include "Global/Binder.h"
+
+
+
+Context* Identifier = nullptr;
+
+int ConversationLength = 0;
+
+Context (*Conversation[MaxVPIDs])[NumOfActions] = {nullptr};
+
 int BinderInit() {
 
     static Context id_validate = {"Validate", 8, Validate, NULL, 0};
     Identifier = &id_validate;
 
-    static Context Basic[]={//has max size see Receving.h
-        /*{"ReqTicket",9,ReqTicket,NULL,0},*/
+    static Context Basic[NumOfActions] = {
         {"FormatTicket",12,FormatTicket,NULL,0},
         {"LoadTicket",10,LoadTicket,NULL,0},
         {"PunchTicket",11,PunchTicket,NULL,0},
@@ -22,11 +31,12 @@ int BinderInit() {
         {"Validate",8,Validate,NULL,0}
     };
 
-    for(int i=0;i<256;i++) {
-        memcpy(Conversation[i], Basic, sizeof(Basic));
+    ConversationLength = 8;
 
+    for (int i = 0; i < MaxVPIDs; i++) {
+        Conversation[i] = &Basic;
     }
 
-
-return 1;
+    return 1;
 }
+
