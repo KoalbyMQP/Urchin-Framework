@@ -14,7 +14,8 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(pybind11)
 
-pybind11_add_module(Clam src/Item.cpp)
+pybind11_add_module(Clam src/import.cpp
+        src/ValList.cpp)
 
 set_target_properties(Clam PROPERTIES
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/Tests/Python

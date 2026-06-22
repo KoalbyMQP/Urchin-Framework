@@ -3,7 +3,7 @@
 //
 
 #include "MarshalType.h"
-
+#include "ValList.h"
 
 
 
@@ -16,15 +16,15 @@ public:
 
 
     // set allowed var types
-    using Value = std::variant<int, float, bool>;
+
 
     std::string joint;
     std::string command;
-    std::vector<Value> values;
+    std::vector<ValVariant> values;
 
     Item(const std::string& j,
       const std::string& c,
-      const std::vector<Value>& v)
+      const std::vector<ValVariant>& v)
      : joint(j), command(c), values(v){
         if (j.size() > MAX_JOINT_LEN) {
             throw std::runtime_error("joint too long");
@@ -35,115 +35,118 @@ public:
         }
     }
 
-    std::vector<uint8_t> Press(const Value& value) {
 
-        std::vector<uint8_t> d;
+    Item() = default;
 
-        if (std::holds_alternative<int>(value)) {
-            int v = std::get<int>(value);
-
-            d.push_back('I');
-            appendBytes(d, &v, sizeof(v));
-        }
-
-        else if (std::holds_alternative<float>(value)) {
-            float v = std::get<float>(value);
-
-            d.push_back('F');
-            appendBytes(d, &v, sizeof(v));
-        }
-
-        else if (std::holds_alternative<bool>(value)) {
-            bool v = std::get<bool>(value);
-
-            uint8_t b = v ? 1 : 0;
-
-            d.push_back('B');
-            appendBytes(d, &b, sizeof(b));
-        }
-
-        return d;
-    }
-
-
-
-    bool Expand(const uint8_t* data,
-             size_t size,
-             Value& out,
-             size_t& consumed)
-    {
-        if (!data || size < 1)
-            return false;
-
-        const uint8_t tag = data[0];
-        size_t offset = 1;
-
-        switch (tag)
-        {
-            // ---------------- INT32 ----------------
-            case 'I':
-            {
-                constexpr size_t len = sizeof(int32_t);
-
-                if (size < offset + len)
-                    return false;
-
-                int32_t v;
-                std::memcpy(&v, data + offset, len);
-
-                // Python struct defaults to native endian (usually little-endian)
-                // If you ever need portability, force little-endian explicitly.
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-                v = __builtin_bswap32(v);
-#endif
-
-                out = v;
-                consumed = offset + len;
-                return true;
-            }
-
-                // ---------------- FLOAT ----------------
-            case 'F':
-            {
-                constexpr size_t len = sizeof(float);
-
-                if (size < offset + len)
-                    return false;
-
-                uint32_t raw = 0;
-                std::memcpy(&raw, data + offset, len);
-
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-                raw = __builtin_bswap32(raw);
-#endif
-
-                float v;
-                std::memcpy(&v, &raw, len);
-
-                out = v;
-                consumed = offset + len;
-                return true;
-            }
-
-                // ---------------- BOOL ----------------
-            case 'B':
-            {
-                constexpr size_t len = sizeof(uint8_t);
-
-                if (size < offset + len)
-                    return false;
-
-                const uint8_t b = data[offset];
-
-                out = (b != 0);
-                consumed = offset + len;
-                return true;
-            }
-
-            default:
-                return false;
-        }
-    }
+//     std::vector<uint8_t> Press(const ValVariant& value) {
+//
+//         std::vector<uint8_t> d;
+//
+//         if (std::holds_alternative<int>(value)) {
+//             int v = std::get<int>(value);
+//
+//             d.push_back('I');
+//             appendBytes(d, &v, sizeof(v));
+//         }
+//
+//         else if (std::holds_alternative<float>(value)) {
+//             float v = std::get<float>(value);
+//
+//             d.push_back('F');
+//             appendBytes(d, &v, sizeof(v));
+//         }
+//
+//         else if (std::holds_alternative<bool>(value)) {
+//             bool v = std::get<bool>(value);
+//
+//             uint8_t b = v ? 1 : 0;
+//
+//             d.push_back('B');
+//             appendBytes(d, &b, sizeof(b));
+//         }
+//
+//         return d;
+//     }
+//
+//
+//
+//     bool Expand(const uint8_t* data,
+//              size_t size,
+//              Value& out,
+//              size_t& consumed)
+//     {
+//         if (!data || size < 1)
+//             return false;
+//
+//         const uint8_t tag = data[0];
+//         size_t offset = 1;
+//
+//         switch (tag)
+//         {
+//             // ---------------- INT32 ----------------
+//             case 'I':
+//             {
+//                 constexpr size_t len = sizeof(int32_t);
+//
+//                 if (size < offset + len)
+//                     return false;
+//
+//                 int32_t v;
+//                 std::memcpy(&v, data + offset, len);
+//
+//                 // Python struct defaults to native endian (usually little-endian)
+//                 // If you ever need portability, force little-endian explicitly.
+// #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+//                 v = __builtin_bswap32(v);
+// #endif
+//
+//                 out = v;
+//                 consumed = offset + len;
+//                 return true;
+//             }
+//
+//                 // ---------------- FLOAT ----------------
+//             case 'F':
+//             {
+//                 constexpr size_t len = sizeof(float);
+//
+//                 if (size < offset + len)
+//                     return false;
+//
+//                 uint32_t raw = 0;
+//                 std::memcpy(&raw, data + offset, len);
+//
+// #if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+//                 raw = __builtin_bswap32(raw);
+// #endif
+//
+//                 float v;
+//                 std::memcpy(&v, &raw, len);
+//
+//                 out = v;
+//                 consumed = offset + len;
+//                 return true;
+//             }
+//
+//                 // ---------------- BOOL ----------------
+//             case 'B':
+//             {
+//                 constexpr size_t len = sizeof(uint8_t);
+//
+//                 if (size < offset + len)
+//                     return false;
+//
+//                 const uint8_t b = data[offset];
+//
+//                 out = (b != 0);
+//                 consumed = offset + len;
+//                 return true;
+//             }
+//
+//             default:
+//                 return false;
+//         }
+//     }
 
 
 
@@ -168,9 +171,10 @@ public:
             d.insert(d.end(), reinterpret_cast<const uint8_t*>(command.data()), reinterpret_cast<const uint8_t*>(command.data() + command.size()));
 
             // press the values
-            for (const auto& v : values) {
-                std::vector<uint8_t> encoded = Press(v);
-                d.insert(d.end(), encoded.begin(), encoded.end());
+            for (auto& v : values) {
+                std::vector<uint8_t> e;
+                v.Marshal(e);
+                d.insert(d.end(), e.begin(), e.end());
             }
             return 0; // success
         }
@@ -226,7 +230,7 @@ public:
 
             for (uint8_t i = 0; i < valuesLen; i++) {
 
-                Value v;
+                values v;
                 size_t consumed = 0;
 
                 if (!Expand(d.data() + offset,
@@ -273,7 +277,19 @@ std::ostream& operator<<(std::ostream& os, const Item& item) {
 
     for (size_t i = 0; i < item.values.size(); i++) {
         std::visit([&os](const auto& v) {
+
+        using T = std::decay_t<decltype(v)>;
+
+        if constexpr (std::is_same_v<T, bool>) {
+                os << (v ? "true" : "false");
+            }
+
+        else if constexpr (std::is_same_v<T, int>)
+            os <<  v;
+
+        else if constexpr (std::is_same_v<T, float>)
             os << v;
+
         }, item.values[i]);
 
         if (i + 1 < item.values.size())
@@ -295,13 +311,60 @@ PYBIND11_MODULE(Clam, m) {
         const std::string&,
         const std::vector<Item::Value>&
         >())
+        .def(py::init<>())
+
         .def_readwrite("joint", &Item::joint)
         .def_readwrite("command", &Item::command)
-        .def_readwrite("values", &Item::values)
+
+
+
+    .def_property(
+    "values",
+
+    [](const Item& self) {
+        return self.values;
+    },
+
+    [](Item& self, py::list lst) {
+
+        self.values.clear();
+        self.values.reserve(py::len(lst));
+
+        for (auto obj : lst) {
+
+            py::handle h = obj;
+
+            // IMPORTANT: bool check FIRST using exact type check
+            if (py::isinstance<py::bool_>(h)) {
+                self.values.emplace_back(py::cast<bool>(h));
+            }
+
+            // THEN int
+            else if (py::isinstance<py::int_>(h)) {
+                self.values.emplace_back(py::cast<int>(h));
+            }
+
+            // THEN float
+            else if (py::isinstance<py::float_>(h)) {
+                self.values.emplace_back(py::cast<float>(h));
+            }
+
+            else {
+                throw std::runtime_error("values must be bool, int, or float");
+            }
+        }
+    }
+)
+
+
         .def("Marshal", [](Item& self) {
             std::vector<uint8_t> d;
             int err = self.Marshal(d);
             return py::make_tuple(err, d);
+        })
+        .def("DeMarshal",
+            [](Item& self, const std::vector<uint8_t>& d) {
+            return self.DeMarshal(d);
         })
 
         .def("__repr__", [](const Item& item) {
@@ -310,6 +373,8 @@ PYBIND11_MODULE(Clam, m) {
         return oss.str();})
         .def(py::self == py::self)
         .def(py::self != py::self);
+
+
 
 }
 

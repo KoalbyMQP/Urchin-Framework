@@ -1,0 +1,87 @@
+//
+// Created by gabri on 6/13/26.
+//
+
+
+#include <pybind11/pybind11.h>
+#include <pybind11/stl_bind.h>
+#include "ValList.h"
+
+namespace py = pybind11;
+PYBIND11_MODULE(Clam, m) {
+    py::class_<ValVariant>(m, "ValVariant")
+        .def(py::init<>())
+        .def(py::init<bool>())
+        .def(py::init<int32_t>())
+        .def(py::init<uint32_t>())
+        .def(py::init<float32_t>())
+
+
+        .def("set",
+            [](ValVariant& self, py::object obj)
+            {
+                if (py::isinstance<py::bool_>(obj))
+                {
+                    self.set(obj.cast<bool>());
+                }
+                else if (py::isinstance<py::float_>(obj))
+                {
+                    self.set(obj.cast<float32_t>());
+                }
+                else if (py::isinstance<py::int_>(obj))
+                {
+                    long long v = obj.cast<long long>();
+
+                    if (v < 0)
+                        self.set(static_cast<int32_t>(v));
+                    else
+                        self.set(static_cast<uint32_t>(v));
+                }
+                else
+                {
+                    throw std::runtime_error("Unsupported type");
+                }
+            })
+
+        .def("get", [](const ValVariant& v) -> py::object {
+            return std::visit([](auto&& val) -> py::object {
+                using T = std::decay_t<decltype(val)>;
+
+                if constexpr (std::is_same_v<T, bool32_t>) {
+                    return py::bool_(static_cast<bool>(val));
+                }
+                else if constexpr (std::is_same_v<T, int32_t>) {
+                    return py::int_(val);
+                }
+                else if constexpr (std::is_same_v<T, uint32_t>) {
+                    return py::int_(val);
+                }
+                else if constexpr (std::is_same_v<T, float32_t>) {
+                    return py::float_(val);
+                }
+                else {
+                    return py::none();
+                }
+            }, v.get());
+            })
+
+        .def("marshal",[](ValVariant& self){
+                std::vector<uint8_t> d;
+            int err = self.Marshal(d);
+            return py::make_tuple(err, d);
+            })
+
+        .def("demarshal",[](ValVariant& self, const std::vector<uint8_t>& d){
+            return self.DeMarshal(d);
+            })
+        .def("__repr__", [](const ValVariant& Val) {
+            std::ostringstream oss;
+            oss << Val;
+            return oss.str();})
+        .def("__eq__", [](const ValVariant& a, const ValVariant& b) {
+            return a == b;
+            })
+        .def("__ne__", [](const ValVariant& a, const ValVariant& b) {
+        return !(a == b);
+            });
+}

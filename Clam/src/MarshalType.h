@@ -9,6 +9,7 @@
 #include <variant>
 #include <stdexcept>
 #include <cstddef>
+
 #include <cstdint>
 #include <cstring>
 #include <algorithm>
@@ -17,6 +18,31 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/operators.h>
+
+struct bool32_t {
+    uint32_t v;
+
+    bool32_t() : v(0) {}
+    bool32_t(bool b) : v(b ? 1 : 0) {}
+
+    explicit operator bool() const { return v != 0; }
+
+    bool32_t& operator=(bool b) {
+        v = b ? 1u : 0u;
+        return *this;
+    }
+
+    bool operator==(const bool32_t& other) const {
+        return v == other.v;
+    }
+
+    bool operator!=(const bool32_t& other) const {
+        return v != other.v;
+    }
+};
+using float32_t = float;
+
+
 class MarshalType {
 public:
     /*
