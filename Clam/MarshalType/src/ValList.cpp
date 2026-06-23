@@ -3,7 +3,7 @@
 //
 #include "ValList.h"
 
-    int ValVariant::Marshal(std::vector<uint8_t>& d){
+    int MarshalType::ValVariant::Marshal(std::vector<uint8_t>& d){
         try {
             std::visit([&](auto&& v) {
                 using T = std::decay_t<decltype(v)>;
@@ -34,7 +34,7 @@
         }
     }
 
-    int ValVariant::DeMarshal(const std::vector<uint8_t>& d) {
+    int MarshalType::ValVariant::DeMarshal(const std::vector<uint8_t>& d) {
         try {
             if (d.empty())
                 return -1;
@@ -135,7 +135,7 @@
 
 
 
- std::ostream& operator<<(std::ostream& os, const ValVariant& v)
+ std::ostream& operator<<(std::ostream& os, const MarshalType::ValVariant& v)
     {
         const auto& var = v.get();
 
@@ -151,11 +151,11 @@
             {
                 os << "[uint32] " << value;
             }
-            else if constexpr (std::is_same_v<T, float32_t>)
+            else if constexpr (std::is_same_v<T, MarshalType::float32_t>)
             {
                 os << "[float32] " << value;
             }
-            else if constexpr (std::is_same_v<T, bool32_t>)
+            else if constexpr (std::is_same_v<T, MarshalType::bool32_t>)
             {
                 os << "[bool32] " << (value.v != 0 ? "true" : "false");
             }
