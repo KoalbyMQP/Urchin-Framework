@@ -68,6 +68,18 @@ namespace MarshalType {
             return !(*this == other);
         }
 
+        explicit operator bool() const {
+            return std::visit([](const auto& v) -> bool {
+                using T = std::decay_t<decltype(v)>;
+
+                if constexpr (std::is_same_v<T, bool32_t>)
+                    return static_cast<bool>(v);
+                else
+                    return v != 0;
+            }, value);
+        }
+
+
     private:
         VariantType value;
 

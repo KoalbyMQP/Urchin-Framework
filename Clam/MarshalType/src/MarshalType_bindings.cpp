@@ -6,7 +6,7 @@
 #include <pybind11/stl_bind.h>
 #include <MarshalType.h>
 #include <ValList.h>
-
+#include <Item.h>
 
 #include <pybind11/stl.h>
 
@@ -90,11 +90,11 @@ PYBIND11_MODULE(marshaltype_py, m) {
         return !(a == b);
             });
 
-    /*py::class_<Item>(m, "Item")
+    py::class_<Item>(m, "Item")
         .def(py::init<
         const std::string&,
         const std::string&,
-        const std::vector<Item::Value>&
+        const std::vector<ValVariant>&
         >())
         .def(py::init<>())
 
@@ -111,29 +111,21 @@ PYBIND11_MODULE(marshaltype_py, m) {
     },
 
     [](Item& self, py::list lst) {
-
         self.values.clear();
         self.values.reserve(py::len(lst));
 
         for (auto obj : lst) {
-
             py::handle h = obj;
 
-            // IMPORTANT: bool check FIRST using exact type check
             if (py::isinstance<py::bool_>(h)) {
-                self.values.emplace_back(py::cast<bool>(h));
+                self.values.emplace_back(ValVariant(py::cast<bool>(h)));
             }
-
-            // THEN int
             else if (py::isinstance<py::int_>(h)) {
-                self.values.emplace_back(py::cast<int>(h));
+                self.values.emplace_back(ValVariant(py::cast<int32_t>(h)));
             }
-
-            // THEN float
             else if (py::isinstance<py::float_>(h)) {
-                self.values.emplace_back(py::cast<float>(h));
+                self.values.emplace_back(ValVariant(py::cast<float>(h)));
             }
-
             else {
                 throw std::runtime_error("values must be bool, int, or float");
             }
@@ -157,7 +149,7 @@ PYBIND11_MODULE(marshaltype_py, m) {
         oss << item;
         return oss.str();})
         .def(py::self == py::self)
-        .def(py::self != py::self);*/
+        .def(py::self != py::self);
 }
 
 

@@ -118,7 +118,7 @@
                     v = __builtin_bswap32(v);
 #endif
 
-                    value = v ? 1u : 0u;
+                    value = v;
                     return 0;
                 }
 

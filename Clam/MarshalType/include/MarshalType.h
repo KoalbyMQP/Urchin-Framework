@@ -20,22 +20,28 @@ namespace MarshalType {
 struct bool32_t {
     uint32_t v;
 
-    bool32_t() : v(0) {}
-    bool32_t(bool b) : v(b ? 1 : 0) {}
+    constexpr bool32_t() noexcept : v(0) {}
+    constexpr bool32_t(bool b) noexcept : v(b ? 1u : 0u) {}
 
-    explicit operator bool() const { return v != 0; }
+    constexpr explicit operator bool() const noexcept {
+        return v != 0;
+    }
 
-    bool32_t& operator=(bool b) {
+    constexpr bool32_t& operator=(bool b) noexcept {
         v = b ? 1u : 0u;
         return *this;
     }
 
-    bool operator==(const bool32_t& other) const {
+    constexpr bool operator==(const bool32_t& other) const noexcept {
         return v == other.v;
     }
 
-    bool operator!=(const bool32_t& other) const {
+    constexpr bool operator!=(const bool32_t& other) const noexcept {
         return v != other.v;
+    }
+
+    constexpr bool operator==(bool b) const noexcept {
+        return (v != 0) == b;
     }
 };
 using float32_t = float;

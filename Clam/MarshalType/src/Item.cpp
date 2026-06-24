@@ -46,7 +46,7 @@ namespace MarshalType {
 
     }
 
-    int DeMarshal(const std::vector<uint8_t>& d) {
+    int Item::DeMarshal(const std::vector<uint8_t>& d) {
         try {
             size_t offset = 0;
 
@@ -84,20 +84,20 @@ namespace MarshalType {
             offset += commandLen;
 
             // ---- values ----
-            Item::values.clear();
-            Item::values.reserve(valuesLen);
+            this->values.clear();
+            this->values.reserve(valuesLen);
 
             for (uint8_t i = 0; i < valuesLen; i++) {
 
-                Item::values v;
+                ValVariant v;
                 size_t consumed = 0;
 
-                if (!Expand(d.data() + offset,
-                             d.size() - offset,
-                             v,
-                             consumed)) {
+                std::vector<uint8_t> buff(
+                    d.begin() + offset,
+                    d.begin() + offset + consumed
+                );
+                if (!v.DeMarshal(buff))
                     return -1;
-                             }
 
                 values.push_back(v);
                 offset += consumed;
@@ -116,18 +116,10 @@ namespace MarshalType {
 
 
 
-    bool operator==(const Item& other) const {
-        return joint == other.joint &&
-               command == other.command &&
-               values == other.values;
-    }
 
-    bool operator!=(const Item& other) const {
-        return !(*this == other);
-    }
 };
 
-std::ostream& operator<<(std::ostream& os, const Item& item) {
+std::ostream& operator<<(std::ostream& os, const MarshalType::Item& item) {
 
     os << "Item{\n";
     os << "  joint: " << item.joint << "\n";
@@ -135,21 +127,18 @@ std::ostream& operator<<(std::ostream& os, const Item& item) {
     os << "  values: [";
 
     for (size_t i = 0; i < item.values.size(); i++) {
+
         std::visit([&os](const auto& v) {
+            using T = std::decay_t<decltype(v)>;
 
-        using T = std::decay_t<decltype(v)>;
-
-        if constexpr (std::is_same_v<T, bool>) {
-                os << (v ? "true" : "false");
+            if constexpr (std::is_same_v<T, MarshalType::bool32_t>) {
+                os << (bool)v;
+            }
+            else {
+                os << v;
             }
 
-        else if constexpr (std::is_same_v<T, int>)
-            os <<  v;
-
-        else if constexpr (std::is_same_v<T, float>)
-            os << v;
-
-        }, item.values[i]);
+        }, item.values[i].get());
 
         if (i + 1 < item.values.size())
             os << ", ";
@@ -160,6 +149,6 @@ std::ostream& operator<<(std::ostream& os, const Item& item) {
 
     return os;
 }
-}
+
 
 
