@@ -3,102 +3,198 @@
 //
 
 #include "DBOXprotocol.h"
+#include <boost/crc.hpp>
 
-bool send(DBOX *packet) {
-    //check the size against max payload size
-    //compute ChecksumHeader
-    //compute ChecksumHeader2
-    //compute ChecksumWhole
-    //build struct
-    // use ship on struct
-}
+namespace DBOXProtocol {
+    bool DBOXprotocol::send(DBOX *packet) {
 
-bool ship(DBOXraw *packet) {
-    // convert DBOXraw to span
-    // then use port->write(span);
-}
+        //check the size against max payload size
+        if (std::numeric_limits<uint16_t>::max() < packet->Payload.size()) {
+            return false;
+        }
 
-bool receive(DBOX *packet) {
+        //Start filling the box
+        DBOXraw FullBox = DBOXraw(*packet);
 
-    //loop looking for delimiter
+        // use ship on struct
+        return ship(&FullBox);
+    }
 
-    // once found get bytes with peek into header buffer
-    // if caught RingBufferUnderflowException then try again later
+    bool DBOXprotocol::ship(DBOXraw *packet){
+        std::vector<uint8_t> bytes = static_cast<std::vector<uint8_t>>(*packet);
 
-    // else
-    // check the header buffer with the two checksums
-    // if failed restart and look for next delimater and append byte to the discard file pointer with dump << btye";,dump.flush();
-    // else use  to get the whole packet and cast it to the striped down struct
-    //return struct
+        std::span<const uint8_t> byte_view{
+            bytes.data(),
+            bytes.size()
+        };
+
+        size_t bytes_sent = this->port->write(byte_view, byte_view.size());
+
+        return bytes_sent == byte_view.size();
+    }
+
+    bool DBOXprotocol::receive(DBOX* packet) {
+        if (!packet)
+            return false;
+
+        uint16_t CRC = 0;
+
+        constexpr size_t HeaderSize =
+            sizeof(DBOXraw::VPID) +
+            sizeof(DBOXraw::Stream) +
+            sizeof(DBOXraw::PayloadSize);
+
+        std::array<uint8_t, HeaderSize> headerBuffer{};
+        std::array<uint8_t, 2> crcBuffer{};;
+
+        std::span<uint8_t> Header(headerBuffer);
+        std::span<uint8_t, 2> HeaderCRC(crcBuffer);
+
+        // Look for Delimiter
+        while (true)
+        {
+            uint8_t byte = 0;
+            std::span<uint8_t> buffer(&byte, 1);
+
+            while (true)
+            {
+                if (port->read(buffer, 1) == 1)
+                    break;
+
+                port->wait(WaitForDataMS);
+            }
+
+            if (byte == '\a')
+                break;
+
+            dump.write(reinterpret_cast<const char*>(&byte), 1);
+        }
+
+        //found an instance of a start marker
+
+        // Wait for / read header + CRC
+
+        while (true)
+        {
+            try
+            {
+                std::array<uint8_t, HeaderSize + sizeof(uint16_t)> raw{};
+
+                std::span<uint8_t> rawSpan(raw);
+                //Assuming we don't have frame alignment, peek the header
+                // if data is still ariveing then wha
+                if (port->peek(rawSpan, raw.size()) == raw.size()) {
+                    std::copy_n(
+                    raw.begin(),
+                    HeaderSize,
+                    Header.begin()
+                );
+
+                    std::copy_n(
+                        raw.begin() + HeaderSize,
+                        sizeof(uint16_t),
+                        HeaderCRC.begin()
+                    );
+
+                    // genarate teh CRC from the received header
+                    if (ComputeChecksumCRC(&CRC, Header) == -1){
+                        return false;
+                    }
+
+                    // Verify header CRC
+                    // if the CRC failed then move to the next delimiter
+                    if (CRC == span_to_uint16_native(HeaderCRC)){
+                        break;
+                    }
+                }
 
 
-}
+            }
+            catch (const RingBuffer::RingBufferUnderflowException&)
+            {
+                port->wait(WaitForDataMS);
+            }
+        }
 
-std::string HuntPair() {
-    // will get the list of comm ports and try to connect to them
-    // if connected wait for a port to stabilise then run SendValidater and CheckValidater 3 times to see if they get back to us
-    // if they sent it back correctly then we are good and close the port and return the port name
 
-    // use python as losse example
-    //    def WhoaAreYou(self, COM: str) -> bool:
-    // print("checking a com port")
-    // VPID: int = 0
+
+        //At this point we have proved frame alignment from the CRC so the payload size is correct
+        //We can safely drop the head and read the payload.
+
+        // Extract header fields
+
+        packet->VPID = Header[0];
+        packet->Stream = Header[1];
+
+        uint16_t payloadSize =
+            Header[2] |
+            (static_cast<uint16_t>(Header[3]) << 8);
+
+
+        // Drop the header to prep for reading the paylaod
+        port->drop(HeaderSize + sizeof(uint16_t));
+
+
+        // Read payload
+        //DONOT peek the payload thr ring buffer cant fit the max sized payload.
+        packet->Payload.resize(payloadSize);
+
+        size_t offset = 0;
+
+        while (offset < payloadSize)
+        {
+            auto remaining = payloadSize - offset;
+
+            std::span<uint8_t> destination(
+                packet->Payload.data() + offset,
+                remaining
+            );
+
+            size_t got = port->read(destination, remaining);
+
+            if (got == 0)
+            {
+                port->wait(WaitForDataMS);
+                continue;
+            }
+
+            offset += got;
+        }
+
+
+        return true;
+    }
+
+
+
+    // generator polynomial from https://users.ece.cmu.edu/~koopman/crc/
     //
-    // try:
-    //     #Open COM connection
-    //     bus = serial.Serial(
-    //         COM,
-    //         115200,
-    //         timeout=1,
-    //         dsrdtr=False,
-    //         rtscts=False
-    //     )
-    //
-    //     time.sleep(0.5)  # give CP2102 + MCU time to settle
-    //
-    //     # flush any garbage from boot/reset
-    //     bus.reset_input_buffer()
-    //     bus.reset_output_buffer()
-    //
-    //     message = b'Validate'
-    //
-    //     if self.Debug:
-    //         print("sending Validate")
-    //
-    //     # retry a few times (devices often miss first packet after connect)
-    //     for _ in range(3):
-    //         self.send_packet_internal(VPID, message, bus)
-    //
-    //         output = self.CheckForValidate(bus)
-    //         if output:
-    //             return True
-    //
-    //         time.sleep(0.2)
-    //
-    //     return False
-    //
-    // except serial.SerialException as e:
-    //     if self.Debug:
-    //         print(f"Serial error on {COM}: {e}")
-    //     return False
-    //
-    // finally:
-    //     try:
-    //         bus.close()
-    //     except:
-    //         pass
-}
 
-bool CheckValidater() {
-    //use receive to get the incoming packet
-    // then check to see if the string they send back matches the validater
-    // and the steam is 'S' for system
-    // retrun the "and" of the two
-}
+    using my_crc = boost::crc_optimal<
+        16,       // CRC width in bits
+        GeneratorPolynomial,   // generator polynomial without the top x^16 term
+        0xFFFF,   // initial remainder
+        0x0000,   // final xor value
+        false,    // reflect input bytes
+        false     // reflect final remainder
+    >;
+
+    int ComputeChecksumCRC(uint16_t *CRC,std::span<uint8_t> Payload) {
+        if ((Payload.size() * CHAR_BIT) > MAX_CRC_Payload_BIT)
+            return -1;
+
+        my_crc crc;
+        crc.process_bytes(Payload.data(), Payload.size());
+
+        *CRC = crc.checksum();
+        return 0;
+    }
 
 
-// generator polynomial from https://users.ece.cmu.edu/~koopman/crc/
-//
-uint16_t ComputeChecksumCRC(std::span<uint8_t> Payload) {
-    return 0;
+    uint16_t span_to_uint16_native(std::span<const uint8_t, 2> bytes) {
+        // Reinterprets the 2-byte span as a uint16_t directly
+        return std::bit_cast<uint16_t>(std::array<uint8_t, 2>{bytes[0], bytes[1]});
+    }
+
+
 }

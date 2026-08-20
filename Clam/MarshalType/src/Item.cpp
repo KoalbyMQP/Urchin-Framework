@@ -87,25 +87,35 @@ namespace MarshalType {
             this->values.clear();
             this->values.reserve(valuesLen);
 
-            for (uint8_t i = 0; i < valuesLen; i++) {
+            std::vector<ValVariant> parsedValues;
+            parsedValues.reserve(valuesLen);
 
+            for (uint8_t i = 0; i < valuesLen; i++) {
                 ValVariant v;
-                size_t consumed = 0;
 
                 std::vector<uint8_t> buff(
                     d.begin() + offset,
-                    d.begin() + offset + consumed
+                    d.begin() + offset + 5
                 );
-                if (!v.DeMarshal(buff))
+
+                if (0 != v.DeMarshal(buff))
                     return -1;
 
-                values.push_back(v);
+                std::vector<uint8_t> check;
+                v.Marshal(check);
+                size_t consumed = check.size();
+
+                if (consumed == 0 || consumed > d.size() - offset)
+                    return -1;
+
+                parsedValues.push_back(v);
                 offset += consumed;
             }
 
             // assign results
             this->joint = jointStr;
             this->command = commandStr;
+            this->values  = std::move(parsedValues);
 
             return 0;
         }

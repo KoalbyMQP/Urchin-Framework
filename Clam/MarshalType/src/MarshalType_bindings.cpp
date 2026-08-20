@@ -25,7 +25,10 @@ PYBIND11_MODULE(marshaltype_py, m) {
         .def("set",
             [](ValVariant& self, py::object obj)
             {
-                if (py::isinstance<py::bool_>(obj))
+                if (py::isinstance<ValVariant>(h)) {          // ← ADD before bool check
+                    self.values.push_back(py::cast<ValVariant>(h));
+                }
+                else if (py::isinstance<py::bool_>(obj))
                 {
                     self.set(obj.cast<bool>());
                 }
@@ -135,12 +138,11 @@ PYBIND11_MODULE(marshaltype_py, m) {
 
 
         .def("Marshal", [](Item& self) {
-            std::vector<uint8_t> d;
+                std::vector<uint8_t> d;
             int err = self.Marshal(d);
             return py::make_tuple(err, d);
         })
-        .def("DeMarshal",
-            [](Item& self, const std::vector<uint8_t>& d) {
+        .def("DeMarshal",[](Item& self, const std::vector<uint8_t>& d) {
             return self.DeMarshal(d);
         })
 
@@ -148,8 +150,12 @@ PYBIND11_MODULE(marshaltype_py, m) {
         std::ostringstream oss;
         oss << item;
         return oss.str();})
-        .def(py::self == py::self)
-        .def(py::self != py::self);
+    .def("__eq__", [](const Item& a, const Item& b) {
+        return a == b;
+        })
+    .def("__ne__", [](const Item& a, const Item& b) {
+    return !(a == b);
+        });
 }
 
 

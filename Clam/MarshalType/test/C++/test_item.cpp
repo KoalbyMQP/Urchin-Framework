@@ -59,9 +59,7 @@ TEST(TestItem, MAX_VALUES_LEN) {
 
 }
 
-TEST(ValList, MarshalAndDemarshal) {
-
-
+TEST(TestItem, MarshalAndDemarshal_1) {
     std::vector<uint8_t> buffer;
     MarshalType::Item Item_pre("Arm","moveone",0.45f,30,true);
     MarshalType::Item Item_post;
@@ -70,4 +68,13 @@ TEST(ValList, MarshalAndDemarshal) {
     EXPECT_TRUE(Item_pre == Item_post);
 }
 
+
+TEST(TestItem, MarshalAndDemarshal_2) {
+    std::vector<uint8_t> buffer;
+    MarshalType::Item Item_pre("LeftArmCuff","moveone",0.45f,30,true,30u);
+    MarshalType::Item Item_post;
+    Item_pre.Marshal(buffer);
+    Item_post.DeMarshal(buffer);
+    EXPECT_TRUE(Item_pre == Item_post);
+}
 
