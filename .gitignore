@@ -1,6 +1,7 @@
 # Root folder
 /.idea
 /.vscode
+/scratch
 
 # Urchin Firmware
 /Urchin_Firmware/.idea
