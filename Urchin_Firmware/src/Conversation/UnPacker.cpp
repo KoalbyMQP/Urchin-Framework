@@ -132,7 +132,7 @@ int FormatTicket(unsigned char VPID, const char* buffer) {
     const char TicketType = *(buffer);
     volatile unsigned int TicketNum = TicketFindOpen(Tickets);
 
-    //send NoFreeTicket if non are found
+    //send NoFreeTicket if none are found
     if (TicketNum == -1) {
         Platter.I=URCHIN_ERROR_NoFreeTicket; //unsigned int
         (void) PackfToPI(ExchangeQueue,VPID,reinterpret_cast<const char *>(Platter.UString),sizeof(int));
