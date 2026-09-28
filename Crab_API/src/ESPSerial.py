@@ -1,4 +1,5 @@
 import time
+import os
 
 import serial
 import serial.tools.list_ports
@@ -22,6 +23,13 @@ class ESPSerial(object):
         self.BoardTag: bytes = b'URCHIN'
         self.New: bool = True
         self.Debug: bool = Debug
+
+        # Optional override, e.g. URCHIN_PORT=socket://127.0.0.1:5555 for the QEMU simulator.
+        # Unset = original behaviour (scan USB ports for the Urchin board).
+        url = os.environ.get("URCHIN_PORT")
+        if url:
+            self.buss: Serial = serial.serial_for_url(url, baudrate=115200, timeout=1)
+            return
 
         port: list[Serial] = self.find_esp32_ports()
         if len(port) == 0:
