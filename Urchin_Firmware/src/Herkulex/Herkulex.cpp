@@ -372,7 +372,7 @@ std::optional<StatusData> HerkulexClass::stat(int servoID){
 
 
     ck1 = (dataEx[2]^dataEx[3]^dataEx[4]^dataEx[7]^dataEx[8]) & 0xFE;
-	ck2=~(ck1) &0xFE;
+	ck2=~(ck1) & 0xFE;
 
 	if (ck1 != dataEx[5]) return StatusData{static_cast<byte>(-1), 0};
     if (ck2 != dataEx[6]) return StatusData{static_cast<byte>(-2), 0};
