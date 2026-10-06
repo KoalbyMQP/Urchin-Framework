@@ -17,12 +17,19 @@ QueueHandle_t ExchangeQueue = nullptr;
 QueueHandle_t RecationQueue = nullptr;
 QueueHandle_t DebugQueue = nullptr;
 
+// main.cpp mutes the driver's own debug prints (e.g. motor_stop dumps raw
+// checksum numbers with no newline), which just clutter the test console.
+bool g_driverLogsEnabled = true;
+
 extern "C" int PackfToPI(QueueHandle_t, const uint8_t, const char buff[], size_t buff_size) {
     printf("%.*s", static_cast<int>(buff_size), buff);
     return Success;
 }
 
 extern "C" int PrintfToPI(QueueHandle_t, const uint8_t, const char* format, ...) {
+    if (!g_driverLogsEnabled) {
+        return 0;
+    }
     va_list args;
     va_start(args, format);
     int ret = vprintf(format, args);

@@ -3,25 +3,31 @@
 
 FILE(GLOB_RECURSE app_sources ${CMAKE_SOURCE_DIR}/src/*.*)
 
-# Local-only, not committed: isolates the hardware-verification builds
-# (env:DBoxEcho, env:HerkulexTest) from the normal firmware sources, and
-# from each other, so they don't collide over duplicate app_main()
-# definitions.
+# Local-only hardware bench-test builds, isolated from the normal firmware
+# sources and from each other (they'd otherwise collide over duplicate
+# app_main()/global definitions). Which one gets built is chosen by an
+# environment variable that scripts/select_sources.py sets automatically
+# per PlatformIO environment -- nobody needs to set these by hand.
 if(DEFINED ENV{DBOX_ECHO_ONLY})
     FILE(GLOB_RECURSE app_sources ${CMAKE_SOURCE_DIR}/src/DBoxEcho/*.*)
 elseif(DEFINED ENV{HERKULEX_TEST_ONLY})
     FILE(GLOB_RECURSE app_sources
         ${CMAKE_SOURCE_DIR}/src/Herkulex/*.*
+        ${CMAKE_SOURCE_DIR}/src/BenchShared/*.*
         ${CMAKE_SOURCE_DIR}/src/HerkulexTest/*.*)
+elseif(DEFINED ENV{DBOX_MOTOR_ONLY})
+    FILE(GLOB_RECURSE app_sources
+        ${CMAKE_SOURCE_DIR}/src/Herkulex/*.*
+        ${CMAKE_SOURCE_DIR}/src/BenchShared/*.*
+        ${CMAKE_SOURCE_DIR}/src/DBoxMotor/*.*)
+    list(APPEND app_sources ${CMAKE_SOURCE_DIR}/src/DBoxEcho/Esp32UartPort.cpp)
 else()
-    FILE(GLOB_RECURSE dbox_echo_sources ${CMAKE_SOURCE_DIR}/src/DBoxEcho/*.*)
-    if(dbox_echo_sources)
-        list(REMOVE_ITEM app_sources ${dbox_echo_sources})
-    endif()
-    FILE(GLOB_RECURSE herkulex_test_sources ${CMAKE_SOURCE_DIR}/src/HerkulexTest/*.*)
-    if(herkulex_test_sources)
-        list(REMOVE_ITEM app_sources ${herkulex_test_sources})
-    endif()
+    foreach(bench_dir DBoxEcho HerkulexTest DBoxMotor BenchShared)
+        FILE(GLOB_RECURSE bench_sources ${CMAKE_SOURCE_DIR}/src/${bench_dir}/*.*)
+        if(bench_sources)
+            list(REMOVE_ITEM app_sources ${bench_sources})
+        endif()
+    endforeach()
 endif()
 
 idf_component_register(SRCS ${app_sources})
