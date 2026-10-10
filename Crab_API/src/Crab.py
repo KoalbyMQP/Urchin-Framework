@@ -1,9 +1,10 @@
+from __future__ import annotations
 import queue
 import threading
 import struct
 from ESPSerial import ESPSerial
 from Types import Item
-from enum import StrEnum
+from Types import StrEnum
 from typing import Union, Any, List
 from Bridge import Bridge
 from Reaction import Reaction
