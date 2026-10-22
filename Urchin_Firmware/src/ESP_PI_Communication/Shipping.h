@@ -19,7 +19,10 @@ extern uart_config_t uart_config;
 
 
 #ifdef __cplusplus
+#define NO_RETURN [[noreturn]]
 extern "C" {
+#else
+#define NO_RETURN _Noreturn
 #endif
 
 
