@@ -93,6 +93,7 @@ void init_uart(uart_port_t uart_num, int band ,unsigned int BUF_SIZE ,int tx_pin
 		.stop_bits = UART_STOP_BITS_1,
 		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
 		.rx_flow_ctrl_thresh = 122,
+		.rx_glitch_filt_thresh = 0,
 		.source_clk = UART_SCLK_APB,
 		.flags = {
 			.allow_pd = 0,
