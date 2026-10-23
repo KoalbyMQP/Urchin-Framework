@@ -1,0 +1,34 @@
+{
+  "name": "ZaraOS Development Environment",
+  "image": "ghcr.io/koalbymqp/zaraos-dev:nightly",
+  "privileged": true,
+  "runArgs": ["-v", "/dev:/dev"],
+  "forwardPorts": [8080],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "files.watcherExclude": {
+          "**/output/**": true,
+          "**/build/**": true,
+          "**/dl/**": true
+        }
+      },
+      "extensions": [
+        "ms-vscode.makefile-tools",
+        "redhat.vscode-yaml",
+        "timonwong.shellcheck",
+        "ms-vscode.hexdump",
+        "ms-azuretools.vscode-docker",
+        "github.vscode-github-actions",
+        "streetsidesoftware.code-spell-checker",
+        "ms-vscode.cmake-tools",
+        "twxs.cmake",
+        "eamodio.gitlens"
+      ]
+    }
+  },
+  "workspaceFolder": "/workspace",
+  "postCreateCommand": "git config --global --add safe.directory /workspace",
+  "postStartCommand": "start.sh"
+}
