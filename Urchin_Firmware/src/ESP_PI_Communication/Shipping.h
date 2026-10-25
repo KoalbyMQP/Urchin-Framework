@@ -38,7 +38,7 @@ extern "C" {
  * @date 2025-03-24
  * @author Gabriel Weaver
  */
-_Noreturn void Shipping(void *pvParameters);
+NO_RETURN void Shipping(void *pvParameters);
 
 
 /**
