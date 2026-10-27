@@ -20,9 +20,8 @@ namespace RingBuffer {
         size_t available = count;
         size_t toRead = std::min(n, available);
 
-        // (vendored, exceptions disabled) clamp defensively instead of throwing
         if (out.size() < toRead)
-            toRead = out.size();
+            throw RingBufferSpanTooSmallException();
 
         // copy everything available (or requested, whichever is smaller)
         for (size_t i = 0; i < toRead; ++i)
@@ -33,8 +32,12 @@ namespace RingBuffer {
 
         count -= toRead;
 
-        // Note (vendored, exceptions disabled): caller must check the
-        // returned count against n to detect a short read.
+        // IMPORTANT: only signal failure AFTER successful copy
+        if (n > available)
+        {
+            throw RingBufferUnderflowException(n, available, toRead);
+        }
+
         return toRead;
     }
 
@@ -44,9 +47,8 @@ namespace RingBuffer {
         size_t available = count;
         size_t toRead = std::min(n, available);
 
-        // (vendored, exceptions disabled) clamp defensively instead of throwing
         if (out.size() < toRead)
-            toRead = out.size();
+            throw RingBufferSpanTooSmallException();
 
         size_t tempHead = head;
 
@@ -58,11 +60,14 @@ namespace RingBuffer {
 
         // Peek must NOT modify state, so no changes to head/count/tail
 
-        // Note (vendored, exceptions disabled): caller must check the
-        // returned count against n to detect a short peek.
+        // Optional behavior choice:
+        // If you want peek to behave like pop (strict):
+        if (n > available)
+            throw RingBufferUnderflowException(n, available, toRead);
+
         return toRead;
     }
 
 }
 
-#endif // D_BOX_RINGBUFFER_TPP
+#endif // D_BOX_RINGBUFFER_TPP

@@ -3,17 +3,18 @@
 //
 
 #include "DBOXprotocol.h"
-// NOTE: this is a vendored copy for the local DBoxEcho hardware-verification
-// build only (Urchin_Firmware/lib/D-BOX-vendored). The only intentional
-// difference from Gabe's original (Clam/D-BOX/src/DBOX-Protocol/DBOXprotocol.cpp)
-// is right below: boost::crc_optimal is swapped for a hand-rolled CRC-16
-// using the identical polynomial/init/xorout/reflect settings, since Boost
-// isn't available for the ESP32 (xtensa) cross-compiler. Produces
-// bit-identical checksums to the original. receive()'s header-peek retry
-// loop must otherwise stay behaviorally identical to the original (including
-// the try/catch around RingBufferUnderflowException) -- a prior version of
-// this file dropped that try/catch by mistake, which crashed on any real
-// UART link since peek() throws whenever a header hasn't fully arrived yet.
+// NOTE: this is a vendored copy for the ESP32 firmware builds
+// (Urchin_Firmware/lib/D-BOX-vendored) of Gabe's original
+// (Clam/D-BOX/src/DBOX-Protocol/DBOXprotocol.cpp). Intentional differences:
+//  1. boost::crc_optimal is swapped for a hand-rolled CRC-16 with the identical
+//     polynomial/init/xorout/reflect settings, since Boost isn't available for
+//     the ESP32 (xtensa) cross-compiler. Produces bit-identical checksums.
+//  2. receive() resynchronizes after a header CRC failure: it goes back to
+//     searching for the next start marker instead of re-peeking the same bad
+//     bytes forever. (Gabe's original still has that infinite loop.)
+// The header-peek retry loop relies on IPort::peek() throwing
+// RingBufferUnderflowException while a header is still arriving; that is
+// caught below and turned into a WaitForDataMS pause before re-checking.
 
 namespace DBOXProtocol {
     bool DBOXprotocol::send(DBOX *packet) {
@@ -60,75 +61,79 @@ namespace DBOXProtocol {
         std::span<uint8_t> Header(headerBuffer);
         std::span<uint8_t, 2> HeaderCRC(crcBuffer);
 
-        // Look for Delimiter
-        while (true)
+        // Find a start marker whose header passes its CRC.
+        // If a header fails its CRC, the 0x07 we found was a false start
+        // (line noise, or a 0x07 byte inside some other packet's payload).
+        // Its bytes were only peeked, so they are still in the buffer; going
+        // back to the marker search resumes at the byte right after the
+        // false 0x07, which is exactly where a real marker could be hiding.
+        bool aligned = false;
+        while (!aligned)
         {
-            uint8_t byte = 0;
-            std::span<uint8_t> buffer(&byte, 1);
-
+            // Look for Delimiter
             while (true)
             {
-                if (port->read(buffer, 1) == 1)
+                uint8_t byte = 0;
+                std::span<uint8_t> buffer(&byte, 1);
+
+                while (true)
+                {
+                    if (port->read(buffer, 1) == 1)
+                        break;
+
+                    port->wait(WaitForDataMS);
+                }
+
+                if (byte == '\a')
                     break;
 
-                port->wait(WaitForDataMS);
+                dump.write(reinterpret_cast<const char*>(&byte), 1);
             }
 
-            if (byte == '\a')
-                break;
+            //found an instance of a start marker
 
-            dump.write(reinterpret_cast<const char*>(&byte), 1);
-        }
-
-        //found an instance of a start marker
-
-        // Wait for / read header + CRC
-
-        while (true)
-        {
-            // IPort::peek() throws RingBufferUnderflowException (rather than
-            // returning a short count) whenever fewer than raw.size() bytes
-            // have arrived so far -- the normal case while a header is still
-            // trickling in over a live UART. This must be caught here and
-            // treated as "not ready yet, retry", exactly like Gabe's
-            // original boost-based version does; letting it escape crashes
-            // the process (and would abort/reboot real hardware, since
-            // ESP-IDF builds typically have C++ exceptions disabled).
-            try
+            // Wait for / read header + CRC
+            while (true)
             {
-                std::array<uint8_t, HeaderSize + sizeof(uint16_t)> raw{};
+                // IPort::peek() throws RingBufferUnderflowException while
+                // fewer than raw.size() bytes have arrived (normal while a
+                // header is still trickling in over UART). Catch it, pause,
+                // and re-check.
+                try
+                {
+                    std::array<uint8_t, HeaderSize + sizeof(uint16_t)> raw{};
 
-                std::span<uint8_t> rawSpan(raw);
-                //Assuming we don't have frame alignment, peek the header
-                // if data is still ariveing then wha
-                if (port->peek(rawSpan, raw.size()) == raw.size()) {
-                    std::copy_n(
-                    raw.begin(),
-                    HeaderSize,
-                    Header.begin()
-                );
+                    std::span<uint8_t> rawSpan(raw);
+                    //Assuming we don't have frame alignment, peek the header
+                    if (port->peek(rawSpan, raw.size()) == raw.size()) {
+                        std::copy_n(
+                            raw.begin(),
+                            HeaderSize,
+                            Header.begin()
+                        );
 
-                    std::copy_n(
-                        raw.begin() + HeaderSize,
-                        sizeof(uint16_t),
-                        HeaderCRC.begin()
-                    );
+                        std::copy_n(
+                            raw.begin() + HeaderSize,
+                            sizeof(uint16_t),
+                            HeaderCRC.begin()
+                        );
 
-                    // genarate teh CRC from the received header
-                    if (ComputeChecksumCRC(&CRC, Header) == -1){
-                        return false;
-                    }
+                        // generate the CRC from the received header
+                        if (ComputeChecksumCRC(&CRC, Header) == -1){
+                            return false;
+                        }
 
-                    // Verify header CRC
-                    // if the CRC failed then move to the next delimiter
-                    if (CRC == span_to_uint16_native(HeaderCRC)){
+                        // Verify header CRC.
+                        // Match: frame is aligned. Mismatch: false start,
+                        // leave this loop and search for the next delimiter.
+                        aligned = (CRC == span_to_uint16_native(HeaderCRC));
                         break;
                     }
                 }
-            }
-            catch (const RingBuffer::RingBufferUnderflowException&)
-            {
-                port->wait(WaitForDataMS);
+                catch (const RingBuffer::RingBufferUnderflowException&)
+                {
+                    port->wait(WaitForDataMS);
+                }
             }
         }
 
@@ -215,4 +220,4 @@ namespace DBOXProtocol {
     }
 
 
-}
+}
