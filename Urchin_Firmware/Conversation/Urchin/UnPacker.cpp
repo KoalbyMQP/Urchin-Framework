@@ -483,6 +483,16 @@ int GetHealth(unsigned char VPID, const char* buffer) {
     if (0== strcmp("CPU",buffer)) {
 
     }
+	// loops through all motors and prints voltage reading of each
+	if (0 == strcmp("VoltCheck", buffer)) {
+		for (int i = 0; i < GetBridgeMotorSize(); ++i) {
+			BridgeMotor *motor = GetBridgeN(i);
+			auto data = Herkulex.RAMRead(motor->Num, Herkulex.ramInfoTable[1]);
+			// RAM value is voltage * 10 --> put into volts here
+			float voltage = (float) data / 10.0;
+			(void) PrintfToPI(DebugQueue, VPID, "Motor %d: %fV", motor->Num, voltage);
+		}
+	}
     if (0== strcmp("AckCheck",buffer)) {
         (void) PrintfToPI(DebugQueue,VPID,"GetHealth:AckCheck");
         for (int i = 0; i < GetBridgeMotorSize(); ++i) {
