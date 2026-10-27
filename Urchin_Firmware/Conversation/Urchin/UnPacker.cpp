@@ -490,7 +490,7 @@ int GetHealth(unsigned char VPID, const char* buffer) {
 			auto data = Herkulex.RAMRead(motor->Num, Voltage);
 			// RAM value is voltage * 10 --> put into volts here
 			float voltage = (float) data / 10.0;
-			(void) PrintfToPI(DebugQueue, VPID, "Motor %d: %fV", motor->Num, voltage);
+			(void) PrintfToPI(DebugQueue, VPID, "Motor %d: %.1fV", motor->Num, voltage);
 		}
 	}
     if (0== strcmp("AckCheck",buffer)) {
