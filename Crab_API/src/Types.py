@@ -1,6 +1,13 @@
 from typing import List, Union, Callable, Optional
 import struct
-from enum import IntEnum
+from enum import Enum, IntEnum
+
+try:
+    from enum import StrEnum
+except ImportError:  # Python < 3.11
+    class StrEnum(str, Enum):
+        __str__ = str.__str__
+        __format__ = str.__format__
 
 class Item:
     """
