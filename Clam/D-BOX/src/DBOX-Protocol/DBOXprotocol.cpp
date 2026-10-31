@@ -1,0 +1,220 @@
+//
+// Created by gabri on 6/21/2026.
+//
+
+#include "DBOXprotocol.h"
+#include <boost/crc.hpp>
+#include <limits>
+#include <chrono>
+
+namespace DBOXProtocol {
+    bool DBOXprotocol::send(DBOX *packet) {
+
+        //check the size against max payload size
+        if (std::numeric_limits<uint16_t>::max() < packet->Payload.size()) {
+            return false;
+        }
+
+        //Start filling the box
+        DBOXraw FullBox = DBOXraw(*packet);
+
+        // use ship on struct
+        return ship(&FullBox);
+    }
+
+    bool DBOXprotocol::ship(DBOXraw *packet){
+        std::vector<uint8_t> bytes = static_cast<std::vector<uint8_t>>(*packet);
+
+        std::span<const uint8_t> byte_view{
+            bytes.data(),
+            bytes.size()
+        };
+
+        size_t bytes_sent = this->port->write(byte_view, byte_view.size());
+
+        return bytes_sent == byte_view.size();
+    }
+
+    bool DBOXprotocol::receive(DBOX* packet, int32_t timeout_ms) {
+        if (!packet)
+            return false;
+
+        // Deadline handling: timeout_ms < 0 means wait forever (the original
+        // behavior). Otherwise give up and return false once the deadline
+        // passes while still waiting for data.
+        using Clock = std::chrono::steady_clock;
+        const bool hasDeadline = timeout_ms >= 0;
+        const auto deadline = Clock::now() + std::chrono::milliseconds(hasDeadline ? timeout_ms : 0);
+        auto timedOut = [&] { return hasDeadline && Clock::now() >= deadline; };
+
+        uint16_t CRC = 0;
+
+        constexpr size_t HeaderSize =
+            sizeof(DBOXraw::VPID) +
+            sizeof(DBOXraw::Stream) +
+            sizeof(DBOXraw::PayloadSize);
+
+        std::array<uint8_t, HeaderSize> headerBuffer{};
+        std::array<uint8_t, 2> crcBuffer{};;
+
+        std::span<uint8_t> Header(headerBuffer);
+        std::span<uint8_t, 2> HeaderCRC(crcBuffer);
+
+        // Find a start marker whose header passes its CRC. If the CRC fails,
+        // the 0x07 was a false start (noise, or a 0x07 inside another
+        // packet's payload). The header bytes were only peeked, so they are
+        // still buffered: going back to the marker search resumes at the
+        // byte right after the false 0x07. (Previously this re-peeked the
+        // same bad bytes forever.)
+        bool aligned = false;
+        while (!aligned)
+        {
+            // Look for Delimiter
+            while (true)
+            {
+                uint8_t byte = 0;
+                std::span<uint8_t> buffer(&byte, 1);
+
+                while (true)
+                {
+                    if (port->read(buffer, 1) == 1)
+                        break;
+                    if (timedOut())
+                        return false;
+                    port->wait(WaitForDataMS);
+                }
+
+                if (byte == '\a')
+                    break;
+
+                dump.write(reinterpret_cast<const char*>(&byte), 1);
+            }
+
+            //found an instance of a start marker
+
+            // Wait for / read header + CRC
+            while (true)
+            {
+                try
+                {
+                    std::array<uint8_t, HeaderSize + sizeof(uint16_t)> raw{};
+
+                    std::span<uint8_t> rawSpan(raw);
+                    //Assuming we don't have frame alignment, peek the header
+                    if (port->peek(rawSpan, raw.size()) == raw.size()) {
+                        std::copy_n(
+                            raw.begin(),
+                            HeaderSize,
+                            Header.begin()
+                        );
+
+                        std::copy_n(
+                            raw.begin() + HeaderSize,
+                            sizeof(uint16_t),
+                            HeaderCRC.begin()
+                        );
+
+                        // generate the CRC from the received header
+                        if (ComputeChecksumCRC(&CRC, Header) == -1){
+                            return false;
+                        }
+
+                        // Match: frame is aligned. Mismatch: false start,
+                        // leave this loop and search for the next delimiter.
+                        aligned = (CRC == span_to_uint16_native(HeaderCRC));
+                        break;
+                    }
+                }
+                catch (const RingBuffer::RingBufferUnderflowException&)
+                {
+                    if (timedOut())
+                        return false;
+                    port->wait(WaitForDataMS);
+                }
+            }
+        }
+
+
+
+        //At this point we have proved frame alignment from the CRC so the payload size is correct
+        //We can safely drop the head and read the payload.
+
+        // Extract header fields
+
+        packet->VPID = Header[0];
+        packet->Stream = Header[1];
+
+        uint16_t payloadSize =
+            Header[2] |
+            (static_cast<uint16_t>(Header[3]) << 8);
+
+
+        // Drop the header to prep for reading the paylaod
+        port->drop(HeaderSize + sizeof(uint16_t));
+
+
+        // Read payload
+        //DONOT peek the payload thr ring buffer cant fit the max sized payload.
+        packet->Payload.resize(payloadSize);
+
+        size_t offset = 0;
+
+        while (offset < payloadSize)
+        {
+            auto remaining = payloadSize - offset;
+
+            std::span<uint8_t> destination(
+                packet->Payload.data() + offset,
+                remaining
+            );
+
+            size_t got = port->read(destination, remaining);
+
+            if (got == 0)
+            {
+                if (timedOut())
+                    return false;
+                port->wait(WaitForDataMS);
+                continue;
+            }
+
+            offset += got;
+        }
+
+
+        return true;
+    }
+
+
+
+    // generator polynomial from https://users.ece.cmu.edu/~koopman/crc/
+    //
+
+    using my_crc = boost::crc_optimal<
+        16,       // CRC width in bits
+        GeneratorPolynomial,   // generator polynomial without the top x^16 term
+        0xFFFF,   // initial remainder
+        0x0000,   // final xor value
+        false,    // reflect input bytes
+        false     // reflect final remainder
+    >;
+
+    int ComputeChecksumCRC(uint16_t *CRC,std::span<uint8_t> Payload) {
+        if ((Payload.size() * CHAR_BIT) > MAX_CRC_Payload_BIT)
+            return -1;
+
+        my_crc crc;
+        crc.process_bytes(Payload.data(), Payload.size());
+
+        *CRC = crc.checksum();
+        return 0;
+    }
+
+
+    uint16_t span_to_uint16_native(std::span<const uint8_t, 2> bytes) {
+        // Reinterprets the 2-byte span as a uint16_t directly
+        return std::bit_cast<uint16_t>(std::array<uint8_t, 2>{bytes[0], bytes[1]});
+    }
+
+
+}
