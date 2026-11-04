@@ -53,7 +53,9 @@ extern "C" void app_main() {
 
     ActionQueueINIT();
 
-	Spray(NULL);
+	TaskHandle_t taskHandle = NULL;
+	xTaskCreate(Spray, "Spray", 2048, NULL, 1, &taskHandle);
+
 
     // QueueHandle_t AsyncQueue = xQueueCreate(AsyncSize, sizeof(Ticket));
     // QueueHandle_t SequentialQueue = xQueueCreate(SequentialSize, sizeof(Ticket));
