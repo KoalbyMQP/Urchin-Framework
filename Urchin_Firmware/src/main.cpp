@@ -51,15 +51,9 @@ extern "C" void app_main() {
 
     BridgeInit();
 
-    ActionQueINIT();
+    ActionQueueINIT();
 
-
-
-
-
-
-
-
+	Spray(NULL);
 
     // QueueHandle_t AsyncQueue = xQueueCreate(AsyncSize, sizeof(Ticket));
     // QueueHandle_t SequentialQueue = xQueueCreate(SequentialSize, sizeof(Ticket));
