@@ -258,3 +258,8 @@ def test_motor_is_immutable():
     motor = Motor(7, "HerkuleX", "0601", "Shoulder", (-45, 45), 0)
     with pytest.raises(AttributeError):
         motor.number = 8  # type: ignore[misc]
+
+
+def test_empty_joint_name():
+    with pytest.raises(BridgeError, match="Motor #1: JointName must not be empty"):
+        parse_bridge(HEADER + motor_toml(JointName='""'))

@@ -84,6 +84,9 @@ class Motor:
         _check_length("MotorBrand", self.brand, MAX_BRAND)
         _check_length("MotorModel", self.model, MAX_MODEL)
         _check_length("JointName", self.joint, MAX_JOINT)
+        # The firmware's GetBridge() rejects empty names, so the motor could never be addressed
+        if not self.joint:
+            raise ValueError("JointName must not be empty")
         low, high = self.bounds
         _check_int32("Bounds", low)
         _check_int32("Bounds", high)
@@ -203,7 +206,9 @@ def _parse_motor(table: dict[str, Any], index: int) -> Motor:
 def _motor_prefix(table: dict[str, Any], index: int) -> str:
     joint = table.get("JointName")
     return (
-        f"Motor #{index} ({joint}): " if isinstance(joint, str) else f"Motor #{index}: "
+        f"Motor #{index} ({joint}): "
+        if isinstance(joint, str) and joint
+        else f"Motor #{index}: "
     )
 
 
