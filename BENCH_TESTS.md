@@ -136,7 +136,8 @@ pio run -e Urchin-Firmware -t upload
 * The original driver's `HerkulexClass::stat()` and `clearError()` have
   bugs (details in `Urchin_Firmware/src/BenchShared/ServoBench.h`). The
   bench tests use their own versions; **the driver itself is unchanged**.
-* For developers, the Python D-BOX implementation is checked against C++
-  golden frames in `Crab_API/test/test_dbox.py`.
+* For developers: the host side talks D-BOX through `DBOXpy`, the Python
+  bindings of the C++ D-BOX code in `Clam/D-BOX` (tests in
+  `Clam/D-BOX/test/Python` and `Clam/D-BOX/tests/C++`).
 
 Problems? Copy the **whole** console output and send it to the firmware team.

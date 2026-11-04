@@ -6,8 +6,8 @@
 //     Esp32UartPort that env:DBoxEcho proved against the host;
 //   - servo control: the same src/BenchShared helpers env:HerkulexTest
 //     proved against the servo.
-// The host side is Crab_API/src/bench_test.py (pure-Python D-BOX in
-// Crab_API/src/dbox.py).
+// The host side is Crab_API/src/bench_test.py (D-BOX via DBOXpy, the
+// Python bindings of Clam/D-BOX).
 //
 // Wire protocol (all payloads are ASCII text):
 //   handshake   host -> VPID 0, stream 'S', "Urchin"

@@ -1,8 +1,9 @@
 """
-Urchin bench test: check each link of the robot's motor path from a laptop,
-using Gabe's D-BOX protocol, without needing to know anything about it.
+Urchin bench test: check each link of the robot's motor path from a laptop
+or the Raspberry Pi, using Gabe's D-BOX protocol, without needing to know
+anything about it.
 
-    laptop --D-BOX over USB--> ESP32 --Herkulex over UART1--> servo
+    laptop/Pi --D-BOX over USB--> ESP32 --Herkulex over UART1--> servo
 
 Menu options:
     1) Check ESP32 link   laptop <-> ESP32 only (works with DBoxEcho or DBoxMotor firmware)
@@ -10,10 +11,14 @@ Menu options:
     3) Spin motor         keyboard control, end to end
     4) Move to an angle   end to end
 
-Needs:  pip install pyserial
+D-BOX comes from DBOXpy, the Python bindings of the team's C++ D-BOX code
+(Clam/D-BOX): the same framing, receive and discovery code that runs on the
+Pi. Linux only: run it on the Raspberry Pi, or on Windows through WSL with the
+ESP32 attached via usbipd. Building DBOXpy: Clam/D-BOX/tools/README.md.
+
 Run from the Crab_API folder:
-    python src/bench_test.py          (finds the ESP32 by itself)
-    python src/bench_test.py COM5     (or name the port)
+    sudo env PYTHONPATH=$HOME/dbox python3 src/bench_test.py                (finds the ESP32 by itself)
+    sudo env PYTHONPATH=$HOME/dbox python3 src/bench_test.py /dev/ttyUSB0   (or name the port)
 
 Step-by-step guide (flashing, wiring, troubleshooting): Crab_API/BENCH_TEST.md
 ESP32 side: Urchin_Firmware/src/DBoxMotor/main.cpp (wire protocol documented there).
@@ -26,10 +31,14 @@ import sys
 import time
 from typing import Optional
 
-import serial
-import serial.tools.list_ports
-
-from dbox import DBoxLink, Packet
+try:
+    import DBOXpy as dbox
+except ImportError:
+    print("Can't find the DBOXpy module (the team's D-BOX code for Python).\n"
+          "   Build it first: see Clam/D-BOX/tools/README.md, 'From Python'.\n"
+          "   Then run with PYTHONPATH pointing at the folder that holds DBOXpy*.so, e.g.\n"
+          "   sudo env PYTHONPATH=$HOME/dbox python3 src/bench_test.py", flush=True)
+    sys.exit(1)
 
 IDENTITY = "Urchin"   # handshake string, see DBoxMotor/main.cpp
 VPID = 0
@@ -96,14 +105,54 @@ class Keys:
 
 # --- Connection ------------------------------------------------------------
 
+BAUD = 115200
+READ_TIMEOUT_MS = 20       # how long one low-level read waits before giving up
+HANDSHAKE_TIMEOUT_MS = 1000
+HANDSHAKE_ATTEMPTS = 4
+
+
+class Link:
+    """One D-BOX connection, through DBOXpy (Gabe's C++ D-BOX)."""
+
+    def __init__(self) -> None:
+        self.config = dbox.DconfigUart(IDENTITY, "", BAUD, READ_TIMEOUT_MS)
+        self.discovery = dbox.UartDiscovery(True, self.config)
+        self.discovery.handshake_timeout_ms = HANDSHAKE_TIMEOUT_MS
+        self.port = dbox.LinuxSerialPort(self.discovery)
+        self.proto = dbox.DBOXprotocol(self.port, "/dev/null")
+
+    def find_ports(self) -> list:
+        return list(self.port.find())
+
+    def handshake(self, port: str) -> bool:
+        """D-BOX discovery on one port: say IDENTITY, wait for it back."""
+        return self.discovery.active_discover_single(port, HANDSHAKE_ATTEMPTS)
+
+    def open(self, port: str) -> bool:
+        return self.port.openraw(port, BAUD, READ_TIMEOUT_MS)
+
+    def send(self, vpid: int, stream: str, text: str) -> None:
+        self.proto.send(dbox.DBOX(vpid, stream, text))
+
+    def receive(self, timeout: float) -> Optional["dbox.DBOX"]:
+        """Next valid packet, or None if none arrives within timeout seconds."""
+        packet = dbox.DBOX()
+        if self.proto.receive(packet, max(0, int(timeout * 1000))):
+            return packet
+        return None
+
+    def close(self) -> None:
+        self.port.close()
+
+
 class Bench:
-    def __init__(self, link: DBoxLink, port: str, firmware: str, info: str) -> None:
+    def __init__(self, link: Link, port: str, firmware: str, info: str) -> None:
         self.link = link
         self.port = port
         self.firmware = firmware
         self.info = info
 
-    def request(self, text: str, timeout: float = 1.0) -> Optional[Packet]:
+    def request(self, text: str, timeout: float = 1.0) -> Optional["dbox.DBOX"]:
         """Send one command, return the reply (None if nothing came back)."""
         self.link.send(VPID, 'N', text)
         deadline = time.monotonic() + timeout
@@ -119,31 +168,19 @@ class Bench:
             return packet
 
 
-def try_port(port: str) -> Optional[Bench]:
-    try:
-        link = DBoxLink(port)
-    except serial.SerialException as exc:
-        if "PermissionError" in str(exc) or "Access is denied" in str(exc):
-            say(f"   {port}: in use by another program (close any serial monitor and try again)")
+def try_port(link: Link, port: str) -> Optional[Bench]:
+    if not os.access(port, os.R_OK | os.W_OK):
+        say(f"   {port}: no permission (run with sudo, or: sudo usermod -aG dialout $USER and log in again)")
         return None
-
-    time.sleep(0.5)          # let the USB-serial chip / ESP32 settle (it may reboot on open)
-    link.discard_input()     # drop boot messages
-
-    for _ in range(4):
-        link.send(0, 'S', IDENTITY)
-        deadline = time.monotonic() + 1.0
-        while True:
-            packet = link.receive(max(0.0, deadline - time.monotonic()))
-            if packet is None:
-                break
-            if packet.vpid == 0 and packet.stream == 'S' and packet.text == IDENTITY:
-                return identify(link, port)
-    link.close()
-    return None
+    if not link.handshake(port):
+        return None
+    if not link.open(port):
+        say(f"   {port}: answered, but could not be reopened (in use by another program?)")
+        return None
+    return identify(link, port)
 
 
-def identify(link: DBoxLink, port: str) -> Optional[Bench]:
+def identify(link: Link, port: str) -> Optional[Bench]:
     bench = Bench(link, port, "", "")
     reply = bench.request("Info")
     if reply is not None and reply.stream == 'E' and reply.text.startswith("OK " + MOTOR_FW):
@@ -159,25 +196,25 @@ def identify(link: DBoxLink, port: str) -> Optional[Bench]:
 
 
 def connect(port_arg: Optional[str]) -> Optional[Bench]:
-    if port_arg:
-        ports = [port_arg]
-    else:
-        ports = [p.device for p in serial.tools.list_ports.comports()
-                 if "bluetooth" not in (p.description or "").lower()]
+    link = Link()
+    ports = [port_arg] if port_arg else link.find_ports()
     if not ports:
         say("No serial ports found.")
-        hint("Plug the ESP32 in with a DATA USB cable (charge-only cables won't work).")
+        hint("Plug the ESP32 in with a DATA USB cable (charge-only cables won't work).",
+             "On WSL: attach it first, in PowerShell:  usbipd attach --wsl --busid <BUSID>",
+             "   (usbipd list shows the BUSID of 'Silicon Labs CP210x').")
         return None
 
     say(f"Looking for the ESP32 on: {', '.join(ports)}")
     for port in ports:
-        bench = try_port(port)
+        bench = try_port(link, port)
         if bench is not None:
             return bench
 
     say("FAIL: no ESP32 answered the D-BOX handshake.")
     hint("Is the ESP32 plugged in, and flashed with DBoxMotor (or DBoxEcho) firmware?",
          "   flash it from Urchin_Firmware with:  pio run -e DBoxMotor -t upload",
+         "   (on WSL, give it back to Windows first:  usbipd detach --busid <BUSID>)",
          "Close any serial monitor (pio device monitor, VS Code, Arduino IDE) -- only one",
          "   program can use the port at a time.",
          "Press the ESP32's EN/RST button and run this again.")
@@ -332,18 +369,12 @@ def main() -> int:
                 move_motor(bench)
             elif choice in ('q', 'quit', 'exit'):
                 break
-    except serial.SerialException:
-        say("\nFAIL: lost the connection to the ESP32 (USB unplugged?). The motor stops on its own.")
-        return 1
     except (KeyboardInterrupt, EOFError):
         say("")
     finally:
-        try:
-            if motor_ok:
-                bench.request("Stop", timeout=0.3)
-            bench.link.close()
-        except serial.SerialException:
-            pass
+        if motor_ok:
+            bench.request("Stop", timeout=0.3)
+        bench.link.close()
     return 0
 
 
