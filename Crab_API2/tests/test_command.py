@@ -126,7 +126,7 @@ def test_too_many_values():
 
 def test_bad_value_rejected_at_construction():
     with pytest.raises(TypeError):
-        Command("Shoulder", "MoveOne", ["fast"])    # ty: ignore
+        Command("Shoulder", "MoveOne", ["fast"])  # ty: ignore
 
 
 # --- LoadTicket packet ---
