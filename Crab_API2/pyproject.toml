@@ -7,7 +7,9 @@ authors = [
     { name = "Andrew Suyer", email = "asuyer@wpi.edu" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "pyserial>=3.5",
+]
 
 [project.scripts]
 crab-api2 = "crab_api2:main"
