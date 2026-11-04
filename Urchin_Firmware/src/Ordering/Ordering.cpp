@@ -9,14 +9,14 @@
  QueueHandle_t SequentialQueue;
 
 
-void ActionQueINIT() {
+void ActionQueueINIT() {
     AsynchronousQueue= xQueueCreate(ActionQueDepth, sizeof(Ticket));
     SequentialQueue = xQueueCreate(ActionQueDepth, sizeof(Ticket));
     InterruptQueue = xQueueCreate(1, sizeof(Ticket));
 }
 
 
-int PunchToQue(Ticket *ticket) {
+int PunchToQueue(Ticket *ticket) {
     QueueHandle_t Target = NULL;
 
     switch (ticket->type) {

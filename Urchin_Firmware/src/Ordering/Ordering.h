@@ -14,8 +14,8 @@ extern "C" {
 #define ActionQueDepth 5
 #include "Ticketing/Ticket.h"
 
-void ActionQueINIT();
-int PunchToQue(Ticket *ticket);
+void ActionQueueINIT();
+int PunchToQueue(Ticket *ticket);
 
 extern QueueHandle_t InterruptQueue;
 extern QueueHandle_t AsynchronousQueue;
