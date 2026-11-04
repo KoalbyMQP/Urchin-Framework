@@ -92,6 +92,10 @@ pybind11_add_module(D-BOX_py
 
 target_link_libraries(D-BOX_py PRIVATE D-BOX)
 
+# The module is DBOXpy (PYBIND11_MODULE name); the file must match or Python
+# can't import it.
+set_target_properties(D-BOX_py PROPERTIES OUTPUT_NAME DBOXpy)
+
 target_include_directories(D-BOX_py PRIVATE
         "${PROJECT_INCLUDE_DIR}"
 )

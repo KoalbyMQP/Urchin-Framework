@@ -43,3 +43,35 @@ WSL can't see USB devices by default; `usbipd` hands the ESP32 to it.
    `sudo ./dbox_discover` (or add yourself to `dialout` as above).
 6. To give the board back to Windows (e.g. to flash it):
    `usbipd detach --busid 2-3`
+
+---
+
+# From Python: DBOXpy + dbox_discover.py
+
+`DBOXpy` is the Python module built from `src/DBOX_bindings.cpp`. It calls
+the same C++ D-BOX code (protocol, discovery, Linux serial port), so Python on
+the Pi gets the exact same behavior as the C++ tools. `tools/dbox_discover.py`
+is the Python version of `dbox_discover`.
+
+## Build the module (WSL Ubuntu or Raspberry Pi OS), from `Clam/D-BOX`
+
+    sudo apt install -y g++ libboost-dev python3-dev python3-pybind11
+    mkdir -p ~/dbox
+    g++ -std=c++20 -O1 -shared -fPIC $(python3 -m pybind11 --includes) -Iinclude \
+        src/DBOX_bindings.cpp src/DBOX-Protocol/DBOXprotocol.cpp \
+        src/Discovery/UartDiscovery.cpp src/Transport-Interface/IPort.cpp \
+        src/Transport-Interface/UART/UARTSeralPort.cpp \
+        src/Transport-Interface/UART/Linux/linux-sys-seral.cpp \
+        -o ~/dbox/DBOXpy$(python3-config --extension-suffix)
+
+(Gabe's CMake builds the same module as target `D-BOX_py`.)
+
+## Test it (no hardware)
+
+    PYTHONPATH=~/dbox python3 test/Python/test_DBOXpy.py -v
+
+## Run it on the ESP32 (attached to WSL as /dev/ttyUSB0, see above)
+
+    sudo env PYTHONPATH=$HOME/dbox python3 tools/dbox_discover.py
+
+Same expected output as the C++ version.
