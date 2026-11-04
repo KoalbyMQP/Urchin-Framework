@@ -1,0 +1,17 @@
+[project]
+name = "crab-api2"
+version = "0.1.0"
+description = "Crab API — host-side controller that talks to Urchin firmware over USB serial"
+readme = "README.md"
+authors = [
+    { name = "Andrew Suyer", email = "asuyer@wpi.edu" }
+]
+requires-python = ">=3.14"
+dependencies = []
+
+[project.scripts]
+crab-api2 = "crab_api2:main"
+
+[build-system]
+requires = ["uv_build>=0.12.22,<0.13.0"]
+build-backend = "uv_build"
