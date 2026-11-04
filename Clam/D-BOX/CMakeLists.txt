@@ -66,6 +66,15 @@ add_library(D-BOX
 
 )
 
+# Real serial port backend (Linux / Raspberry Pi / WSL)
+if(UNIX AND NOT APPLE)
+    target_sources(D-BOX PRIVATE src/Transport-Interface/UART/Linux/linux-sys-seral.cpp)
+
+    # Hardware check: find the ESP32 with discovery, send it one command.
+    add_executable(dbox_discover tools/dbox_discover.cpp)
+    target_link_libraries(dbox_discover PRIVATE D-BOX)
+endif()
+
 #add_library(MarshalType::marshaltype ALIAS marshaltype)
 
 target_include_directories(D-BOX PUBLIC
@@ -187,6 +196,10 @@ if(BUILD_TESTING)
             D-BOX
             GTest::gtest_main
     )
+    if(UNIX AND NOT APPLE)
+        target_sources(D-BOX_tests PRIVATE tests/C++/Transport-Interface/Linux/test_LinuxSerial.cpp)
+        target_link_libraries(D-BOX_tests PRIVATE util)   # openpty() for the Linux serial tests
+    endif()
 
 
     #------------------------------

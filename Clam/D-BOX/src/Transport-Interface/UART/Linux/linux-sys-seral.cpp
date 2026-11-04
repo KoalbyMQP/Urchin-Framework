@@ -1,15 +1,28 @@
-#include "../../linux-sys-seral.h"
+//
+// Created by gabri on 6/18/2026.
+// Updated 2026-11-03 to the current IPort / UARTSerialPort<UartDiscovery>
+// interface. toBaud() and configurePort() are Gabe's originals (with read
+// timeouts moved to poll() and HUPCL cleared).
+//
+
+#include <Transport-Interface/UART/Linux/linux-sys-seral.h>
 
 #include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <fcntl.h>
 #include <filesystem>
+#include <fstream>
+#include <poll.h>
 #include <span>
 #include <string>
+#include <sys/ioctl.h>
 #include <system_error>
 #include <termios.h>
+#include <thread>
 #include <unistd.h>
 #include <vector>
+
 namespace DBOXProtocol {
     namespace fs = std::filesystem;
 
@@ -111,11 +124,14 @@ namespace DBOXProtocol {
         // No software flow control
         tty.c_iflag &= ~(IXON | IXOFF | IXANY);
 
-        // Blocking read semantics:
-        // - wait until at least 1 byte arrives
-        // - no inter-byte timeout
-        tty.c_cc[VMIN]  = 1;
+        // Non-blocking reads at the termios level; rawread() waits with
+        // poll() for at most the configured timeout instead. (VMIN=1 made
+        // read() block forever, so receive()/discovery timeouts never fired.)
+        tty.c_cc[VMIN]  = 0;
         tty.c_cc[VTIME] = 0;
+
+        // Don't drop DTR/RTS on close (that would reset an ESP32 again).
+        tty.c_cflag &= ~HUPCL;
 
         if (::cfsetispeed(&tty, speed) != 0)
             return false;
@@ -132,17 +148,24 @@ namespace DBOXProtocol {
         return true;
     }
 
-    bool LinuxSerialPort::open(const char* device, uint32_t baudRate)
+    bool LinuxSerialPort::open()
+    {
+        if (this->Discovery == nullptr || this->Discovery->config == nullptr)
+            return false;
+        auto* cfg = this->Discovery->config;
+        return openraw(cfg->Port.c_str(), cfg->baud, cfg->timeout);
+    }
+
+    bool LinuxSerialPort::openraw(const char* device, uint32_t baudRate, uint32_t timeoutMs)
     {
         close();
 
         if (device == nullptr || *device == '\0')
             return false;
 
-        // Blocking descriptor:
-        // - O_RDWR   : read/write
-        // - O_NOCTTY : don't make this process the controlling terminal
-        int fd = ::open(device, O_RDWR | O_NOCTTY);
+        // O_NOCTTY: don't become the controlling terminal.
+        // O_NONBLOCK: don't hang in open() waiting for carrier detect.
+        int fd = ::open(device, O_RDWR | O_NOCTTY | O_NONBLOCK);
         if (fd < 0)
             return false;
 
@@ -152,7 +175,19 @@ namespace DBOXProtocol {
             return false;
         }
 
+        // Back to blocking mode; rawread() bounds every wait with poll().
+        int flags = ::fcntl(fd, F_GETFL);
+        if (flags >= 0)
+            ::fcntl(fd, F_SETFL, flags & ~O_NONBLOCK);
+
+        // Leave DTR/RTS deasserted (EN/BOOT on ESP32 boards). Not every
+        // device supports modem lines (e.g. ptys), so errors are ignored.
+        int lines = TIOCM_DTR | TIOCM_RTS;
+        (void)::ioctl(fd, TIOCMBIC, &lines);
+
         m_fd = fd;
+        m_timeoutMs = timeoutMs;
+        this->flushPeek();
         return true;
     }
 
@@ -206,6 +241,18 @@ namespace DBOXProtocol {
 
         size = std::min(size, buffer.size());
 
+        // Wait at most m_timeoutMs for data, then report "nothing yet" (0).
+        pollfd pfd{m_fd, POLLIN, 0};
+        for (;;)
+        {
+            const int ready = ::poll(&pfd, 1, static_cast<int>(m_timeoutMs));
+            if (ready < 0 && errno == EINTR)
+                continue;
+            if (ready <= 0 || !(pfd.revents & POLLIN))
+                return 0;
+            break;
+        }
+
         for (;;)
         {
             const ssize_t bytesRead = ::read(m_fd, buffer.data(), size);
@@ -213,73 +260,61 @@ namespace DBOXProtocol {
             if (bytesRead > 0)
                 return static_cast<std::size_t>(bytesRead);
 
-            if (bytesRead == 0)
-                return 0;
-
-            if (errno == EINTR)
+            if (bytesRead < 0 && errno == EINTR)
                 continue;
 
-            // Any other read error
             return 0;
         }
     }
 
-    void LinuxSerialPort::flushBus()
+    void LinuxSerialPort::flushBuss()
     {
         if (!isOpen())
             return;
 
-        // Wait until all queued output has been transmitted
-        while (::tcdrain(m_fd) != 0)
-        {
-            if (errno == EINTR)
-                continue;
-            break;
-        }
+        ::tcflush(m_fd, TCIOFLUSH);
     }
 
-    void LinuxSerialPort::clearInputBuffer()
+    void LinuxSerialPort::wait(uint32_t time_ms)
     {
-        if (!isOpen())
-            return;
-
-        ::tcflush(m_fd, TCIFLUSH);
+        std::this_thread::sleep_for(std::chrono::milliseconds(time_ms));
     }
 
-    void LinuxSerialPort::clearOutputBuffer()
-    {
-        if (!isOpen())
-            return;
-
-        ::tcflush(m_fd, TCOFLUSH);
-    }
-
+    // Lists serial devices worth trying:
+    //  - USB serial (ttyUSB*, ttyACM*, ttyXRUSB*), on-board UARTs (ttyAMA*,
+    //    ttyTHS*, ttyPS*), Bluetooth serial (rfcomm*);
+    //  - ttyS* only when the kernel found real hardware behind it
+    //    (/sys/class/tty/<name>/type != 0). Most PCs expose 4-32 empty ttyS
+    //    nodes; trying each would add ~1.5 s per port to discovery.
+    // Symlinks (/dev/serial0, /dev/serial/by-id/...) are not listed: they
+    // point at these same devices, and listing both would try a port twice.
     std::vector<std::string> LinuxSerialPort::find()
     {
         std::vector<std::string> ports;
         std::error_code ec;
 
-        auto isSerialDeviceName = [](const std::string& name) -> bool
+        auto startsWith = [](const std::string& s, const char* p) { return s.rfind(p, 0) == 0; };
+
+        auto isRealTtyS = [](const std::string& name) -> bool
         {
-            return
-                name.rfind("ttyS",   0) == 0 ||   // PC UARTs
-                name.rfind("ttyUSB", 0) == 0 ||   // USB serial adapters
-                name.rfind("ttyACM", 0) == 0 ||   // CDC ACM / Arduino / modems
-                name.rfind("ttyAMA", 0) == 0 ||   // ARM UARTs
-                name.rfind("rfcomm", 0) == 0 ||   // Bluetooth serial
-                name.rfind("ttyTHS", 0) == 0 ||   // NVIDIA Jetson
-                name.rfind("ttyPS",  0) == 0 ||   // Xilinx / Zynq
-                name.rfind("ttyXRUSB", 0) == 0;   // Exar / XR USB serial
+            std::ifstream typeFile("/sys/class/tty/" + name + "/type");
+            int type = 0;
+            return typeFile >> type && type != 0;
         };
 
-        // Scan /dev for common serial device nodes
         for (const auto& entry : fs::directory_iterator("/dev", ec))
         {
             if (ec)
                 break;
 
             const std::string name = entry.path().filename().string();
-            if (!isSerialDeviceName(name))
+            const bool candidate =
+                startsWith(name, "ttyUSB") || startsWith(name, "ttyACM") ||
+                startsWith(name, "ttyAMA") || startsWith(name, "rfcomm") ||
+                startsWith(name, "ttyTHS") || startsWith(name, "ttyPS") ||
+                startsWith(name, "ttyXRUSB") ||
+                (startsWith(name, "ttyS") && isRealTtyS(name));
+            if (!candidate)
                 continue;
 
             std::error_code sec;
@@ -287,20 +322,15 @@ namespace DBOXProtocol {
                 ports.push_back(entry.path().string());
         }
 
-        // Add stable symlinks if present (often preferable to /dev/ttyUSBx)
-        const fs::path byId("/dev/serial/by-id");
-        if (fs::exists(byId, ec) && fs::is_directory(byId, ec))
-        {
-            for (const auto& entry : fs::directory_iterator(byId, ec))
-            {
-                if (ec)
-                    break;
-
-                ports.push_back(entry.path().string());
-            }
-        }
-
-        std::sort(ports.begin(), ports.end());
+        // USB adapters first: that's where an ESP32 usually is.
+        auto rank = [](const std::string& p) {
+            if (p.find("ttyUSB") != std::string::npos || p.find("ttyACM") != std::string::npos) return 0;
+            if (p.find("ttyAMA") != std::string::npos || p.find("ttyS") != std::string::npos) return 1;
+            return 2;
+        };
+        std::sort(ports.begin(), ports.end(), [&](const std::string& a, const std::string& b) {
+            return rank(a) != rank(b) ? rank(a) < rank(b) : a < b;
+        });
         ports.erase(std::unique(ports.begin(), ports.end()), ports.end());
 
         return ports;
