@@ -19,12 +19,15 @@ packed ``BridgeMotor`` struct from ``Urchin_Firmware/src/Global/Bridge.h``.
 
 from __future__ import annotations
 
+import logging
 import struct
 import tomllib
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 BRIDGE_VERSION = "0.1"
 
@@ -112,9 +115,12 @@ def load_bridge(path: str | PathLike[str]) -> list[Motor]:
     """Read and validate a bridge file."""
     path = Path(path)
     try:
-        return parse_bridge(path.read_text(encoding="utf-8"))
+        motors = parse_bridge(path.read_text(encoding="utf-8"))
     except BridgeError as e:
         raise BridgeError(e.message, path) from None
+    for motor in motors:
+        logger.debug("Loaded %s", motor)
+    return motors
 
 
 def parse_bridge(text: str) -> list[Motor]:

@@ -104,6 +104,8 @@ class Link:
         frame = encode_frame(vpid, payload)
         with self._write_lock:
             self.port.write(frame)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("Sent VPID %d: %r", vpid, payload)
 
     def read(self) -> Frame | None:
         """Read the next frame, or return None if the port times out first."""
@@ -114,7 +116,15 @@ class Link:
         if len(raw) < FRAME_SIZE:
             logger.warning("Incomplete frame: got %d of %d bytes", len(raw), FRAME_SIZE)
             return None
-        return decode_frame(raw)
+        frame = decode_frame(raw)
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(
+                "Received VPID %d stream %s: %r",
+                frame.vpid,
+                frame.stream,
+                frame.data.rstrip(b"\0"),
+            )
+        return frame
 
     def close(self) -> None:
         self.port.close()
