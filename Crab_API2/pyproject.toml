@@ -4,9 +4,9 @@ version = "0.1.0"
 description = "Crab API — host-side controller that talks to Urchin firmware over USB serial"
 readme = "README.md"
 authors = [
-    { name = "Andrew Suyer", email = "asuyer@wpi.edu" }
+    { name = "Humanoid Robots - Software Engineering Team", email = "gr-humanoid-robots_software-engg_26-27@wpi.edu" }
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.11"
 dependencies = [
     "pyserial>=3.5",
 ]

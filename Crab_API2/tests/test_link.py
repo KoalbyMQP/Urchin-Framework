@@ -304,3 +304,9 @@ def test_encode_matches_legacy_espserial_format():
     payload = b"FormatTicketA"
     legacy = b"\x07" + struct.pack("<Bc1024s", 0, b"N", payload.ljust(1024, b"\x00"))
     assert encode_frame(0, payload) == legacy
+
+
+def test_open_failure_raises_link_error(monkeypatch):
+    monkeypatch.delenv("URCHIN_PORT", raising=False)
+    with pytest.raises(LinkError, match="Could not open /dev/definitely-not-a-port"):
+        Link.open("/dev/definitely-not-a-port")

@@ -21,7 +21,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from os import PathLike
-from typing import Literal, Self, overload
+from typing import Literal, Self, TypeAlias, overload
 
 from crab_api2.bridge import load_bridge
 from crab_api2.command import Command
@@ -41,7 +41,7 @@ VPID = 0
 URCHIN_OK = 0
 URCHIN_ERROR_NO_FREE_TICKET = 1  # Global/Errors.h
 
-type HealthCheck = Literal["FreeRam", "TotalRam", "AckCheck"]
+HealthCheck: TypeAlias = Literal["FreeRam", "TotalRam", "AckCheck"]
 HEALTH_CHECKS: tuple[HealthCheck, ...] = ("FreeRam", "TotalRam", "AckCheck")
 
 _ACK_CHECKING = b"GetHealth:AckCheck:Checking "

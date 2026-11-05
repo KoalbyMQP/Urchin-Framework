@@ -15,13 +15,14 @@ from __future__ import annotations
 import struct
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from typing import TypeAlias
 
 from crab_api2.bridge import MAX_JOINT
 
 MAX_VALUES = 20  # MAX_VALUES_LEN in UnPacker.h
 MAX_NAME = 254  # LoadTicket copies the name into char command[255]
 
-type Value = int | float | bool
+Value: TypeAlias = int | float | bool
 
 _HEADER = struct.Struct(f"<I{MAX_JOINT}sBB")
 _INT = struct.Struct("<ci")

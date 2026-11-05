@@ -152,3 +152,8 @@ def test_requires_subcommand(capsys):
 def test_no_demo_command(capsys):
     with pytest.raises(SystemExit):
         cli.main(["demo"])
+
+
+def test_check_unopenable_port(capsys):
+    assert cli.main(["check", str(BRIDGE), "--url", "/dev/definitely-not-a-port"]) == 1
+    assert "error: Could not open /dev/definitely-not-a-port" in capsys.readouterr().err

@@ -98,7 +98,13 @@ class Link:
         """
         url = url or os.environ.get("URCHIN_PORT") or find_urchin_port()
         logger.info("Opening %s", url)
-        return cls(serial.serial_for_url(url, baudrate=BAUD_RATE, timeout=1))
+        try:
+            port = serial.serial_for_url(url, baudrate=BAUD_RATE, timeout=1)
+        except (serial.SerialException, OSError) as e:
+            # pyserial wraps the OS error in a message that repeats the port name
+            reason = e.__context__ if isinstance(e.__context__, OSError) else e
+            raise LinkError(f"Could not open {url}: {reason}") from e
+        return cls(port)
 
     def send(self, vpid: int, payload: bytes) -> None:
         frame = encode_frame(vpid, payload)

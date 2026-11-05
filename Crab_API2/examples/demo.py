@@ -51,21 +51,26 @@ def main() -> None:
                 print(f"Cycle {cycle}: AckCheck")
                 print_ack_check(crab.get_health("AckCheck"))
 
+                print("(1) Sleeping 3 seconds...")
                 time.sleep(3)
                 command = herkulex.move_one("Shoulder", -23.0, 40, JogLedColor.LED_BLUE)
                 print(
                     f"Move Shoulder to -23: ticket {crab.send(TicketType.ASYNCHRONOUS, [command])}"
                 )
 
+                print("(2) Sleeping 1 second...")
                 time.sleep(1)
                 command = herkulex.move_one("Shoulder", 23.0, 40, JogLedColor.LED_RED)
                 print(
                     f"Move Shoulder to 23: ticket {crab.send(TicketType.ASYNCHRONOUS, [command])}"
                 )
 
+                print("(3) Sleeping 1 second...")
                 time.sleep(1)
                 print(f"Cycle {cycle}: AckCheck")
                 print_ack_check(crab.get_health("AckCheck"))
+
+                print("(4) Sleeping 1 second...")
                 time.sleep(1)
         except KeyboardInterrupt:
             print("Stopping")
