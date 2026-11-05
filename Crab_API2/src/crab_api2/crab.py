@@ -87,6 +87,10 @@ class Crab:
 
     ``url`` is passed to ``Link.open``: an explicit device or pyserial URL, else
     ``$URCHIN_PORT``, else the first board found by discovery.
+
+    ``reply_timeout`` bounds each wait for a firmware reply. FormatTicket blinks the
+    board LED for 1 s before replying (``LED()`` in UnPacker.cpp), so it must be well
+    over a second.
     """
 
     def __init__(
@@ -94,7 +98,7 @@ class Crab:
         bridge_path: str | PathLike[str],
         url: str | None = None,
         *,
-        reply_timeout: float = 1.0,
+        reply_timeout: float = 3.0,
     ) -> None:
         self.motors = load_bridge(bridge_path)
         self.reply_timeout = reply_timeout
