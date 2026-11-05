@@ -14,6 +14,7 @@ from pathlib import Path
 from crab_api2 import herkulex
 from crab_api2.crab import Crab, MotorStatus, TicketType
 from crab_api2.herkulex import JogLedColor
+from crab_api2.log import setup_logging
 
 DEFAULT_BRIDGE = Path(__file__).with_name("bridge.toml")
 
@@ -39,10 +40,7 @@ def main() -> None:
     parser.add_argument("-v", "--verbose", action="store_true", help="show debug logs")
     args = parser.parse_args()
 
-    logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO,
-        format="%(asctime)s %(levelname)-7s %(name)s: %(message)s",
-    )
+    setup_logging(logging.DEBUG if args.verbose else logging.INFO)
 
     with Crab(args.bridge, args.url) as crab:
         time.sleep(3)
