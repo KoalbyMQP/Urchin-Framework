@@ -5,16 +5,16 @@ FROM python:3.11-slim
 
 
 # PYTHONUNBUFFERED: show print() output in Cortex logs right away.
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
-ENV UV_LINK_MODE=copy \
+COPY --from=ghcr.io/astral-sh/uv:0.12 /uv /uvx /usr/local/bin/
+ENV PYTHONUNBUFFERED=1 \
+    UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
-    UV_PYTHON_DOWNLOADS=never \
-    URCHIN_PORT=socket://10.0.2.2:5555
+    UV_PYTHON_DOWNLOADS=never
 
 WORKDIR /app 
 
 COPY Crab_API2/pyproject.toml Crab_API2/README.md ./
-COPY Crab_API2/src ./
+COPY Crab_API2/src ./src
 RUN uv pip install --system --no-cache .
 COPY Crab_API2/examples ./examples
 
