@@ -90,7 +90,11 @@
               # Crab API modules use flat imports (e.g. `from ESPSerial import *`).
               URCHIN_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
               export URCHIN_ROOT
-              export PYTHONPATH="$URCHIN_ROOT/Crab_API/src''${PYTHONPATH:+:$PYTHONPATH}"
+              # Replace, don't extend: Python-based tools in this shell (pre-commit,
+              # esptool, ...) add nixpkgs' default-Python site-packages to PYTHONPATH,
+              # which would leak into the 3.11 interpreter and uv virtualenvs. Those
+              # tools are wrapped and don't need it.
+              export PYTHONPATH="$URCHIN_ROOT/Crab_API/src"
               echo "Urchin dev shell: urchin-build | urchin-image | urchin-sim | urchin-motor-sim  (--help on each)"
             '';
           };

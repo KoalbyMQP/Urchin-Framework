@@ -1,0 +1,31 @@
+[project]
+name = "crab-api2"
+version = "0.1.0"
+description = "Crab API — host-side controller that talks to Urchin firmware over USB serial"
+readme = "README.md"
+authors = [
+    { name = "Humanoid Robots - Software Engineering Team", email = "gr-humanoid-robots_software-engg_26-27@wpi.edu" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "pyserial>=3.5",
+]
+
+[project.scripts]
+crab-api2 = "crab_api2.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.22,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.3",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff.lint]
+extend-select = ["I", "UP", "B"]
