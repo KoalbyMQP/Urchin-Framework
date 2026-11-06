@@ -35,4 +35,12 @@ rec {
     urchin-motor-sim
     qemu-esp32
   ];
+
+  urchin-stack = script "urchin-stack" [
+    urchin-sim
+    pkgs.netcat-openbsd
+    pkgs.procps
+    pkgs.uv
+    pkgs.python311
+  ];
 }
