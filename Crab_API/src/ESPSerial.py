@@ -29,6 +29,15 @@ class ESPSerial(object):
 
         self.buss: Serial = serial.Serial(port[0], 115200, timeout=1)
 
+        deadline = time.time() + 10
+        while time.time() < deadline:
+            self.send_packet(0, b'Validate')
+            if self.CheckForValidate(self.buss):
+                print("REVALIDATED!")
+                break
+        else:
+            raise ConnectionError("ESP32 did not answer after reopening the port")
+
     def find_esp32_ports(self) -> list[str]:
         ports: list[Serial] = serial.tools.list_ports.comports()
         esp32_ports = []
@@ -90,7 +99,7 @@ class ESPSerial(object):
             raise ValueError("VPID must be an integer between 0 and 255")
 
         buff = buff.ljust(1024, b'\x00')[:1024]
-        print("Sending: |"+str(buff)+"|")
+        #print("Sending: |"+str(buff)+"|")
         try:
             packed_data = struct.pack(self.PACKET_FORMAT,  VPID, b'N', buff)
             bus.write(self.START_MARKER + packed_data)
@@ -164,10 +173,12 @@ class ESPSerial(object):
 
                 output = self.CheckForValidate(bus)
                 if output:
+                    print("Validated")
                     return True
 
                 time.sleep(0.2)
-
+                   
+            print("FAILED VALIDATION")
             return False
 
         except serial.SerialException as e:
