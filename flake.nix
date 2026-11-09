@@ -29,6 +29,7 @@
             urchin-motor-sim
             urchin-sim
             urchin-stack
+            urchin-fullstack
             ;
           default = p.urchin-sim;
         }
@@ -46,6 +47,7 @@
         {
           sim = app p.urchin-sim;
           stack = app p.urchin-stack;
+          fullstack = app p.urchin-fullstack;
           motor-sim = app p.urchin-motor-sim;
           build = app p.urchin-build;
           image = app p.urchin-image;

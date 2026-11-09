@@ -1077,3 +1077,6 @@ dkms.conf
 # direnv
 .direnv
 .envrc
+
+# Sim logs (nix run .#fullstack)
+/.sim-logs

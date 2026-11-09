@@ -43,4 +43,13 @@ rec {
     pkgs.uv
     pkgs.python311
   ];
+
+  # Also needs `nix` on PATH: the ZaraOS VM and Driver Station run through
+  # their own repos' flakes.
+  urchin-fullstack = script "urchin-fullstack" [
+    urchin-sim
+    pkgs.netcat-openbsd
+    pkgs.curl
+    pkgs.util-linux # setsid
+  ];
 }
