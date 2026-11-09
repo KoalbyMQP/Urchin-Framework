@@ -13,8 +13,9 @@ in
 rec {
   qemu-esp32 = pkgs.callPackage ./qemu-esp32.nix { };
 
-  # Python 3.11: the oldest version Crab_API2 supports (requires-python >= 3.11).
-  crabPython = pkgs.callPackage ./python.nix { python3 = pkgs.python311; };
+  # Python for the legacy Crab_API. Crab_API2 doesn't use it: uv installs the
+  # Python 3.10 pinned in Crab_API2/.python-version (nixpkgs no longer has 3.10).
+  crabPython = pkgs.callPackage ./python.nix { };
 
   # HerkuleX servo emulator for the simulator's motor bus (UART1). Only the
   # standard library is needed; -I keeps a caller's PYTHONPATH (e.g. a ROS

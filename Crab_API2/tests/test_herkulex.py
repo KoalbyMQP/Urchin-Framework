@@ -42,6 +42,11 @@ def test_command_names_match_firmware_strings():
     assert set(HerkulexCommand) == {"MoveOne", "GetAngle", "SetTorque", "TestReact"}
 
 
+def test_command_names_stringify_to_firmware_strings():
+    assert str(HerkulexCommand.TEST_REACT) == "TestReact"
+    assert f"{HerkulexCommand.MOVE_ONE}" == "MoveOne"
+
+
 # --- move_one: Variables[0].Float goal, [1].Int play time, [2].Int JogLedColor ---
 
 

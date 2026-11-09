@@ -17,10 +17,13 @@ import threading
 import time
 from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Protocol, Self
+from typing import TYPE_CHECKING, Protocol
 
 import serial
 from serial.tools.list_ports import comports
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 

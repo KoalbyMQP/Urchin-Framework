@@ -7,18 +7,22 @@ firmware resolves the joint to a motor number, model, and bounds via the bridge.
 
 from __future__ import annotations
 
-from enum import IntEnum, StrEnum
+from enum import Enum, IntEnum
 
 from crab_api2.command import Command
 
 MAX_PLAY_TIME = 255  # ticks; the firmware multiplies by PTime (11.2 ms), max 2856 ms
 
 
-class HerkulexCommand(StrEnum):
+class HerkulexCommand(str, Enum):
     MOVE_ONE = "MoveOne"
     GET_ANGLE = "GetAngle"
     SET_TORQUE = "SetTorque"
     TEST_REACT = "TestReact"
+
+    # Stringify to the firmware name (like 3.11's StrEnum), not "HerkulexCommand.MOVE_ONE"
+    __str__ = str.__str__
+    __format__ = str.__format__
 
 
 class LedColor(IntEnum):

@@ -21,11 +21,12 @@ from __future__ import annotations
 
 import logging
 import struct
-import tomllib
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
 from typing import Any
+
+import tomli
 
 logger = logging.getLogger(__name__)
 
@@ -126,8 +127,8 @@ def load_bridge(path: str | PathLike[str]) -> list[Motor]:
 def parse_bridge(text: str) -> list[Motor]:
     """Parse and validate the contents of a bridge file."""
     try:
-        data = tomllib.loads(text)
-    except tomllib.TOMLDecodeError as e:
+        data = tomli.loads(text)
+    except tomli.TOMLDecodeError as e:
         raise BridgeError(f"Invalid TOML: {e}") from None
 
     _check_version(data)

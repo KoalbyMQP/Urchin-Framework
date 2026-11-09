@@ -19,9 +19,9 @@ import struct
 import threading
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import Enum
 from os import PathLike
-from typing import Literal, Self, TypeAlias, overload
+from typing import TYPE_CHECKING, Literal, TypeAlias, overload
 
 from crab_api2.bridge import load_bridge
 from crab_api2.command import Command
@@ -33,6 +33,9 @@ from crab_api2.reaction import (
     ReactionRegistry,
     decode_reaction,
 )
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 firmware_logger = logging.getLogger("crab_api2.firmware")
@@ -48,11 +51,15 @@ _ACK_CHECKING = b"GetHealth:AckCheck:Checking "
 _ACK_DONE = b"AckCheck:done"
 
 
-class TicketType(StrEnum):
+class TicketType(str, Enum):
     SEQUENTIAL = "S"
     RESOLVING = "R"
     ASYNCHRONOUS = "A"
     INTERRUPT = "I"
+
+    # Stringify to the value (like 3.11's StrEnum), not "TicketType.SEQUENTIAL"
+    __str__ = str.__str__
+    __format__ = str.__format__
 
 
 class CrabError(Exception):

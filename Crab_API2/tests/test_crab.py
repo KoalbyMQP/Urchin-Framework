@@ -92,6 +92,11 @@ def test_ticket_types():
     assert [t.value for t in TicketType] == ["S", "R", "A", "I"]
 
 
+def test_ticket_types_stringify_to_values():
+    assert [str(t) for t in TicketType] == ["S", "R", "A", "I"]
+    assert [f"{t}" for t in TicketType] == ["S", "R", "A", "I"]
+
+
 def test_tickets_increment(crab):
     tickets = [
         crab.send(TicketType.ASYNCHRONOUS, [herkulex.get_angle("Hip")])

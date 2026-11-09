@@ -92,7 +92,7 @@
               export URCHIN_ROOT
               # Replace, don't extend: Python-based tools in this shell (pre-commit,
               # esptool, ...) add nixpkgs' default-Python site-packages to PYTHONPATH,
-              # which would leak into the 3.11 interpreter and uv virtualenvs. Those
+              # which would leak into crabPython and uv's Python 3.10 virtualenvs. Those
               # tools are wrapped and don't need it.
               export PYTHONPATH="$URCHIN_ROOT/Crab_API/src"
               echo "Urchin dev shell: urchin-build | urchin-image | urchin-sim | urchin-motor-sim  (--help on each)"
