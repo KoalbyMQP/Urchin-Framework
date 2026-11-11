@@ -193,6 +193,7 @@ if(BUILD_TESTING)
             tests/C++/Transport-Interface/Fake/test_FakeSeral.cpp
             tests/C++/test_ISerialPort.cpp
             tests/C++/DBOX-Protocol/test_DBOXprotocol.cpp
+            tests/C++/DBOX-Protocol/test_PayloadCRC.cpp
             tests/C++/Discovery/test_UartDiscovery.cpp
     )
 

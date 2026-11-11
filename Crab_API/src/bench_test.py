@@ -7,9 +7,17 @@ anything about it.
 
 Menu options:
     1) Check ESP32 link   laptop <-> ESP32 only (works with DBoxEcho or DBoxMotor firmware)
-    2) Check motor        ESP32 <-> servo: finds the servo, reports its status in plain English
+    2) Check motors       ESP32 <-> servos: finds every servo on the bus, reports
+                          each one's status in plain English
     3) Spin motor         keyboard control, end to end
     4) Move to an angle   end to end
+    5) Choose motor       which servo options 3/4 drive: one of them, or all at once
+    6) Change motor ID    give a servo a new Herkulex ID (needed before two servos
+                          with the same ID can share the bus)
+
+Several servos can share the bus (daisy chain); each needs its own ID. Each
+servo is addressed by D-BOX VPID = its Herkulex ID, and VPID 0 means "all of
+them" (provisional, see DBoxMotor/main.cpp). Works with one servo too.
 
 D-BOX comes from DBOXpy, the Python bindings of the team's C++ D-BOX code
 (Clam/D-BOX): the same framing, receive and discovery code that runs on the
@@ -41,12 +49,12 @@ except ImportError:
     sys.exit(1)
 
 IDENTITY = "Urchin"   # handshake string, see DBoxMotor/main.cpp
-VPID = 0
+ALL = 0               # VPID 0 = the board / every servo at once
 SPIN_SPEED = 200      # same as HerkulexTest; servo range is -1023..1023
 KEEPALIVE_S = 0.1     # firmware stops the motor if no Spin arrives for 0.5s
 LINK_ROUNDS = 20
 MOVE_TIME_MS = 1000
-MAX_ANGLE = 160       # MODEL_0601 tops out around +/-164 degrees
+MAX_ANGLE = 160       # DRS-0601 tops out around +/-164 degrees, DRS-0201 +/-166
 
 ERROR_BITS = [
     (0x01, "INPUT VOLTAGE OUT OF RANGE - check the DC supply voltage / current limit"),
@@ -151,21 +159,69 @@ class Bench:
         self.port = port
         self.firmware = firmware
         self.info = info
+        self.servos = {}        # Herkulex ID -> model ("0601", "0201", ...)
+        self.target = ALL       # VPID options 3/4 send to
+        self.multi = False      # firmware understands per-servo VPIDs (v2+)
 
-    def request(self, text: str, timeout: float = 1.0) -> Optional["dbox.DBOX"]:
+    def request(self, text: str, timeout: float = 1.0,
+                vpid: Optional[int] = None) -> Optional["dbox.DBOX"]:
         """Send one command, return the reply (None if nothing came back)."""
-        self.link.send(VPID, 'N', text)
+        vpid = self.target if vpid is None else vpid
+        self.link.send(vpid, 'N', text)
         deadline = time.monotonic() + timeout
         while True:
             packet = self.link.receive(max(0.0, deadline - time.monotonic()))
             if packet is None:
                 return None
             if packet.stream == 'D':
-                say(f"   (ESP32 says: {packet.text})")
+                who = f"motor {packet.VPID}" if packet.VPID else "ESP32"
+                say(f"   ({who} says: {packet.text})")
                 continue
             if packet.stream == 'S':
                 continue
             return packet
+
+    def update_servos(self, info: str) -> None:
+        """Read the servo list out of an Info reply.
+
+        v2: "DBoxMotor v2 servos=219:0601,253:0201" (or servos=none)
+        v1: "DBoxMotor v1 servo=219" (or servo=broadcast) -- one servo only
+        """
+        self.servos = {}
+        for word in info.split():
+            if word.startswith("servos=") and word != "servos=none":
+                self.multi = True
+                self.servos = parse_servo_list(word[len("servos="):].replace(",", " "))
+            elif word == "servos=none":
+                self.multi = True
+            elif word.startswith("servo=") and word[6:].isdigit():
+                self.servos = {int(word[6:]): "0601"}
+        if self.target != ALL and self.target not in self.servos:
+            self.target = ALL
+
+    def target_name(self) -> str:
+        if self.target == ALL:
+            if len(self.servos) > 1:
+                return f"all {len(self.servos)} motors"
+            return "the motor" if self.servos else "the motor (not found yet)"
+        return motor_name(self.target, self.servos.get(self.target, "?"))
+
+
+def parse_servo_list(text: str) -> dict:
+    """"219:0601 253:0201?" -> {219: "0601", 253: "0201?"} ('?' = model guessed)."""
+    servos = {}
+    for item in text.split():
+        servo_id, _, model = item.partition(":")
+        if servo_id.isdigit():
+            servos[int(servo_id)] = model or "?"
+    return servos
+
+
+def motor_name(servo_id: int, model: str) -> str:
+    guessed = model.endswith("?")
+    model = model.rstrip("?")
+    text = f"motor {servo_id} (DRS-{model}" if model else f"motor {servo_id} ("
+    return text + (", model not confirmed)" if guessed else ")")
 
 
 def try_port(link: Link, port: str) -> Optional[Bench]:
@@ -186,6 +242,7 @@ def identify(link: Link, port: str) -> Optional[Bench]:
     if reply is not None and reply.stream == 'E' and reply.text.startswith("OK " + MOTOR_FW):
         bench.firmware = MOTOR_FW
         bench.info = reply.text[3:]
+        bench.update_servos(bench.info)
     elif reply is not None and reply.stream == 'N' and reply.text == "Info":
         bench.firmware = ECHO_FW   # echo firmware just sends our packet back
         bench.info = ECHO_FW
@@ -217,7 +274,10 @@ def connect(port_arg: Optional[str]) -> Optional[Bench]:
          "   (on WSL, give it back to Windows first:  usbipd detach --busid <BUSID>)",
          "Close any serial monitor (pio device monitor, VS Code, Arduino IDE) -- only one",
          "   program can use the port at a time.",
-         "Press the ESP32's EN/RST button and run this again.")
+         "Press the ESP32's EN/RST button and run this again.",
+         "Just updated the code? Rebuild DBOXpy AND re-flash the ESP32: both sides",
+         "   must run the same D-BOX version (e.g. the message CRC-32 changed the",
+         "   packet format), or they can't understand each other.")
     return None
 
 
@@ -234,7 +294,7 @@ def check_link(bench: Bench) -> None:
             reply = bench.request(payload)
             ok = reply is not None and reply.stream == 'N' and reply.text == payload
         else:
-            reply = bench.request("Info")
+            reply = bench.request("Info", vpid=ALL)
             ok = reply is not None and reply.text.startswith("OK " + MOTOR_FW)
         if ok:
             passed += 1
@@ -247,32 +307,53 @@ def check_link(bench: Bench) -> None:
              "Turn Bluetooth off (it has interfered with this USB link before).")
 
 
-def describe_status(reply_text: str) -> None:
-    # "OK STAT <id> <error> <detail>"
-    _, _, servo_id, error, detail = reply_text.split()
-    error, detail = int(error), int(detail)
-    say(f"   servo ID {servo_id}, torque {'ON' if detail & 0x40 else 'OFF'}")
-    if error == 0:
-        say("   no errors")
-    for bit, text in ERROR_BITS:
-        if error & bit:
-            say(f"   ERROR: {text}")
-    if error:
+def describe_status(bench: Bench, reply_text: str) -> None:
+    # "OK STAT <id> <error> <detail> [<id> <error> <detail> ...]", "-" = no reply
+    words = reply_text.split()[2:]
+    any_error = False
+    for i in range(0, len(words) - 2, 3):
+        servo_id, error, detail = words[i:i + 3]
+        name = motor_name(int(servo_id), bench.servos.get(int(servo_id), "?"))
+        if error == "-":
+            say(f"   {name}: did not answer this time")
+            continue
+        error, detail = int(error), int(detail)
+        say(f"   {name}: torque {'ON' if detail & 0x40 else 'OFF'}, "
+            + ("no errors" if error == 0 else "errors:"))
+        for bit, text in ERROR_BITS:
+            if error & bit:
+                say(f"      ERROR: {text}")
+        any_error = any_error or error != 0
+    if any_error:
         hint("Errors are cleared automatically on the next Spin/Move.")
 
 
 def check_motor(bench: Bench) -> None:
-    say("\n[2] Motor: looking for the servo (can take up to ~10 seconds)...")
-    reply = bench.request("Find", timeout=20)
+    say("\n[2] Motors: looking for every servo on the bus (takes about 10 seconds)...")
+    reply = bench.request("Find", timeout=20, vpid=ALL)
     if reply is None:
         say("FAIL: the ESP32 stopped answering.")
         hint("Check the USB cable; press EN/RST on the ESP32 and run this again.")
         return
     if reply.text.startswith("OK FOUND"):
-        say(f"PASS: servo found (ID {reply.text.split()[2]}) -- two-way communication OK")
-        status = bench.request("Status")
+        if bench.multi:
+            bench.servos = parse_servo_list(reply.text[len("OK FOUND"):])
+        else:
+            bench.servos = {int(reply.text.split()[2]): "0601"}
+        if bench.target != ALL and bench.target not in bench.servos:
+            bench.target = ALL
+        count = len(bench.servos)
+        say(f"PASS: {count} servo{'s' if count != 1 else ''} found -- two-way communication OK")
+        for servo_id, model in bench.servos.items():
+            say(f"   {motor_name(servo_id, model)}")
+        status = bench.request("Status", vpid=ALL)
         if status is not None and status.text.startswith("OK STAT"):
-            describe_status(status.text)
+            describe_status(bench, status.text)
+        if count > 1:
+            hint("Options 3 and 4 drive all of them; use option 5 to pick one.")
+        if any(model.endswith("?") for model in bench.servos.values()):
+            hint("A model ending in '?' was guessed (the servo didn't say what it is).",
+                 "   If angles come out wrong for it, tell the firmware team its model.")
         return
     say("FAIL: no servo answered.")
     hint("Is the DC supply ON? Did the servo's LED light up at power-on?",
@@ -283,7 +364,8 @@ def check_motor(bench: Bench) -> None:
 
 
 def spin_motor(bench: Bench) -> None:
-    say("\n[3] Spin motor:  d = spin clockwise   a = spin counter-clockwise")
+    say(f"\n[3] Spin {bench.target_name()}:")
+    say("                 d = spin clockwise   a = spin counter-clockwise")
     say("                 space = stop         q = stop and go back to the menu")
     direction = 0
     last_sent = 0.0
@@ -308,6 +390,9 @@ def spin_motor(bench: Bench) -> None:
                 if reply is None:
                     say("   FAIL: the ESP32 stopped answering -- motor will stop on its own")
                     direction = 0
+                elif reply.text.startswith("ERR"):
+                    say(f"   FAIL: ESP32 refused ({reply.text}) -- run option 2")
+                    direction = 0
                 last_sent = now
             time.sleep(0.01)
     bench.request("Stop")
@@ -315,7 +400,8 @@ def spin_motor(bench: Bench) -> None:
 
 
 def move_motor(bench: Bench) -> None:
-    raw = input(f"\n[4] Angle to move to, in degrees (-{MAX_ANGLE} to {MAX_ANGLE}): ").strip()
+    raw = input(f"\n[4] Angle to move {bench.target_name()} to, in degrees"
+                f" (-{MAX_ANGLE} to {MAX_ANGLE}): ").strip()
     try:
         angle = float(raw)
     except ValueError:
@@ -334,6 +420,57 @@ def move_motor(bench: Bench) -> None:
         say(f"FAIL: ESP32 refused the move ({reply.text}).")
 
 
+def choose_motor(bench: Bench) -> None:
+    if not bench.servos:
+        say("\n[5] No motors known yet -- run option 2 first.")
+        return
+    say("\n[5] Which motor should options 3 and 4 drive?")
+    say("    0) all of them at once")
+    for servo_id, model in bench.servos.items():
+        say(f"  {servo_id:3}) {motor_name(servo_id, model)}")
+    raw = input("Motor ID: ").strip()
+    if not raw.isdigit() or (int(raw) != ALL and int(raw) not in bench.servos):
+        say("   Not one of the IDs above; nothing changed.")
+        return
+    bench.target = int(raw)
+    say(f"   Options 3 and 4 now drive {bench.target_name()}.")
+
+
+def change_id(bench: Bench) -> None:
+    say("\n[6] Change a motor's ID. Every servo on the bus needs its own ID;")
+    say("    new servos all come with the same factory ID (DRS-0601: 219, DRS-0201: 253),")
+    say("    so plug them in ONE AT A TIME and give each a new ID before adding the next.")
+    if not bench.servos:
+        say("   No motors known yet -- run option 2 first.")
+        return
+    for servo_id, model in bench.servos.items():
+        say(f"  {servo_id:3}) {motor_name(servo_id, model)}")
+    old = input("Current ID of the motor to change: ").strip()
+    if not old.isdigit() or int(old) not in bench.servos:
+        say("   Not one of the IDs above; nothing changed.")
+        return
+    new = input("New ID (1-253): ").strip()
+    if not new.isdigit() or not 1 <= int(new) <= 253:
+        say("   The new ID must be a number from 1 to 253; nothing changed.")
+        return
+    old, new = int(old), int(new)
+    reply = bench.request(f"SetId {new}", timeout=5, vpid=old)
+    if reply is None:
+        say("FAIL: no reply from the ESP32.")
+    elif reply.text.startswith("OK SETID"):
+        bench.servos[new] = bench.servos.pop(old)
+        bench.servos = dict(sorted(bench.servos.items()))
+        if bench.target == old:
+            bench.target = new
+        say(f"PASS: motor {old} is now motor {new} (saved in the servo, survives power-off)")
+        hint("Write the new ID on a piece of tape on the servo.")
+    elif reply.text.startswith("ERR TAKEN"):
+        say(f"FAIL: another servo already uses ID {new}. Pick a different one.")
+    else:
+        say(f"FAIL: the servo didn't take the new ID ({reply.text}).")
+        hint("Run option 2 to see which IDs answer now.")
+
+
 # --- Menu ------------------------------------------------------------------
 
 def main() -> int:
@@ -349,31 +486,42 @@ def main() -> int:
         hint("Flash it from Urchin_Firmware with:  pio run -e DBoxMotor -t upload")
 
     needs = "" if motor_ok else "   (needs DBoxMotor firmware)"
+    multi_needs = needs or ("" if bench.multi else "   (needs DBoxMotor v2 firmware)")
     try:
         while True:
+            if motor_ok:
+                say(f"\n Driving: {bench.target_name()}")
             say("\n 1) Check ESP32 link")
-            say(" 2) Check motor" + needs)
+            say(" 2) Check motors" + needs)
             say(" 3) Spin motor" + needs)
             say(" 4) Move motor to an angle" + needs)
+            say(" 5) Choose motor" + multi_needs)
+            say(" 6) Change a motor's ID" + multi_needs)
             say(" q) Quit")
             choice = input("Choose: ").strip().lower()
             if choice == '1':
                 check_link(bench)
-            elif choice in ('2', '3', '4') and not motor_ok:
+            elif choice in ('2', '3', '4', '5', '6') and not motor_ok:
                 say("   This needs DBoxMotor firmware on the ESP32 (see the note above).")
+            elif choice in ('5', '6') and not bench.multi:
+                say("   This needs the multi-motor (v2) DBoxMotor firmware; re-flash it.")
             elif choice == '2':
                 check_motor(bench)
             elif choice == '3':
                 spin_motor(bench)
             elif choice == '4':
                 move_motor(bench)
+            elif choice == '5':
+                choose_motor(bench)
+            elif choice == '6':
+                change_id(bench)
             elif choice in ('q', 'quit', 'exit'):
                 break
     except (KeyboardInterrupt, EOFError):
         say("")
     finally:
         if motor_ok:
-            bench.request("Stop", timeout=0.3)
+            bench.request("Stop", timeout=0.3, vpid=ALL)
         bench.link.close()
     return 0
 

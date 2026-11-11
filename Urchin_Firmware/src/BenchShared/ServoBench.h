@@ -34,11 +34,28 @@ constexpr int kTxPin = 17;     // ESP32 TX -> servo RX
 constexpr int kRxPin = 16;     // ESP32 RX <- servo TX
 
 constexpr int kBroadcastId = 0xFE;
+constexpr int kMaxServoId = 253;  // valid servo IDs are 0..253
+// Default model, used when a servo's model is unknown (and by the
+// single-servo helpers below that don't take one).
 constexpr HerkulexModel kModel = MODEL_0601;
 // MODEL_0601's position range, matching HerkulexClass::moveOneAngle's math.
 constexpr int kCenterPos = 1024;
 constexpr float kDegPerUnit = 0.161f;
 constexpr int kMaxPos = 2047;
+
+// Position geometry for each servo family, from the Herkulex manuals (and
+// the same numbers HerkulexClass::moveOneAngle uses).
+struct ModelInfo {
+    HerkulexModel model;
+    const char* name;  // "0101", "0201", "0601", "0602"
+    int centerPos;     // position value at 0 degrees
+    float degPerUnit;
+    int maxPos;
+};
+const ModelInfo& InfoFor(HerkulexModel model);
+// Parses "0101" / "0201" / "0601" / "0602" (a leading "DRS-" is allowed).
+// Returns false for anything else.
+bool ParseModel(const char* text, HerkulexModel* out);
 
 struct ServoStatus {
     uint8_t error;   // STATUS_ERROR register (RAM 48)
@@ -61,6 +78,28 @@ void ClearErrors(int id);
 // to do before every motion command.
 void Arm(int id);
 
+// Reads `len` bytes of the servo's EEPROM starting at `addr` (raw
+// EEP_READ). Returns false if no well-formed reply arrived.
+bool ReadEep(int id, uint8_t addr, uint8_t len, uint8_t* out);
+
+// Asks the servo what it is (EEPROM "Model No." bytes at address 0-1).
+// Returns false if it didn't answer or the number isn't one we know; *out is
+// then left alone. Known numbers: 0x01 = DRS-0101, 0x02 = DRS-0201 (both
+// from the manuals); 0x04/0x06 = DRS-0401/0601 with second byte 0x02
+// meaning the 0x02 (high-resolution) variant -- the 06xx numbers are not yet
+// confirmed on real hardware, hence the Model override in DBoxMotor.
+bool ReadModel(int id, HerkulexModel* out);
+
+// Every ID 0-253 that answers a STAT, in order (~8s with nothing on the
+// bus). No broadcast first: with two or more servos their broadcast replies
+// collide. Returns how many were written to ids (at most maxIds).
+int FindAll(int* ids, int maxIds);
+
+// Writes a new ID into the servo's EEPROM and reboots it so it takes
+// effect. Returns true once the servo answers on the new ID (up to ~2s).
+// The caller must make sure newId is free first.
+bool ChangeId(int oldId, int newId);
+
 // Returns the servo's ID, or -1 if nothing answered. Tries a broadcast STAT
 // first (a lone servo usually answers it with its real ID, instantly), then
 // addresses every ID 0-253 (~10s). progress, if given, is called with each
@@ -73,6 +112,7 @@ int FindServo(void (*progress)(int id));
 // The servo keeps turning until told otherwise, so callers re-send this
 // periodically and call Stop() when done.
 void SpinAt(int id, int speed);
+void SpinAt(int id, int speed, HerkulexModel model);
 
 void Stop(int id);
 
@@ -80,5 +120,6 @@ void Stop(int id);
 // tracks the motion). Returns false if the angle is outside the servo's
 // range.
 bool MoveToAngle(int id, float degrees, int timeMs);
+bool MoveToAngle(int id, float degrees, int timeMs, HerkulexModel model);
 
 }  // namespace Bench

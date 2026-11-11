@@ -116,6 +116,11 @@ int main() {
     { std::vector<uint8_t> v = {0x07,'j','u','n','k','!','!'}; auto bad=A; bad[3]^=0x01; add(v,bad); add(v,B);
       fails += !run("7 garbage + bad header + good, trickling", v, {{4,'S',"sensor ok"}}, true); }
 
-    printf("\n%d of 7 failed\n", fails);
+    // 8. Message damaged in transit ("move 90" -> "move 98"): header CRC
+    //    passes, payload CRC-32 fails, so it is dropped; the next one arrives
+    { auto bad = A; bad[7 + 6] ^= 0x08; std::vector<uint8_t> v = bad; add(v, B);
+      fails += !run("8 [crc32] damaged message, then good one", v, {{4,'S',"sensor ok"}}, true); }
+
+    printf("\n%d of 8 failed\n", fails);
     return fails;
 }

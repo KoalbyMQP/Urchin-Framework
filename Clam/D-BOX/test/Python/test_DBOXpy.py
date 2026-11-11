@@ -42,9 +42,17 @@ class PacketTypes(unittest.TestCase):
         self.assertEqual(p, d.DBOX(0, ord("N"), "Spin 200"))
 
     def test_wire_format_matches_the_spec(self):
-        # 07 | ID 00 | 'N' 4E | len 08 00 | CRC 6A 4A | "Spin 200"
+        # 07 | ID 00 | 'N' 4E | len 08 00 | CRC 6A 4A | "Spin 200" | CRC-32 46 F4 58 25
         self.assertEqual(frame_bytes(0, "N", "Spin 200"),
-                         bytes.fromhex("07004E08006A4A") + b"Spin 200")
+                         bytes.fromhex("07004E08006A4A") + b"Spin 200" + bytes.fromhex("46F45825"))
+
+    def test_payload_crc_is_standard_crc32(self):
+        # The trailing 4 bytes are zlib.crc32 of the payload, little-endian, so
+        # any language can build or check D-BOX packets.
+        import zlib
+        for text in ["", "Urchin", "OK STAT 219 0 64", "x" * 300]:
+            raw = frame_bytes(7, "E", text)
+            self.assertEqual(raw[-4:], zlib.crc32(text.encode()).to_bytes(4, "little"))
 
 
 class ProtocolOverFakePorts(unittest.TestCase):
@@ -60,6 +68,16 @@ class ProtocolOverFakePorts(unittest.TestCase):
         t0 = time.monotonic()
         self.assertFalse(pa.receive(d.DBOX(), 150))
         self.assertLess(time.monotonic() - t0, 1.5)
+
+    def test_receive_drops_damaged_message(self):
+        # "Move 90" -> "Move 98": header still valid, payload CRC-32 is not.
+        pa, _, _, b = fake_pair()
+        bad = bytearray(frame_bytes(1, "N", "Move 90"))
+        bad[7 + 6] ^= 0x08
+        b.write(bytes(bad) + frame_bytes(1, "N", "Move 45"))
+        got = d.DBOX()
+        self.assertTrue(pa.receive(got, 1000))
+        self.assertEqual(got.text, "Move 45")
 
     def test_receive_skips_junk_and_false_start(self):
         pa, _, _, b = fake_pair()

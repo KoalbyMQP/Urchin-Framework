@@ -12,6 +12,8 @@
 //  2. receive() resynchronizes after a header CRC failure: it goes back to
 //     searching for the next start marker instead of re-peeking the same bad
 //     bytes forever. (Gabe's original still has that infinite loop.)
+//  3. Same CRC-32 message check as Gabe's copy, but hand-rolled instead of
+//     boost::crc_32_type (no Boost on the ESP32); bit-identical results.
 // The header-peek retry loop relies on IPort::peek() throwing
 // RingBufferUnderflowException while a header is still arriving; that is
 // caught below and turned into a WaitForDataMS pause before re-checking.
@@ -61,129 +63,161 @@ namespace DBOXProtocol {
         std::span<uint8_t> Header(headerBuffer);
         std::span<uint8_t, 2> HeaderCRC(crcBuffer);
 
-        // Find a start marker whose header passes its CRC.
-        // If a header fails its CRC, the 0x07 we found was a false start
-        // (line noise, or a 0x07 byte inside some other packet's payload).
-        // Its bytes were only peeked, so they are still in the buffer; going
-        // back to the marker search resumes at the byte right after the
-        // false 0x07, which is exactly where a real marker could be hiding.
-        bool aligned = false;
-        while (!aligned)
+        // Repeat until a packet passes both checks. A packet whose message
+        // fails its CRC-32 was damaged in transit: drop it and search again.
+        while (true)
         {
-            // Look for Delimiter
-            while (true)
+            // Find a start marker whose header passes its CRC.
+            // If a header fails its CRC, the 0x07 we found was a false start
+            // (line noise, or a 0x07 byte inside some other packet's payload).
+            // Its bytes were only peeked, so they are still in the buffer; going
+            // back to the marker search resumes at the byte right after the
+            // false 0x07, which is exactly where a real marker could be hiding.
+            bool aligned = false;
+            while (!aligned)
             {
-                uint8_t byte = 0;
-                std::span<uint8_t> buffer(&byte, 1);
-
+                // Look for Delimiter
                 while (true)
                 {
-                    if (port->read(buffer, 1) == 1)
+                    uint8_t byte = 0;
+                    std::span<uint8_t> buffer(&byte, 1);
+
+                    while (true)
+                    {
+                        if (port->read(buffer, 1) == 1)
+                            break;
+
+                        port->wait(WaitForDataMS);
+                    }
+
+                    if (byte == '\a')
                         break;
 
-                    port->wait(WaitForDataMS);
+                    dump.write(reinterpret_cast<const char*>(&byte), 1);
                 }
 
-                if (byte == '\a')
-                    break;
+                //found an instance of a start marker
 
-                dump.write(reinterpret_cast<const char*>(&byte), 1);
-            }
-
-            //found an instance of a start marker
-
-            // Wait for / read header + CRC
-            while (true)
-            {
-                // IPort::peek() throws RingBufferUnderflowException while
-                // fewer than raw.size() bytes have arrived (normal while a
-                // header is still trickling in over UART). Catch it, pause,
-                // and re-check.
-                try
+                // Wait for / read header + CRC
+                while (true)
                 {
-                    std::array<uint8_t, HeaderSize + sizeof(uint16_t)> raw{};
+                    // IPort::peek() throws RingBufferUnderflowException while
+                    // fewer than raw.size() bytes have arrived (normal while a
+                    // header is still trickling in over UART). Catch it, pause,
+                    // and re-check.
+                    try
+                    {
+                        std::array<uint8_t, HeaderSize + sizeof(uint16_t)> raw{};
 
-                    std::span<uint8_t> rawSpan(raw);
-                    //Assuming we don't have frame alignment, peek the header
-                    if (port->peek(rawSpan, raw.size()) == raw.size()) {
-                        std::copy_n(
-                            raw.begin(),
-                            HeaderSize,
-                            Header.begin()
-                        );
+                        std::span<uint8_t> rawSpan(raw);
+                        //Assuming we don't have frame alignment, peek the header
+                        if (port->peek(rawSpan, raw.size()) == raw.size()) {
+                            std::copy_n(
+                                raw.begin(),
+                                HeaderSize,
+                                Header.begin()
+                            );
 
-                        std::copy_n(
-                            raw.begin() + HeaderSize,
-                            sizeof(uint16_t),
-                            HeaderCRC.begin()
-                        );
+                            std::copy_n(
+                                raw.begin() + HeaderSize,
+                                sizeof(uint16_t),
+                                HeaderCRC.begin()
+                            );
 
-                        // generate the CRC from the received header
-                        if (ComputeChecksumCRC(&CRC, Header) == -1){
-                            return false;
+                            // generate the CRC from the received header
+                            if (ComputeChecksumCRC(&CRC, Header) == -1){
+                                return false;
+                            }
+
+                            // Verify header CRC.
+                            // Match: frame is aligned. Mismatch: false start,
+                            // leave this loop and search for the next delimiter.
+                            aligned = (CRC == span_to_uint16_native(HeaderCRC));
+                            break;
                         }
-
-                        // Verify header CRC.
-                        // Match: frame is aligned. Mismatch: false start,
-                        // leave this loop and search for the next delimiter.
-                        aligned = (CRC == span_to_uint16_native(HeaderCRC));
-                        break;
+                    }
+                    catch (const RingBuffer::RingBufferUnderflowException&)
+                    {
+                        port->wait(WaitForDataMS);
                     }
                 }
-                catch (const RingBuffer::RingBufferUnderflowException&)
+            }
+
+
+
+            //At this point we have proved frame alignment from the CRC so the payload size is correct
+            //We can safely drop the head and read the payload.
+
+            // Extract header fields
+
+            packet->VPID = Header[0];
+            packet->Stream = Header[1];
+
+            uint16_t payloadSize =
+                Header[2] |
+                (static_cast<uint16_t>(Header[3]) << 8);
+
+
+            // Drop the header to prep for reading the paylaod
+            port->drop(HeaderSize + sizeof(uint16_t));
+
+
+            // Read payload
+            //DONOT peek the payload thr ring buffer cant fit the max sized payload.
+            packet->Payload.resize(payloadSize);
+
+            size_t offset = 0;
+
+            while (offset < payloadSize)
+            {
+                auto remaining = payloadSize - offset;
+
+                std::span<uint8_t> destination(
+                    packet->Payload.data() + offset,
+                    remaining
+                );
+
+                size_t got = port->read(destination, remaining);
+
+                if (got == 0)
                 {
                     port->wait(WaitForDataMS);
+                    continue;
                 }
+
+                offset += got;
             }
-        }
 
-
-
-        //At this point we have proved frame alignment from the CRC so the payload size is correct
-        //We can safely drop the head and read the payload.
-
-        // Extract header fields
-
-        packet->VPID = Header[0];
-        packet->Stream = Header[1];
-
-        uint16_t payloadSize =
-            Header[2] |
-            (static_cast<uint16_t>(Header[3]) << 8);
-
-
-        // Drop the header to prep for reading the paylaod
-        port->drop(HeaderSize + sizeof(uint16_t));
-
-
-        // Read payload
-        //DONOT peek the payload thr ring buffer cant fit the max sized payload.
-        packet->Payload.resize(payloadSize);
-
-        size_t offset = 0;
-
-        while (offset < payloadSize)
-        {
-            auto remaining = payloadSize - offset;
-
-            std::span<uint8_t> destination(
-                packet->Payload.data() + offset,
-                remaining
-            );
-
-            size_t got = port->read(destination, remaining);
-
-            if (got == 0)
+            // Read the message CRC-32 (4 bytes, little-endian) after the payload.
+            std::array<uint8_t, PayloadCRCSize> crcBytes{};
+            size_t crcOffset = 0;
+            while (crcOffset < crcBytes.size())
             {
-                port->wait(WaitForDataMS);
-                continue;
+                std::span<uint8_t> destination(
+                    crcBytes.data() + crcOffset,
+                    crcBytes.size() - crcOffset
+                );
+
+                size_t got = port->read(destination, destination.size());
+
+                if (got == 0)
+                {
+                    port->wait(WaitForDataMS);
+                    continue;
+                }
+
+                crcOffset += got;
             }
 
-            offset += got;
+            const uint32_t receivedCRC =
+                static_cast<uint32_t>(crcBytes[0]) |
+                (static_cast<uint32_t>(crcBytes[1]) << 8) |
+                (static_cast<uint32_t>(crcBytes[2]) << 16) |
+                (static_cast<uint32_t>(crcBytes[3]) << 24);
+
+            if (receivedCRC == ComputePayloadCRC32(packet->Payload))
+                return true;
         }
-
-
-        return true;
     }
 
 
@@ -214,10 +248,23 @@ namespace DBOXProtocol {
     }
 
 
+    // Standard CRC-32 (reflected, poly 0x04C11DB7 = 0xEDB88320 reversed, init
+    // and final xor 0xFFFFFFFF) -- bit-identical to boost::crc_32_type, which
+    // Gabe's copy uses, and to Python's zlib.crc32.
+    uint32_t ComputePayloadCRC32(std::span<const uint8_t> Payload) {
+        uint32_t crc = 0xFFFFFFFFu;
+        for (uint8_t b : Payload) {
+            crc ^= b;
+            for (int i = 0; i < 8; ++i)
+                crc = (crc & 1u) ? (crc >> 1) ^ 0xEDB88320u : (crc >> 1);
+        }
+        return crc ^ 0xFFFFFFFFu;
+    }
+
     uint16_t span_to_uint16_native(std::span<const uint8_t, 2> bytes) {
         // Reinterprets the 2-byte span as a uint16_t directly
         return std::bit_cast<uint16_t>(std::array<uint8_t, 2>{bytes[0], bytes[1]});
     }
 
 
-}
+}

@@ -17,8 +17,19 @@ namespace DBOXProtocol {
 #define MAX_CRC_Payload_BIT 135
 #define WaitForDataMS 20
 #define MAX_CRC_Payload_BYTE ((MAX_CRC_Payload_BIT) / CHAR_BIT)
+// Size of the message checksum that follows every payload (CRC-32).
+#define PayloadCRCSize 4
+
+    // Wire format of one packet (multi-byte fields little-endian):
+    //   0x07 | VPID | Stream | PayloadSize (2) | header CRC-16 (2) | payload | payload CRC-32 (4)
+    // The header CRC-16 covers VPID..PayloadSize and is what lets receive()
+    // trust PayloadSize. The CRC-32 covers the payload bytes only; it is
+    // always present (an empty payload's CRC-32 is 0x00000000).
 
     int ComputeChecksumCRC(uint16_t *CRC,std::span<uint8_t> Payload);
+    // Standard CRC-32 (IEEE 802.3 / zlib / Python's zlib.crc32): reflected,
+    // polynomial 0x04C11DB7, init 0xFFFFFFFF, final xor 0xFFFFFFFF.
+    uint32_t ComputePayloadCRC32(std::span<const uint8_t> Payload);
     uint16_t span_to_uint16_native(std::span<const uint8_t, 2> bytes);
     struct DBOX {
         uint8_t VPID{};
@@ -49,7 +60,7 @@ namespace DBOXProtocol {
         uint8_t Stream;
         uint16_t PayloadSize;
         uint16_t ChecksumHeaderCRC;
-        //uint16_t ChecksumPlayloadCRC;
+        uint32_t ChecksumPayloadCRC;
         std::vector<uint8_t> Payload{};
 
         DBOXraw(const DBOX& packet)
@@ -73,13 +84,14 @@ namespace DBOXProtocol {
                 bytes.size()
             };
             ComputeChecksumCRC(&ChecksumHeaderCRC, byte_view);
+            ChecksumPayloadCRC = ComputePayloadCRC32(Payload);
         }
         DBOXraw() = default;
 
         operator std::vector<uint8_t>() const
         {
             std::vector<uint8_t> bytes;
-            bytes.reserve(7 + Payload.size());
+            bytes.reserve(7 + Payload.size() + PayloadCRCSize);
 
             bytes.push_back(7); // bell char for delimataer
             bytes.push_back(VPID);
@@ -93,6 +105,10 @@ namespace DBOXProtocol {
             bytes.push_back(static_cast<uint8_t>((ChecksumHeaderCRC >> 8) & 0xFF));
 
             bytes.insert(bytes.end(), Payload.begin(), Payload.end());
+
+            // Little-endian uint32_t
+            for (int shift = 0; shift < 32; shift += 8)
+                bytes.push_back(static_cast<uint8_t>((ChecksumPayloadCRC >> shift) & 0xFF));
 
             return bytes;
         }

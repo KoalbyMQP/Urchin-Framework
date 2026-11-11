@@ -14,6 +14,39 @@ namespace Bench {
 
 static constexpr TickType_t kReplyTimeout = pdMS_TO_TICKS(30);
 
+static const ModelInfo kModels[] = {
+    {MODEL_0101, "0101", 512, 0.325f, 1023},
+    {MODEL_0201, "0201", 512, 0.325f, 1023},
+    {MODEL_0601, "0601", 1024, 0.161f, 2047},
+    {MODEL_0602, "0602", 16384, 0.011f, 32767},
+};
+
+const ModelInfo& InfoFor(HerkulexModel model) {
+    for (const ModelInfo& m : kModels) {
+        if (m.model == model) {
+            return m;
+        }
+    }
+    return kModels[2];  // MODEL_0601, the bench default
+}
+
+bool ParseModel(const char* text, HerkulexModel* out) {
+    if (text[0] == 'D' && text[1] == 'R' && text[2] == 'S' && text[3] == '-') {
+        text += 4;
+    }
+    for (const ModelInfo& m : kModels) {
+        int i = 0;
+        while (m.name[i] && text[i] == m.name[i]) {
+            ++i;
+        }
+        if (m.name[i] == '\0' && (text[i] == '\0' || text[i] == ' ')) {
+            *out = m.model;
+            return true;
+        }
+    }
+    return false;
+}
+
 void Begin() {
     Herkulex.begin(kUart, kBaud, kRxPin, kTxPin);
     // Keep RX from floating (and reading noise) while the servo is
@@ -68,6 +101,79 @@ bool Ping(int id, ServoStatus* out, int* replyId) {
     return true;
 }
 
+bool ReadEep(int id, uint8_t addr, uint8_t len, uint8_t* out) {
+    if (len > 8) {
+        return false;
+    }
+    uart_flush_input(kUart);
+    const uint8_t data[] = {addr, len};
+    SendPacket(static_cast<uint8_t>(id), HEEPREAD, data, sizeof(data));
+
+    // Reply: FF FF size id 0x42 ck1 ck2 addr len data[len] error detail
+    uint8_t r[11 + 8];
+    int want = 11 + len;
+    if (uart_read_bytes(kUart, r, want, kReplyTimeout) != want) {
+        return false;
+    }
+    if (r[0] != 0xFF || r[1] != 0xFF || r[2] != want || r[3] != id ||
+        r[4] != (HEEPREAD | 0x40) || r[7] != addr || r[8] != len) {
+        return false;
+    }
+    uint8_t x = r[2] ^ r[3] ^ r[4];
+    for (int i = 7; i < want; ++i) {
+        x ^= r[i];
+    }
+    if (r[5] != (x & 0xFE) || r[6] != ((~x) & 0xFE)) {
+        return false;
+    }
+    for (int i = 0; i < len; ++i) {
+        out[i] = r[9 + i];
+    }
+    return true;
+}
+
+bool ReadModel(int id, HerkulexModel* out) {
+    uint8_t m[2];
+    if (!ReadEep(id, 0x00, 2, m)) {
+        return false;
+    }
+    switch (m[0]) {
+        case 0x01: *out = MODEL_0101; return true;
+        case 0x02: *out = MODEL_0201; return true;
+        case 0x04:
+        case 0x06: *out = (m[1] == 0x02) ? MODEL_0602 : MODEL_0601; return true;
+        default: return false;
+    }
+}
+
+int FindAll(int* ids, int maxIds) {
+    ServoStatus s;
+    int count = 0;
+    for (int id = 0; id <= kMaxServoId && count < maxIds; ++id) {
+        if (Ping(id, &s, nullptr)) {
+            ids[count++] = id;
+        }
+    }
+    return count;
+}
+
+bool ChangeId(int oldId, int newId) {
+    // EEPROM address 6 holds the ID on every DRS family; it is copied into
+    // RAM (and so takes effect) at boot, hence the reboot.
+    const uint8_t data[] = {0x06, 0x01, static_cast<uint8_t>(newId)};
+    SendPacket(static_cast<uint8_t>(oldId), HEEPWRITE, data, sizeof(data));
+    vTaskDelay(pdMS_TO_TICKS(50));
+    SendPacket(static_cast<uint8_t>(oldId), HREBOOT, nullptr, 0);
+    ServoStatus s;
+    for (int i = 0; i < 20; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(100));
+        if (Ping(newId, &s, nullptr)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void ClearErrors(int id) {
     const uint8_t data[] = {0x30, 0x02, 0x00, 0x00};
     SendPacket(static_cast<uint8_t>(id), HRAMWRITE, data, sizeof(data));
@@ -98,12 +204,16 @@ int FindServo(void (*progress)(int id)) {
 }
 
 void SpinAt(int id, int speed) {
+    SpinAt(id, speed, kModel);
+}
+
+void SpinAt(int id, int speed, HerkulexModel model) {
     static constexpr int kSpinCommandMs = 300;
     int magnitude = (speed < 0) ? ((-speed) | 0x4000) : speed;
     int lsb = magnitude & 0x00FF;
     int msb = (magnitude & 0xFF00) >> 8;
     JogLedColor led = speed < 0 ? LED_RED : LED_BLUE;
-    Herkulex.sendSJog(id, speed, kSpinCommandMs, led, kModel, /*Mode=*/true, lsb, msb);
+    Herkulex.sendSJog(id, speed, kSpinCommandMs, led, model, /*Mode=*/true, lsb, msb);
 }
 
 void Stop(int id) {
@@ -111,11 +221,16 @@ void Stop(int id) {
 }
 
 bool MoveToAngle(int id, float degrees, int timeMs) {
-    int position = static_cast<int>(degrees / kDegPerUnit) + kCenterPos;
-    if (position < 0 || position > kMaxPos) {
+    return MoveToAngle(id, degrees, timeMs, kModel);
+}
+
+bool MoveToAngle(int id, float degrees, int timeMs, HerkulexModel model) {
+    const ModelInfo& m = InfoFor(model);
+    int position = static_cast<int>(degrees / m.degPerUnit) + m.centerPos;
+    if (position < 0 || position > m.maxPos) {
         return false;
     }
-    Herkulex.moveOne(id, position, timeMs, LED_GREEN, kModel);
+    Herkulex.moveOne(id, position, timeMs, LED_GREEN, model);
     return true;
 }
 

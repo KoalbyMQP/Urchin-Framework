@@ -16,6 +16,7 @@ instead of hanging the run.
 | 5 | Bug 2: a false 0x07 whose header overlaps the real 0x07 |
 | 6 | Boot noise, a 0x07 inside a payload, two packets back to back |
 | 7 | All of the above, arriving over time |
+| 8 | A message damaged in transit (header fine, payload CRC-32 fails) is dropped |
 
 Output columns: `checks` = UART reads, `waits` = rests, `most checks w/o rest`
 = longest run of reads with no rest (huge means spinning).
