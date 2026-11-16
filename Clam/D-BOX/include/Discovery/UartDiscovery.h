@@ -40,7 +40,7 @@ namespace DBOXProtocol {
          * @param config The config
          */
         explicit UartDiscovery(bool active, DconfigUart* config)
-           : Discovery<UARTSerialPort<UartDiscovery>, DconfigUart>(config) {}
+           : Discovery<UARTSerialPort<UartDiscovery>, DconfigUart>(config), active(active) {}
 
         /**
          * Initializer
@@ -91,6 +91,16 @@ namespace DBOXProtocol {
          * @return
          */
         bool ReceiveValidate(IPort *port);
+
+        /**
+         * How long to wait for the peer's identity reply on one attempt (ms).
+         */
+        int32_t handshakeTimeoutMs = 500;
+
+        /**
+         * How many hellos to send on each port before moving on.
+         */
+        int attemptsPerPort = 3;
 
         /**
          *

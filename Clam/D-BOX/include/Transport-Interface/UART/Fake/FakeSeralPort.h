@@ -81,6 +81,7 @@ namespace DBOXProtocol {
                 std::scoped_lock lock(m_mutex);
                 pair = host->open(device,baudRate);
                 m_link = pair.first;
+                m_side = pair.second;   // which end of the fake cable this port is
                 const std::string dev = device;
             }
 
@@ -196,6 +197,10 @@ namespace DBOXProtocol {
 
         std::vector<std::string> find()
         {
+            // Plugged into a fake host: list every port the host has, like
+            // an OS listing COM ports.
+            if (host != nullptr)
+                return host->list();
             if (!m_link)
                 return {};
 

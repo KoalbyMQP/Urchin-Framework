@@ -28,8 +28,8 @@ namespace DBOXProtocol {
         virtual bool openraw(const char* device, uint32_t baudRate, uint32_t timeoutMs) = 0;
 
         UartDiscovery *Discovery;
-        int start() override;
-        int end() override;
+        // start()/end() removed: IPort no longer declares them (see the
+        // commented-out bodies in UARTSeralPort.cpp), so "override" failed to compile.
 
     };
 }

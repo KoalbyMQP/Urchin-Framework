@@ -66,6 +66,15 @@ add_library(D-BOX
 
 )
 
+# Real serial port backend (Linux / Raspberry Pi / WSL)
+if(UNIX AND NOT APPLE)
+    target_sources(D-BOX PRIVATE src/Transport-Interface/UART/Linux/linux-sys-seral.cpp)
+
+    # Hardware check: find the ESP32 with discovery, send it one command.
+    add_executable(dbox_discover tools/dbox_discover.cpp)
+    target_link_libraries(dbox_discover PRIVATE D-BOX)
+endif()
+
 #add_library(MarshalType::marshaltype ALIAS marshaltype)
 
 target_include_directories(D-BOX PUBLIC
@@ -82,6 +91,10 @@ pybind11_add_module(D-BOX_py
 )
 
 target_link_libraries(D-BOX_py PRIVATE D-BOX)
+
+# The module is DBOXpy (PYBIND11_MODULE name); the file must match or Python
+# can't import it.
+set_target_properties(D-BOX_py PROPERTIES OUTPUT_NAME DBOXpy)
 
 target_include_directories(D-BOX_py PRIVATE
         "${PROJECT_INCLUDE_DIR}"
@@ -180,12 +193,17 @@ if(BUILD_TESTING)
             tests/C++/Transport-Interface/Fake/test_FakeSeral.cpp
             tests/C++/test_ISerialPort.cpp
             tests/C++/DBOX-Protocol/test_DBOXprotocol.cpp
+            tests/C++/Discovery/test_UartDiscovery.cpp
     )
 
     target_link_libraries(D-BOX_tests PRIVATE
             D-BOX
             GTest::gtest_main
     )
+    if(UNIX AND NOT APPLE)
+        target_sources(D-BOX_tests PRIVATE tests/C++/Transport-Interface/Linux/test_LinuxSerial.cpp)
+        target_link_libraries(D-BOX_tests PRIVATE util)   # openpty() for the Linux serial tests
+    endif()
 
 
     #------------------------------

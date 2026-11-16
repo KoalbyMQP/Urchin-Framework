@@ -109,6 +109,9 @@ namespace DBOXProtocol {
 
         explicit DBOXprotocol(IPort* port, std::string_view dump_path)
             : port(port) ,dump(std::string(dump_path), std::ios::binary | std::ios::app) {
+            // Let the port (and the Discovery bound to it) reach this protocol
+            // instance; UartDiscovery sends/receives through port->protocol.
+            if (port) port->protocol = this;
 
 
         };
@@ -127,7 +130,7 @@ namespace DBOXProtocol {
          * @param packet
          * @return
          */
-        bool receive(DBOX *packet);
+        bool receive(DBOX *packet, int32_t timeout_ms = -1);
 
         /**
          *

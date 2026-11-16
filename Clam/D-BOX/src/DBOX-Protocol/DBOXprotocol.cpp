@@ -4,6 +4,8 @@
 
 #include "DBOXprotocol.h"
 #include <boost/crc.hpp>
+#include <limits>
+#include <chrono>
 
 namespace DBOXProtocol {
     bool DBOXprotocol::send(DBOX *packet) {
@@ -33,9 +35,17 @@ namespace DBOXProtocol {
         return bytes_sent == byte_view.size();
     }
 
-    bool DBOXprotocol::receive(DBOX* packet) {
+    bool DBOXprotocol::receive(DBOX* packet, int32_t timeout_ms) {
         if (!packet)
             return false;
+
+        // Deadline handling: timeout_ms < 0 means wait forever (the original
+        // behavior). Otherwise give up and return false once the deadline
+        // passes while still waiting for data.
+        using Clock = std::chrono::steady_clock;
+        const bool hasDeadline = timeout_ms >= 0;
+        const auto deadline = Clock::now() + std::chrono::milliseconds(hasDeadline ? timeout_ms : 0);
+        auto timedOut = [&] { return hasDeadline && Clock::now() >= deadline; };
 
         uint16_t CRC = 0;
 
@@ -50,69 +60,77 @@ namespace DBOXProtocol {
         std::span<uint8_t> Header(headerBuffer);
         std::span<uint8_t, 2> HeaderCRC(crcBuffer);
 
-        // Look for Delimiter
-        while (true)
+        // Find a start marker whose header passes its CRC. If the CRC fails,
+        // the 0x07 was a false start (noise, or a 0x07 inside another
+        // packet's payload). The header bytes were only peeked, so they are
+        // still buffered: going back to the marker search resumes at the
+        // byte right after the false 0x07. (Previously this re-peeked the
+        // same bad bytes forever.)
+        bool aligned = false;
+        while (!aligned)
         {
-            uint8_t byte = 0;
-            std::span<uint8_t> buffer(&byte, 1);
-
+            // Look for Delimiter
             while (true)
             {
-                if (port->read(buffer, 1) == 1)
+                uint8_t byte = 0;
+                std::span<uint8_t> buffer(&byte, 1);
+
+                while (true)
+                {
+                    if (port->read(buffer, 1) == 1)
+                        break;
+                    if (timedOut())
+                        return false;
+                    port->wait(WaitForDataMS);
+                }
+
+                if (byte == '\a')
                     break;
 
-                port->wait(WaitForDataMS);
+                dump.write(reinterpret_cast<const char*>(&byte), 1);
             }
 
-            if (byte == '\a')
-                break;
+            //found an instance of a start marker
 
-            dump.write(reinterpret_cast<const char*>(&byte), 1);
-        }
-
-        //found an instance of a start marker
-
-        // Wait for / read header + CRC
-
-        while (true)
-        {
-            try
+            // Wait for / read header + CRC
+            while (true)
             {
-                std::array<uint8_t, HeaderSize + sizeof(uint16_t)> raw{};
+                try
+                {
+                    std::array<uint8_t, HeaderSize + sizeof(uint16_t)> raw{};
 
-                std::span<uint8_t> rawSpan(raw);
-                //Assuming we don't have frame alignment, peek the header
-                // if data is still ariveing then wha
-                if (port->peek(rawSpan, raw.size()) == raw.size()) {
-                    std::copy_n(
-                    raw.begin(),
-                    HeaderSize,
-                    Header.begin()
-                );
+                    std::span<uint8_t> rawSpan(raw);
+                    //Assuming we don't have frame alignment, peek the header
+                    if (port->peek(rawSpan, raw.size()) == raw.size()) {
+                        std::copy_n(
+                            raw.begin(),
+                            HeaderSize,
+                            Header.begin()
+                        );
 
-                    std::copy_n(
-                        raw.begin() + HeaderSize,
-                        sizeof(uint16_t),
-                        HeaderCRC.begin()
-                    );
+                        std::copy_n(
+                            raw.begin() + HeaderSize,
+                            sizeof(uint16_t),
+                            HeaderCRC.begin()
+                        );
 
-                    // genarate teh CRC from the received header
-                    if (ComputeChecksumCRC(&CRC, Header) == -1){
-                        return false;
-                    }
+                        // generate the CRC from the received header
+                        if (ComputeChecksumCRC(&CRC, Header) == -1){
+                            return false;
+                        }
 
-                    // Verify header CRC
-                    // if the CRC failed then move to the next delimiter
-                    if (CRC == span_to_uint16_native(HeaderCRC)){
+                        // Match: frame is aligned. Mismatch: false start,
+                        // leave this loop and search for the next delimiter.
+                        aligned = (CRC == span_to_uint16_native(HeaderCRC));
                         break;
                     }
                 }
-
-
-            }
-            catch (const RingBuffer::RingBufferUnderflowException&)
-            {
-                port->wait(WaitForDataMS);
+                catch (const RingBuffer::RingBufferUnderflowException&)
+                {
+                    if (timedOut())
+                        return false;
+                    port->wait(WaitForDataMS);
+                }
             }
         }
 
@@ -154,6 +172,8 @@ namespace DBOXProtocol {
 
             if (got == 0)
             {
+                if (timedOut())
+                    return false;
                 port->wait(WaitForDataMS);
                 continue;
             }
