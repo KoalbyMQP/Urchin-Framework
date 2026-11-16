@@ -260,8 +260,8 @@ class Crab:
         if not isinstance(type,str):
             raise TypeError("type must be str")
 
-        if type not in ["TotalRam","FreeRam","CPU","AckCheck"]:
-            raise TypeError("Type must be one of TotalRam,FreeRam,CPU,AckCheck")
+        if type not in ["TotalRam","FreeRam","CPU","VoltCheck","AckCheck"]:
+            raise TypeError("Type must be one of TotalRam,FreeRam,CPU,VoltCheck,AckCheck")
 
         # todo
         # send "GetHealth" to esp32 along with the type
