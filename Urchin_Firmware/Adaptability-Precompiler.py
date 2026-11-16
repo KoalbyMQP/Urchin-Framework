@@ -32,12 +32,10 @@ if not SOURCE.exists():
 
 if not SOURCE.is_dir():
     raise RuntimeError(f"Source is not a directory: {SOURCE}")
+# Adaptability folder is never in repo. It was ignored. 
+# Git doesn't keep empty folders, so create it on a fresh copy.
+DEST.mkdir(parents=True, exist_ok=True)
 
-if not DEST.exists():
-    raise RuntimeError(f"Destination folder does not exist: {DEST}")
-
-if not DEST.is_dir():
-    raise RuntimeError(f"Destination is not a directory: {DEST}")
 
 # Validate required files exist in source
 missing = [
