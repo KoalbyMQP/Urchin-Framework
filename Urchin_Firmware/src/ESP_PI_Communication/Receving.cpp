@@ -12,6 +12,7 @@
 #include "Herkulex/Herkulex.h"
 #include "Adaptability/UnPacker.h"
 #include "Global/Binder.h"
+#include "DboxLink.h"
 
 
 #define HX_UART_NUM UART_NUM_2
@@ -51,6 +52,21 @@
 
     // Context *CurrentConext[PIDNUM];
     // CurrentConext[0]=Basic;
+    #ifdef URCHIN_DBOX
+    // D-BOX: one whole, header-checked packet at a time. The payload is
+    // zero-padded to COMS_SIZE because the command handlers were written for
+    // the old Box.data buffer.
+    static uint8_t payload[COMS_SIZE];
+    while (true) {
+        uint8_t vpid = 0;
+        uint8_t stream = 0;
+        if (DboxReceive(&vpid, &stream, payload, sizeof(payload)) && Conversation[vpid] != nullptr) {
+            ProcessRequest(vpid, *Conversation[vpid], payload);
+        }
+        esp_task_wdt_reset();
+    }
+    #endif
+
 
     //receiving buffer to hold partial messages - 256 as works well with seral
     uint8_t rx_buffer[256];

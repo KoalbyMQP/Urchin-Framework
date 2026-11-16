@@ -80,6 +80,7 @@ int SendMessage(const uint8_t VPID, const char Stream, const uint8_t buff[], con
 
 typedef struct{
     uint8_t VPID;
+    uint16_t size; //bytes of data actually used (NEW)
     char data[COMS_SIZE];
 }MSG;
 

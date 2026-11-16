@@ -19,15 +19,16 @@
 #include "Global/Bridge.h"
 #include "Ordering/InjectorSpry.h"
 #include "Ordering/Ordering.h"
-
+#include "ESP_PI_Communication/DboxLink.h"
 uart_config_t uart_config;
 
 
 
 extern "C" void app_main() {
     SetUpUart();
-
-
+    #ifdef URCHIN_DBOX
+        DboxLinkInit();
+    #endif
     #ifdef UNIT_TEST
         #include "test/UnitTest.h"
         UnitTests(); }

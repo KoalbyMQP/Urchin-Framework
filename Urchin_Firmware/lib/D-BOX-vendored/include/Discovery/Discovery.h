@@ -52,7 +52,7 @@ namespace DBOXProtocol {
             * Constructor
             * @param config The config
             */
-            explicit Discovery<IportType,DConfigType>(DConfigType* config)
+            explicit Discovery(DConfigType* config)
             : config(config){}
 
 

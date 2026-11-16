@@ -20,5 +20,7 @@ COPY Crab_API2/examples ./examples
 
 ARG URCHIN_PORT=""
 ENV URCHIN_PORT=${URCHIN_PORT}
+ARG URCHIN_PROTOCOL=box
+ENV URCHIN_PROTOCOL=${URCHIN_PROTOCOL}
 COPY zaraos.json /etc/zaraos/package.json
 CMD [ "python", "examples/demo.py" ]

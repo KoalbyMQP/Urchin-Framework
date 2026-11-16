@@ -33,6 +33,31 @@ FRAME_SIZE = 1 + 1 + DATA_SIZE  # VPID + Stream + data, after the start marker
 HOST_STREAM = b"N"
 BAUD_RATE = 115200
 
+# D-BOX (Clam/D-BOX) frame, used when URCHIN_PROTOCOL=dbox:
+#     0x07 | VPID (u8) | Stream (char) | payload size (u16 LE) | header CRC-16 (u16 LE) | payload
+DBOX_HEADER_SIZE = 6  # VPID + Stream + size + CRC, after the start marker
+DBOX_CRC_POLY = 0x9EB2  # same settings as Clam/D-BOX: init 0xFFFF, no reflection, no final XOR
+
+
+def crc16(data: bytes) -> int:
+    """D-BOX header checksum."""
+    crc = 0xFFFF
+    for byte in data:
+        crc ^= byte << 8
+        for _ in range(8):
+            crc = ((crc << 1) ^ DBOX_CRC_POLY) & 0xFFFF if crc & 0x8000 else (crc << 1) & 0xFFFF
+    return crc
+
+
+def encode_dbox(vpid: int, payload: bytes) -> bytes:
+    """Build a host-to-firmware D-BOX frame, including the start marker."""
+    if not 0 <= vpid <= 255:
+        raise LinkError(f"VPID must be between 0 and 255, got {vpid}")
+    if len(payload) > 0xFFFF:
+        raise LinkError(f"payload is {len(payload)} bytes; max is {0xFFFF}")
+    header = bytes([vpid]) + HOST_STREAM + len(payload).to_bytes(2, "little")
+    return START_MARKER + header + crc16(header).to_bytes(2, "little") + payload
+
 VALIDATE_COMMAND = b"Validate"
 BOARD_TAG = b"URCHIN"
 USB_SERIAL_NUMBER = "urchin"
@@ -88,9 +113,13 @@ def decode_frame(raw: bytes) -> Frame:
 class Link:
     """A framed connection to the firmware over an open port."""
 
-    def __init__(self, port: Port) -> None:
+    def __init__(self, port: Port, protocol: str | None = None) -> None:
         self.port = port
+        self.protocol = protocol or os.environ.get("URCHIN_PROTOCOL", "box")
+        if self.protocol not in ("box", "dbox"):
+            raise LinkError(f"unknown protocol {self.protocol!r}; use 'box' or 'dbox'")
         self._write_lock = threading.Lock()
+        self._pending = bytearray()  # D-BOX: bytes read but not used yet
 
     @classmethod
     def open(cls, url: str | None = None) -> Self:
@@ -110,7 +139,8 @@ class Link:
         return cls(port)
 
     def send(self, vpid: int, payload: bytes) -> None:
-        frame = encode_frame(vpid, payload)
+        frame = encode_dbox(vpid, payload) if self.protocol == "dbox" else encode_frame(vpid, payload)
+
         with self._write_lock:
             self.port.write(frame)
         if logger.isEnabledFor(logging.DEBUG):
@@ -118,6 +148,8 @@ class Link:
 
     def read(self) -> Frame | None:
         """Read the next frame, or return None if the port times out first."""
+        if self.protocol == "dbox":
+            return self._read_dbox()
         skipped = self.port.read_until(START_MARKER)
         if not skipped.endswith(START_MARKER):
             return None
@@ -137,6 +169,48 @@ class Link:
 
     def close(self) -> None:
         self.port.close()
+    
+    # --- D-BOX ---
+
+    def _take(self, size: int) -> bytes:
+        """Up to ``size`` bytes: leftover bytes first, then the port."""
+        data = bytes(self._pending[:size])
+        del self._pending[:size]
+        if len(data) < size:
+            data += self.port.read(size - len(data))
+        return data
+
+    def _find_marker(self) -> bool:
+        """Skip to just after the next start marker; False if the port times out."""
+        index = self._pending.find(START_MARKER)
+        if index >= 0:
+            del self._pending[: index + 1]
+            return True
+        self._pending.clear()
+        return self.port.read_until(START_MARKER).endswith(START_MARKER)
+
+    def _read_dbox(self) -> Frame | None:
+        while self._find_marker():
+            header = self._take(DBOX_HEADER_SIZE)
+            if len(header) < DBOX_HEADER_SIZE:
+                logger.warning("Incomplete D-BOX header: got %d bytes", len(header))
+                return None
+            if crc16(header[:4]) != int.from_bytes(header[4:6], "little"):
+                # False start: a 0x07 that wasn't a frame. Search again from the next byte.
+                self._pending[:0] = header
+                continue
+            size = int.from_bytes(header[2:4], "little")
+            payload = self._take(size)
+            if len(payload) < size:
+                logger.warning("Incomplete D-BOX payload: got %d of %d bytes", len(payload), size)
+                return None
+            # Pad like the old fixed-size frame, so the rest of Crab sees the same data.
+            frame = Frame(vpid=header[0], stream=chr(header[1]), data=payload.ljust(DATA_SIZE, b"\0"))
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.debug("Received VPID %d stream %s: %r", frame.vpid, frame.stream, payload)
+            return frame
+        return None
+
 
     def __enter__(self) -> Self:
         return self

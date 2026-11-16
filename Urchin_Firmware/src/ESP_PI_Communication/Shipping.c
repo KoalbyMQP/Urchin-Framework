@@ -4,6 +4,7 @@
 //
 #include "Global//GLOBAL.h"
 #include "Shipping.h"
+#include "DboxLink.h"
 #include "Ticketing/Ticket.h"
 #include "Ticketing/TicketNum.h"
 
@@ -51,7 +52,7 @@ void SendQue(QueueHandle_t Queue, char Stream) {
     while(uxQueueMessagesWaiting(Queue)>0){
         if (xQueueReceive(Queue, &received_data_from_queue, portMAX_DELAY)) {
             //int length= strlen((const char *)(data));
-            (void) SendMessage(received_data_from_queue.VPID ,Stream, (uint8_t*)&received_data_from_queue.data,COMS_SIZE);
+            (void) SendMessage(received_data_from_queue.VPID ,Stream, (uint8_t*)&received_data_from_queue.data,received_data_from_queue.size);
 
 
 
@@ -65,8 +66,9 @@ int SendMessage(const uint8_t VPID, const char Stream, const uint8_t buff[], con
 
 
     if (strchr("REDFS",Stream)==NULL) return -2; // run time assertion : not a valid stream "REDFS" is a list of chars that are valid streams
-
-
+    #ifdef URCHIN_DBOX
+        return DboxSend(VPID, Stream, buff, size);
+    #endif
     Box board = {0};
     (void) memset(&board,0,sizeof(board));
     board.delimiter='\a';

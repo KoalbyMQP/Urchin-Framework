@@ -1,0 +1,2 @@
+# D-BOX uses C++ exceptions, which ESP-IDF turns off by default.
+CONFIG_COMPILER_CXX_EXCEPTIONS=y

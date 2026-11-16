@@ -3,6 +3,7 @@
 //
 
 #include "DBOXprotocol.h"
+#include <limits>
 // NOTE: this is a vendored copy for the ESP32 firmware builds
 // (Urchin_Firmware/lib/D-BOX-vendored) of Gabe's original
 // (Clam/D-BOX/src/DBOX-Protocol/DBOXprotocol.cpp). Intentional differences:
@@ -220,4 +221,4 @@ namespace DBOXProtocol {
     }
 
 
-}
+}
