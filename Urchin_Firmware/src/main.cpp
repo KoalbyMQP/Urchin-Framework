@@ -9,11 +9,11 @@
 
 // Local headers
 #include "Global/GLOBAL.h"
+#include "Global/Binder.h"
 #include "Global/setup.h"
 #include "ESP_PI_Communication/Coms.h"
 #include "ESP_PI_Communication/Shipping.h"
 #include "Ticketing/Ticket.h"
-#include "Conversation/UnPacker.h"
 #include "ESP_PI_Communication/MSGQueue.h"
 #include "ESP_PI_Communication/Receving.h"
 #include "Global/Bridge.h"
@@ -40,9 +40,21 @@ extern "C" void app_main() {
 
     SetUpPins();
 
+
+    Identifier = nullptr;
+
+    ConversationLength = 0;
+
+    for (int i = 0; i < MaxVPIDs; i++) {
+        Conversation[i] = nullptr;
+    }
+
     BridgeInit();
 
-    ActionQueINIT();
+    ActionQueueINIT();
+
+	TaskHandle_t taskHandle = NULL;
+	xTaskCreate(Spray, "Spray", 2048, NULL, 1, &taskHandle);
 
 
     // QueueHandle_t AsyncQueue = xQueueCreate(AsyncSize, sizeof(Ticket));

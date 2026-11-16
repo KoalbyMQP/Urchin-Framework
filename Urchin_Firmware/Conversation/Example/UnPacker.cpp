@@ -440,7 +440,7 @@ int PunchTicket(unsigned char VPID, const char* buffer) {
         (void) PrintfToPI(DebugQueue,VPID,"No packets in ticket");
     }else{
         PrintPackets(DebugQueue,VPID,Tickets[Ticket]->Packets);
-        PunchToQue(Tickets[Ticket]);
+        PunchToQueue(Tickets[Ticket]);
 
     }
 

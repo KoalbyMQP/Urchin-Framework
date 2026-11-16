@@ -20,16 +20,9 @@ void InjectorSpryInit() {
 }
 
 [[noreturn]] void Spray(void *pvParameters) {
-
-
-
-
+	InjectorSpryInit();
     while (true) {
-
-
         Ticket ticket;
-
-
 
         if (xQueueReceive(AsynchronousQueue, &ticket, portMAX_DELAY)) {
 
@@ -48,45 +41,20 @@ void InjectorSpryInit() {
                 }
                 xSemaphoreGive(UART1Mutex);
                 // ----------Give mutex--------------------------------------------------------------------------------------------------
-            }else {
-                (void) PrintfToPI(DebugQueue,0,"Spray FAILED to clam Mutex UART1");
+            } else {
+                (void) PrintfToPI(DebugQueue,0,"Spray FAILED to claim Mutex UART1");
             }
-
-
-
-
-
-
         }
-
-
-
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
-
-
-
-
-
 }
 
 
 [[noreturn]] void Injector(void *pvParameters) {
-
-
     UART1Mutex = xSemaphoreCreateMutex();
 
     while (true) {
-
-
-
-
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
-
-
-
-
-
 }

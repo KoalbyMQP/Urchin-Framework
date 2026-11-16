@@ -3,13 +3,15 @@
 //
 
 #include "Receving.h"
-#include "Conversation/UnPacker.h"
+
 #include "Ticketing//TicketNum.h"
 #include "Coms.h"
 #include "Errors.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "Herkulex/Herkulex.h"
+#include "Adaptability/UnPacker.h"
+#include "Global/Binder.h"
 
 
 #define HX_UART_NUM UART_NUM_2
@@ -27,27 +29,28 @@
     //uint8_t data[COMS_SIZE];
 
 
+    (void)BinderInit();
     (void)UnpackerInit();
 
 
 
 //setting up conversation
-    static Context Basic[]={//has max size see Receving.h
-            /*{"ReqTicket",9,ReqTicket,NULL,0},*/
-            {"FormatTicket",12,FormatTicket,NULL,0},
-            {"LoadTicket",10,LoadTicket,NULL,0},
-            {"PunchTicket",11,PunchTicket,NULL,0},
-            {"CloseTicket",11,CloseTicket,NULL,0},
-            {"TicketInfo",10,TicketInfo,NULL,0},
-            {"GetHealth",9,GetHealth,NULL,0},
-            {"Bridge",6,Bridge,NULL,0},
-            {"Validate",8,Validate,NULL,0}
-    };
+    // static Context Basic[]={//has max size see Receving.h
+    //         /*{"ReqTicket",9,ReqTicket,NULL,0},*/
+    //         {"FormatTicket",12,FormatTicket,NULL,0},
+    //         {"LoadTicket",10,LoadTicket,NULL,0},
+    //         {"PunchTicket",11,PunchTicket,NULL,0},
+    //         {"CloseTicket",11,CloseTicket,NULL,0},
+    //         {"TicketInfo",10,TicketInfo,NULL,0},
+    //         {"GetHealth",9,GetHealth,NULL,0},
+    //         {"Bridge",6,Bridge,NULL,0},
+    //         {"Validate",8,Validate,NULL,0}
+    // };
 
 
 
-    Context *CurrentConext[PIDNUM];
-    CurrentConext[0]=Basic;
+    // Context *CurrentConext[PIDNUM];
+    // CurrentConext[0]=Basic;
 
     //receiving buffer to hold partial messages - 256 as works well with seral
     uint8_t rx_buffer[256];
@@ -88,7 +91,7 @@
 
                         // Process the Box here
 
-                        ProcessRequest(LocalBox->VPID,CurrentConext[LocalBox->VPID],(uint8_t*) LocalBox->data);
+                        ProcessRequest(LocalBox->VPID,*Conversation[LocalBox->VPID],(uint8_t*) LocalBox->data);
 
                         box_pos = 0;
                         syncing = true; // look for next frame
@@ -115,7 +118,7 @@ int ProcessRequest(unsigned char VPID ,Context Commands[],const uint8_t buffer[]
     int error=0;
 
     //(void) PrintfToPI(DebugQueue,0,"ProcessRequest:%s",buffer);
-    while (i < NumOfActions && !found){
+    while (i < ConversationLength && !found){
         if (0==strncmp((char*)buffer,Commands[i].Name,Commands[i].depth)) {
             error=Commands[i].function(VPID,SkipFoward((char*)buffer,Commands[i].depth));
             found=1;
