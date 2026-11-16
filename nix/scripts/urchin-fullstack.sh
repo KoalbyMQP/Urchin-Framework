@@ -69,7 +69,8 @@ wait_for() {
 }
 
 # --- 2. ESP32 sim ------------------------------------------------------------
-setsid urchin-sim --no-build </dev/null >"$log_dir/esp32-sim.log" 2>&1 &
+URCHIN_SIM_BRIDGE="${URCHIN_SIM_BRIDGE:-$ROOT/Crab_API2/examples/bridge.toml}" \
+  setsid urchin-sim --no-build </dev/null >"$log_dir/esp32-sim.log" 2>&1 &
 sim_pid=$!
 wait_for "ESP32 sim (port 5555)" 30 nc -z 127.0.0.1 5555
 
