@@ -1,4 +1,5 @@
-from enum import IntEnum, StrEnum
+from enum import IntEnum
+from Types import StrEnum
 from Types import Item
 
 class LedColor(IntEnum):

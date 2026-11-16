@@ -1,0 +1,41 @@
+{
+  "name": "urchin-framework",
+  "image": "koalby/urchin-framework",
+  "essential": false,
+  "autostart": false,
+  "depends": [
+    "cortex-bridge"
+  ],
+  "env": {
+    "ROS_DOMAIN_ID": "42",
+    "RMW_IMPLEMENTATION": "rmw_cyclonedds_cpp"
+  },
+  "health_check": {
+    "enabled": true,
+    "restart_on_failure": true,
+    "max_restarts": 3
+  },
+  "privileged": true,
+  "devices": [
+    "/dev/ttyUSB0",
+    "/dev/ttyUSB1",
+    "/dev/ttyUSB2",
+    "/dev/ttyUSB3",
+    "/dev/ttyACM0",
+    "/dev/ttyACM1",
+    "/dev/ttyACM2",
+    "/dev/ttyACM3",
+    "/dev/i2c-1",
+    "/dev/i2c-2",
+    "/dev/spidev0.0",
+    "/dev/spidev0.1",
+    "/dev/gpiochip0",
+    "/dev/video0",
+    "/dev/bus/usb"
+  ],
+  "volumes": [
+    "/dev:/dev",
+    "/sys:/sys:ro",
+    "/run/udev:/run/udev:ro"
+  ]
+}

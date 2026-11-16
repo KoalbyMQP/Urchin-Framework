@@ -1,3 +1,4 @@
+from __future__ import annotations
 import struct
 import tomlkit_extras
 from tomlkit_extras import load_toml_file, TOMLDocumentDescriptor, InvalidFieldError, InvalidArrayOfTablesError
