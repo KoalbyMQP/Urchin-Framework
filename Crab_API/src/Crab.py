@@ -1,4 +1,5 @@
 import queue
+import os
 import threading
 import struct
 from ESPSerial import ESPSerial
@@ -211,6 +212,12 @@ class Crab:
             print("sending:" + "FormatTicket" + type)
         self.serial.send_packet(0, b"FormatTicket" + type.encode('utf-8'))
 
+        # TODO: temp
+        while self.Debug._qsize() > 0:
+            self._QueSmartPop(self.Debug, "<I")
+            print("Queue Size: ", self.Debug._qsize())
+
+
         # Check Error
         Error: int = self._QueSmartPop(self.Exchange, "<i") # int
         if (Error == 1):
@@ -218,6 +225,7 @@ class Crab:
 
         # Receve Ticket
         ticket: int = self._QueSmartPop(self.Exchange, "<I") # unsigned int
+        print("TICKET = ", ticket)
 
         self.OurTickets.append(ticket)
         if resolver is not None:
@@ -242,7 +250,10 @@ class Crab:
         # Punch ticket
         self.serial.send_packet(0, b"PunchTicket" + struct.pack('I',ticket))
         # todo
+        print("it has already sent the punched ticket")
         # Add resolver to the self.react
+        while True:
+            self._QueSmartPop(self.Debug, "<I")
         # todo
         return ticket
 

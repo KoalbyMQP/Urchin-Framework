@@ -10,9 +10,9 @@ Bounds = [-45,45] #Bounds from CAD software
 AlignmentAngle = 0 #Angle the motor should be in for assembly
 
 [[Motor]]
-MotorNum = 8
+MotorNum = 13
 MotorBrand = "HerkuleX"
-MotorModel = "0602" #Motor Model
+MotorModel = "0601" #Motor Model
 JointName = "Hip" #Name of Joint from URDF file EXACTLY
 Bounds = [-50,50] #Bounds from CAD software
 AlignmentAngle = 0 #Angle the motor should be in for assembly
