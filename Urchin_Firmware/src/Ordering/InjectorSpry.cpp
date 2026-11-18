@@ -34,15 +34,17 @@ void InjectorSpryInit() {
 
                 for (int i = 0; i < length; ++i) {
                     Packet *packet = PacketGet(ticket.Packets,i);
-                    (void) PrintfToPI(DebugQueue,VPID,"Spray->Sending Packet VV VV");
                     PrintPackets(DebugQueue,VPID,packet);
-					(void) PrintfToPI(DebugQueue, 0, "About to print packet contents");
-					for (int i = 0; i < packet->ContentsSize; i++) {
-						(void) PrintfToPI(DebugQueue, 0, "%u", packet->contents[i]);
-					}
+					//(void) PrintfToPI(DebugQueue, 0, "About to print packet contents");
+					//for (int i = 0; i < packet->ContentsSize; i++) {
+					//	(void) PrintfToPI(DebugQueue, 0, "%u", packet->contents[i]);
+					//}
 
 
+					Herkulex.torqueON(packet->device);
+                    //(void) PrintfToPI(DebugQueue,VPID,"Turned torque on for motor %d", packet->device);
                     Herkulex.sendData(reinterpret_cast<byte *>(packet->contents),packet->ContentsSize);
+					//(void) PrintfToPI(DebugQueue, VPID, "Finished first ticket");
                 }
                 xSemaphoreGive(UART1Mutex);
                 // ----------Give mutex--------------------------------------------------------------------------------------------------

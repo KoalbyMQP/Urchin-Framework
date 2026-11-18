@@ -217,7 +217,7 @@ void HerkulexClass::sendEepWriteRegistry(int servoID, int address, byte* values,
 }
 
 void HerkulexClass::sendSJog(int servoID, int Target, int pTime, JogLedColor valueLed, HerkulexModel model, bool Mode, int LSB, int MSB){
-	(void) PrintfToPI(DebugQueue, 0, "Made it into SJOG");
+	//(void) PrintfToPI(DebugQueue, 0, "Made it into SJOG");
 	int SetValue;
 	if(Mode == true){
 		Mode = 1;
@@ -1152,79 +1152,6 @@ void HerkulexClass::moveOne(int servoID, int targPosition, int pTime, JogLedColo
   sendSJog(servoID, targPosition, pTime, valueLed, model, Mode, LSB, MSB);
 }
 
-
-// move one servo at target position 0 - 1024
-//void HerkulexClass::getMoveOnePacket(int servoID, int targPosition, int pTime, JogLedColor valueLed, HerkulexModel model){
-//  // command-specific checks
-//  int posLimit = 0;
-//
-//
-//  switch (model) {
-//	case MODEL_0601:
-//		posLimit = 2047;
-//		break;
-//	case MODEL_0602:
-//		posLimit = 32767;
-//		break;
-//	case MODEL_0101:
-//  		//TODO add this value
-//	case MODEL_0201:
-//		posLimit = 1023;
-//		break;
-//    default:
-//  		return;
-//  		break;
-//  }
-//  if (targPosition > posLimit || targPosition < 0) {
-//	 PrintfToPI(DebugQueue,0,"HerkulexLib: moveOne: Error targPosition out of range");
-//    return;              // speed (goal) non correct
-//  }
-//  if ((pTime < 0) || (pTime > 2856)) {
-//	 PrintfToPI(DebugQueue,0,"HerkulexLib: moveOne: Error playTime out of range 0<%d>2856",pTime);
-//	return;
-//  }
-//  int LSB=targPosition & 0X00FF;								// MSB Pos
-//  int MSB=(targPosition & 0XFF00) >> 8;						// LSB Pos
-//
-//  bool Mode = false;
-//
-//  int SetValue = (1<<valueLed);	//assign led value
-//
-//  playTime=int((float)pTime/11.2);			// 8. Execution time
-//
-//   pSize = 0x0C;          			    	// 3.Packet size 7-58
-//   cmd   = HSIMULJOG;              				// 5. CMD
-//
-//   pkt_params[0]=LSB;               			// 8. speedLSB
-//   pkt_params[1]=MSB;               			// 9. speedMSB
-//   pkt_params[2]=SetValue;                         // 10. Mode=0;
-//   pkt_params[3]=servoID;                    		// 11. ServoID
-//
-//   pID=servoID^playTime;
-//
-//   lenghtString=4;             				// lenghtData
-//
-//   ck1=checksum1(data,lenghtString);			//6. Checksum1
-//   ck2=checksum2(ck1);						//7. Checksum2
-//
-//   pID=servoID;
-//
-//   packet[0] = 0xFF;				// Packet Header
-//   packet[1] = 0xFF;				// Packet Header
-//   packet[2] = pSize;	 		// Packet Size
-//   packet[3] = pID;				// Servo ID
-//   packet[4] = cmd;				// Command Ram Write
-//   packet[5] = ck1;				// Checksum 1
-//   packet[6] = ck2;				// Checksum 2
-//   packet[7] = playTime;  		// Execution time
-//   packet[8] = pkt_params[0];
-//   packet[9] = pkt_params[1];
-//   packet[10] = pkt_params[2];
-//   packet[11] = pkt_params[3];
-//
-//   return packet;
-//}
-
 // move one servo to an angle between -160 and 160
 
 void HerkulexClass::moveOneAngle(int servoID, float angle, int pTime, JogLedColor valueLed, HerkulexModel model, bool showStatus) {
@@ -1721,16 +1648,16 @@ void HerkulexClass::addData(int GoalLSB, int GoalMSB, int set, int servoID)
 
 // Sending the buffer long lenght to Serial port
 void HerkulexClass::sendData(byte* buffer, int length) {
-	(void) PrintfToPI(DebugQueue, 0, "Made it to sendData");
+	//(void) PrintfToPI(DebugQueue, 0, "Made it to sendData");
 	memcpy(BusPacket,buffer,length);
 	BusPacketLength=length;
 
 	if (!Indirect){
-		(void) uart_write_bytes(port, buffer, length);
-	(void) PrintfToPI(DebugQueue, 0, "Just sent bytes I think???");
+		uart_write_bytes(port, buffer, length);
+
 		vTaskDelay(10 / portTICK_PERIOD_MS);
 	} else {
-		(void) PrintfToPI(DebugQueue, 0, "Indirectly edited BusPacket");
+		//(void) PrintfToPI(DebugQueue, 0, "Indirectly edited BusPacket");
 	}
 }
 

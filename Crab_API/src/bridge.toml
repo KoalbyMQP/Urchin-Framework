@@ -2,7 +2,7 @@
 Version = "0.1"
 
 [[Motor]]
-MotorNum = 7 #Motor number  (printed on motor)
+MotorNum = 14 #Motor number  (printed on motor)
 MotorBrand = "HerkuleX" #Motor Brand
 MotorModel = "0601" #Motor Model
 JointName = "Shoulder" #Name of Joint from URDF file EXACTLY

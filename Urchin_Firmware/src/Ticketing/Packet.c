@@ -17,7 +17,7 @@ Packet* CreateNode(int dest, int protocol,int device, char Check, char contents[
     node->protocol = protocol;
     node->device = device;
     node->Check = Check;
-    memcpy(node->contents,contents,HerkulexPacketSize);
+    memcpy(node->contents,contents,contentsSIZE);
     node->ContentsSize = contentsSIZE;
     node->VPID = VPID;
     node->ACK = ACK;

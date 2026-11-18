@@ -212,12 +212,6 @@ class Crab:
             print("sending:" + "FormatTicket" + type)
         self.serial.send_packet(0, b"FormatTicket" + type.encode('utf-8'))
 
-        # TODO: temp
-        while self.Debug._qsize() > 0:
-            self._QueSmartPop(self.Debug, "<I")
-            print("Queue Size: ", self.Debug._qsize())
-
-
         # Check Error
         Error: int = self._QueSmartPop(self.Exchange, "<i") # int
         if (Error == 1):
@@ -252,8 +246,6 @@ class Crab:
         # todo
         print("it has already sent the punched ticket")
         # Add resolver to the self.react
-        while True:
-            self._QueSmartPop(self.Debug, "<I")
         # todo
         return ticket
 

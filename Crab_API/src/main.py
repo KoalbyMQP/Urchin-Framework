@@ -14,11 +14,6 @@ def main() -> None:
     time.sleep(3)
 
     while True:
-<<<<<<< Updated upstream
-        test.GetHealth("AckCheck")
-
-=======
->>>>>>> Stashed changes
         #command = HerkuleX.SetTorque(True,"",True)
         #ticket = test.send(TicketType.Sequential, [command], None, False)
         #print("Main:ticket" + str(ticket))
@@ -39,43 +34,24 @@ def main() -> None:
         print("NEW LOOP HERE")
         print("-------------------------------------------------")
         time.sleep(3)
-<<<<<<< Updated upstream
-        command1 = HerkuleX.MoveOne("Shoulder", float(-23), 40, JogLedColor.LED_BLUE)
-        command2 = HerkuleX.MoveOne("Hip", float(-23), 40, JogLedColor.LED_BLUE)
-        ticket = test.send(TicketType.Sequential,[command1, command2],None,False)
-=======
-        command = HerkuleX.MoveOne("Hip", float(-23), 40, JogLedColor.LED_BLUE)
-        command2 = HerkuleX.MoveOne("Hip", float(23), 40, JogLedColor.LED_RED)
+        command = HerkuleX.MoveOne("Shoulder", float(-23), 40, JogLedColor.LED_RED)
+        command2 = HerkuleX.MoveOne("Hip", float(-23), 40, JogLedColor.LED_RED)
         ticket = test.send(TicketType.Asynchronous,[command,command2],None,False)
         print("Main:ticket" + str(ticket))
 
         time.sleep(3)
-        command = HerkuleX.MoveOne("Hip", float(23), 40, JogLedColor.LED_RED)
-        command2 = HerkuleX.MoveOne("Hip", float(-23), 40, JogLedColor.LED_BLUE)
+        command = HerkuleX.MoveOne("Shoulder", float(23), 40, JogLedColor.LED_BLUE)
+        command2 = HerkuleX.MoveOne("Hip", float(23), 40, JogLedColor.LED_BLUE)
         ticket = test.send(TicketType.Asynchronous,[command,command2],None,False)
->>>>>>> Stashed changes
         print("Main:ticket" + str(ticket))
 
 
-<<<<<<< Updated upstream
-        time.sleep(1)
-        print("\n\n\n\n\n\n")
-        command1 = HerkuleX.MoveOne("Shoulder", float(23), 40, JogLedColor.LED_RED)
-        command2 = HerkuleX.MoveOne("Hip", float(23), 40, JogLedColor.LED_RED)
-        ticket = test.send(TicketType.Sequential,[command1, command2],None,False)
-        print("Main:ticket" + str(ticket))
-=======
         #time.sleep(1)
         #print("\n\n\n\n\n\n")
         #command = HerkuleX.MoveOne("Hip", float(23), 40, JogLedColor.LED_RED)
         #ticket = test.send(TicketType.Asynchronous, [command], None, False)
         #print("Main:ticket" + str(ticket))
->>>>>>> Stashed changes
 
-        time.sleep(1)
-        test.GetHealth("AckCheck")
-
-        time.sleep(1)
 
 
     test.close()
