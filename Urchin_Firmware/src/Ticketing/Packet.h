@@ -47,10 +47,10 @@ typedef struct Packet{
     /**
      * The packet itself
      */
-    char contance[HerkulexPacketSize];
+    char contents[HerkulexPacketSize];
 
 
-    unsigned char ContanceSize;
+    unsigned char ContentsSize;
 
 
     /**
@@ -74,8 +74,9 @@ typedef struct Packet{
 
 }Packet;
 
-    Packet* CreateNode(int dest, int protocol,int device, char Check, char contance[], unsigned char contanceSIZE, unsigned char VPID, int (*ACK)(unsigned char VPID ,const char buffer[]));
+    Packet* CreateNode(int dest, int protocol,int device, char Check, char contents[], unsigned char contentsSIZE, unsigned char VPID, int (*ACK)(unsigned char VPID ,const char buffer[]));
 
+	/* Inserts new packet node at the head of a packets list */
     void InsertionHead(Packet** head, Packet* node);
 
 

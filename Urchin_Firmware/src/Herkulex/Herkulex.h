@@ -450,6 +450,8 @@ public:
    */
   void  moveOne(int servoID, int Goal, int pTime, JogLedColor valueLed, HerkulexModel model);
 
+  //char*  getMoveOnePacket(int servoID, int Goal, int pTime, JogLedColor valueLed, HerkulexModel model);
+
 
   /**
    *

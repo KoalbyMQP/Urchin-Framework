@@ -20,7 +20,6 @@ void InjectorSpryInit() {
 }
 
 [[noreturn]] void Spray(void *pvParameters) {
-	InjectorSpryInit();
     while (true) {
         Ticket ticket;
 
@@ -37,15 +36,20 @@ void InjectorSpryInit() {
                     Packet *packet = PacketGet(ticket.Packets,i);
                     (void) PrintfToPI(DebugQueue,VPID,"Spray->Sending Packet VV VV");
                     PrintPackets(DebugQueue,VPID,packet);
-                    Herkulex.sendData(reinterpret_cast<byte *>(packet->contance),packet->ContanceSize);
+					(void) PrintfToPI(DebugQueue, 0, "About to print packet contents");
+					for (int i = 0; i < packet->ContentsSize; i++) {
+						(void) PrintfToPI(DebugQueue, 0, "%u", packet->contents[i]);
+					}
+
+
+                    Herkulex.sendData(reinterpret_cast<byte *>(packet->contents),packet->ContentsSize);
                 }
                 xSemaphoreGive(UART1Mutex);
                 // ----------Give mutex--------------------------------------------------------------------------------------------------
-            } else {
-                (void) PrintfToPI(DebugQueue,0,"Spray FAILED to claim Mutex UART1");
-            }
+			}else {
+				(void) PrintfToPI(DebugQueue,0,"Spray FAILED to clam Mutex UART1");
+           	}
         }
-
         vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }

@@ -17,5 +17,6 @@
 
 #include "Ticketing/Packet.h"
 extern SemaphoreHandle_t UART1Mutex;
+void InjectorSpryInit(void);
 [[noreturn]] void Spray(void *pvParameters);
 #endif //URCHIN_FIRMWARE_INJECTOR_H

@@ -43,11 +43,6 @@ int UnpackerInit() {
     Herkulex.SetIndirect(false);
     Herkulex.initialize();
 
-
-
-
-
-
     return 0;
 }
 
@@ -294,24 +289,24 @@ int LoadTicket(unsigned char VPID, const char* buffer) {
             (void)(PrintfToPI)(DebugQueue,VPID,"LoadTicket:time:%d",Variables[1].Data.Int);
 
 
-
-
-
-            Herkulex.torqueON(MotorNum);
+            //Herkulex.torqueON(MotorNum);
             //Herkulex.RAMRead(MotorNum,Torque);
+			
+			Herkulex.SetIndirect(true);
             Herkulex.moveOne(MotorNum,Pos, Variables[1].Data.Int*PTime, static_cast<JogLedColor>(Variables[2].Data.Int), Model);
+			Herkulex.SetIndirect(false);
 
 
-            //Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),Herkulex.BusPacketLength,VPID,NULL);
-            //InsertionHead(&Tickets[Header.ticket]->Packets,Stamp);
-            //if (Tickets[Header.ticket] == NULL) {
-            //    PrintfToPI(DebugQueue, VPID, "Invalid ticket");
-            //    return -1;
-            //}
+            Packet* Stamp = CreateNode(0/*0=local*/,3/*Herkulex = 2*/,MotorNum,0,reinterpret_cast<char *>(Herkulex.BusPacket),Herkulex.BusPacketLength,VPID,NULL);
+            InsertionHead(&Tickets[Header.ticket]->Packets,Stamp);
+            if (Tickets[Header.ticket] == NULL) {
+                PrintfToPI(DebugQueue, VPID, "Invalid ticket");
+                return -1;
+            }
 
-            //if (Tickets[Header.ticket]->Packets == NULL) {
-            //    (void) PrintfToPI(DebugQueue,VPID,"Load: No packets in ticket");
-            //}
+            if (Tickets[Header.ticket]->Packets == NULL) {
+                (void) PrintfToPI(DebugQueue,VPID,"Load: No packets in ticket");
+            }
         }
     }
 
@@ -439,6 +434,7 @@ int PunchTicket(unsigned char VPID, const char* buffer) {
     if (Tickets[Ticket]->Packets==NULL) {
         (void) PrintfToPI(DebugQueue,VPID,"No packets in ticket");
     }else{
+        (void) PrintfToPI(DebugQueue,VPID,"WOOOO WE ACTUALLY MADE IT HERE");
         PrintPackets(DebugQueue,VPID,Tickets[Ticket]->Packets);
         PunchToQueue(Tickets[Ticket]);
 

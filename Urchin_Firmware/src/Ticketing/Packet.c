@@ -5,7 +5,7 @@
 #include "Packet.h"
 
 
-Packet* CreateNode(int dest, int protocol,int device, char Check, char contance[], unsigned char contanceSIZE, unsigned char VPID, int (*ACK)(unsigned char VPID ,const char buffer[])) {
+Packet* CreateNode(int dest, int protocol,int device, char Check, char contents[], unsigned char contentsSIZE, unsigned char VPID, int (*ACK)(unsigned char VPID ,const char buffer[])) {
     Packet* node = (Packet*) pvPortMalloc(sizeof(Packet));
 
     if (node == NULL){return NULL;}
@@ -17,8 +17,8 @@ Packet* CreateNode(int dest, int protocol,int device, char Check, char contance[
     node->protocol = protocol;
     node->device = device;
     node->Check = Check;
-    memcpy(node->contance,contance,HerkulexPacketSize);
-    node->ContanceSize = contanceSIZE;
+    memcpy(node->contents,contents,HerkulexPacketSize);
+    node->ContentsSize = contentsSIZE;
     node->VPID = VPID;
     node->ACK = ACK;
 
@@ -73,7 +73,7 @@ void PrintPackets(QueueHandle_t Queue ,unsigned int VPID ,Packet* head){
                      head->dest,
                      head->protocol,
                      head->device,
-                     head->ContanceSize,
+                     head->ContentsSize,
                      head->Check,
                      head->VPID);
 

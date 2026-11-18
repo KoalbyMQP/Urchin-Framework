@@ -36,13 +36,8 @@ extern "C" void app_main() {
 
     esp_log_level_set("*", ESP_LOG_NONE);
     //sets up the seral comuncation
-
-
     SetUpPins();
-
-
     Identifier = nullptr;
-
     ConversationLength = 0;
 
     for (int i = 0; i < MaxVPIDs; i++) {
@@ -50,12 +45,8 @@ extern "C" void app_main() {
     }
 
     BridgeInit();
-
-    ActionQueueINIT();
-
-	TaskHandle_t taskHandle = NULL;
-	xTaskCreate(Spray, "Spray", 2048, NULL, 1, &taskHandle);
-
+    ActionQueINIT();
+	InjectorSpryInit();
 
     // QueueHandle_t AsyncQueue = xQueueCreate(AsyncSize, sizeof(Ticket));
     // QueueHandle_t SequentialQueue = xQueueCreate(SequentialSize, sizeof(Ticket));
@@ -65,9 +56,7 @@ extern "C" void app_main() {
     //printf("MSG_QUEUE_LENGTH:%d\n",MSG_QUEUE_LENGTH);
 
     ExchangeQueue= xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
-
     RecationQueue = xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
-
     DebugQueue = xQueueCreate(MSG_QUEUE_LENGTH, MSG_ITEM_SIZE);
 
     if (!ExchangeQueue || !RecationQueue || !DebugQueue) {
@@ -80,9 +69,9 @@ extern "C" void app_main() {
     //Shipping(nullptr);
     BaseType_t ShipxReturned = xTaskCreate(Shipping, "Shipping", 8048, nullptr, 3, &xHandleShip);
     if( ShipxReturned == pdPASS ){
-        //printf("Shipping Task creation worked!\n");
+        printf("Shipping Task creation worked!\n");
     }else {
-        //printf("Shipping Task creation failed!\n");
+        printf("Shipping Task creation failed!\n");
     }
 
 
@@ -91,27 +80,27 @@ extern "C" void app_main() {
     TaskHandle_t xHandleRecv = nullptr;
     BaseType_t RecvxReturned = xTaskCreate(receiving, "Receiving", 8048, nullptr, 3, &xHandleRecv);
     if( RecvxReturned == pdPASS ){
-        //printf("Receiving Task creation worked!\n");
+        printf("Receiving Task creation worked!\n");
     }else {
-        //printf("Receiving Task creation failed!\n");
+        printf("Receiving Task creation failed!\n");
     }
 
 
-    //TaskHandle_t xHandleSpray = nullptr;
-    //BaseType_t SprayxReturned = xTaskCreate(Spray, "Spray", 8048, nullptr, 3, &xHandleSpray);
-    //if( SprayxReturned == pdPASS ){
-        //printf("Receiving Task creation worked!\n");
-    //}else {
-        //printf("Receiving Task creation failed!\n");
-    //}
+    TaskHandle_t xHandleSpray = nullptr;
+    BaseType_t SprayxReturned = xTaskCreate(Spray, "Spray", 8048, nullptr, 3, &xHandleSpray);
+    if( SprayxReturned == pdPASS ){
+      printf("Receiving Task creation worked!\n");
+    }else {
+      printf("Receiving Task creation failed!\n");
+    }
 
     //Shipping(nullptr);
-int nothing=0;
-    while(1) {
-        vTaskDelay(100 / portTICK_PERIOD_MS);
-        nothing=1;
-        nothing=nothing;
-    }
+	//int nothing=0;
+    //while(1) {
+    //    vTaskDelay(100 / portTICK_PERIOD_MS);
+    //    nothing=1;
+    //    nothing=nothing;
+    //}
 
 }
 #endif
