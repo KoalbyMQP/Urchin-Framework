@@ -13,7 +13,7 @@ wheels = [
 
 [[package]]
 name = "crab-api2"
-version = "0.2.0"
+version = "0.3.0.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "pyserial" },
