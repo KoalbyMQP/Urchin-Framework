@@ -163,6 +163,7 @@ hardware.
 | Servo LED changes color (blue/red/green) but the shaft doesn't move | Supply voltage too low for that servo; the DRS-0601 needed about 10 V. |
 | Option 2: `ERROR: INPUT VOLTAGE OUT OF RANGE` | Check the supply voltage; raise the current limit a little. A DRS-0201 trips this above 10.0 V by default. |
 | Option 2 finds fewer servos than are plugged in | Two servos share an ID (both still on the factory ID?). Unplug all but one and use option 6, see *More than one motor*. |
+| Servo **moves** with option 3 but option 2 never finds it | Its replies aren't getting back (servo TXD → ESP32 GPIO16). Run `src/servo_sniff.py` (same command as the bench test, different script): it shows the raw reply bytes and says whether nothing, garbage or a clean reply arrives. |
 | Option 3/4: `ERR NOSERVO` | The chosen motor stopped answering (unplugged, or its ID changed). Run option 2 again. |
 | Option 2: `ERROR: OVERLOAD` | Something is blocking the shaft. Errors clear on the next spin/move. |
 | Option 3/4: `FAIL: the ESP32 stopped answering` | USB cable came loose, or the ESP32 reset. Re-plug (and re-attach to WSL), run again. |

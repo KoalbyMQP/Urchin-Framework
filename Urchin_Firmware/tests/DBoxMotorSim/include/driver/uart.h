@@ -33,3 +33,4 @@ int uart_read_bytes(uart_port_t, void* buf, uint32_t length, TickType_t wait);
 esp_err_t uart_flush(uart_port_t);
 esp_err_t uart_flush_input(uart_port_t);
 esp_err_t uart_wait_tx_done(uart_port_t, TickType_t);
+esp_err_t uart_set_baudrate(uart_port_t, uint32_t baudrate);

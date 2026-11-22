@@ -174,6 +174,72 @@ bool ChangeId(int oldId, int newId) {
     return false;
 }
 
+const BaudInfo kBauds[7] = {
+    {115200, 0x10}, {57600, 0x22}, {200000, 0x09}, {250000, 0x07},
+    {400000, 0x04}, {500000, 0x03}, {666666, 0x02},
+};
+
+static void SetBusBaud(int baud) {
+    uart_set_baudrate(kUart, baud);
+    uart_flush_input(kUart);
+}
+
+int ScanBauds(int* id) {
+    ServoStatus s;
+    int found = -1;
+    for (const BaudInfo& b : kBauds) {
+        SetBusBaud(b.baud);
+        vTaskDelay(pdMS_TO_TICKS(5));
+        int replyId = -1;
+        for (int attempt = 0; attempt < 3 && found < 0; ++attempt) {
+            if (Ping(kBroadcastId, &s, &replyId) && replyId <= kMaxServoId) {
+                found = b.baud;
+                *id = replyId;
+            }
+        }
+        if (found >= 0) {
+            break;
+        }
+    }
+    SetBusBaud(kBaud);
+    return found;
+}
+
+bool ResetBaud(int id, int currentBaud) {
+    uint8_t code = 0;
+    for (const BaudInfo& b : kBauds) {
+        if (b.baud == kBaud) {
+            code = b.code;
+        }
+    }
+    SetBusBaud(currentBaud);
+    vTaskDelay(pdMS_TO_TICKS(5));
+    // EEPROM address 4 = baud rate; it takes effect after a reboot.
+    const uint8_t data[] = {0x04, 0x01, code};
+    SendPacket(static_cast<uint8_t>(id), HEEPWRITE, data, sizeof(data));
+    vTaskDelay(pdMS_TO_TICKS(50));
+    SendPacket(static_cast<uint8_t>(id), HREBOOT, nullptr, 0);
+    SetBusBaud(kBaud);
+    ServoStatus s;
+    for (int i = 0; i < 20; ++i) {
+        vTaskDelay(pdMS_TO_TICKS(100));
+        if (Ping(id, &s, nullptr)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int SniffStat(int id, uint8_t* out, int max, int* idleBytes) {
+    uint8_t junk[64];
+    uart_flush_input(kUart);
+    *idleBytes = uart_read_bytes(kUart, junk, sizeof(junk), pdMS_TO_TICKS(100));
+    uart_flush_input(kUart);
+    SendPacket(static_cast<uint8_t>(id), HSTAT, nullptr, 0);
+    int got = uart_read_bytes(kUart, out, max, pdMS_TO_TICKS(50));
+    return got < 0 ? 0 : got;
+}
+
 void ClearErrors(int id) {
     const uint8_t data[] = {0x30, 0x02, 0x00, 0x00};
     SendPacket(static_cast<uint8_t>(id), HRAMWRITE, data, sizeof(data));

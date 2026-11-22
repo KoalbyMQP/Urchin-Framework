@@ -30,8 +30,9 @@ env PYTHONPATH=$HOME/dbox python3 src/bench_test.py /dev/pts/3
 `servos.log` shows what each simulated servo was told to do
 (`SERVO 253 (DRS-0201) MOVE to position 650`, `SPIN 200`, `STOP`, ...).
 
-* `SIM_SERVOS`: comma-separated `<id>:<model>`; model is 0101, 0201, 0601 or
-  0602. Two servos with the same ID collide, like on the real bus. Empty =
+* `SIM_SERVOS`: comma-separated `<id>:<model>[@baud]`; model is 0101, 0201,
+  0601 or 0602; `@57600` etc. makes that servo use another speed (default
+  115200), like a servo someone reconfigured. Two servos with the same ID collide, like on the real bus. Empty =
   no servo powered.
 * The simulated servos check every packet's checksum, answer STAT and EEPROM
   reads, take EEPROM ID writes and reboots, and collide when more than one

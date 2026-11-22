@@ -2,7 +2,8 @@
 // Linux, with
 //   UART0 -> a pty (the bench test opens its slave end like a /dev/ttyUSB0)
 //   UART1 -> simulated Herkulex servos on one daisy-chained bus.
-// SIM_SERVOS="219:0601,253:0201" picks the servos; SIM_LOG=<file> records
+// SIM_SERVOS="219:0601,253:0201@57600" picks the servos (optional
+// @baud: a servo set to another speed only hears/answers at that speed); SIM_LOG=<file> records
 // what each servo was told to do.
 #include <driver/uart.h>
 #include <freertos/FreeRTOS.h>
@@ -69,7 +70,16 @@ struct SimServo {
     bool torque = false;
     uint8_t err = 0, det = 0;
     unsigned long bootUntil = 0;
+    int baud = 115200, eepBaud = 115200;
 };
+static int g_busBaud = 115200;
+static int BaudFromCode(uint8_t code) {
+    switch (code) {
+        case 0x02: return 666666; case 0x03: return 500000; case 0x04: return 400000;
+        case 0x07: return 250000; case 0x09: return 200000; case 0x10: return 115200;
+        case 0x22: return 57600; default: return 0;
+    }
+}
 static std::vector<SimServo> g_servos;
 static std::mutex g_busMutex;
 static std::condition_variable g_busCv;
@@ -111,7 +121,7 @@ static void HandleBusPacket(const std::vector<uint8_t>& p) {
     int n = size - 7;
     std::vector<std::vector<uint8_t>> replies;
     for (SimServo& s : g_servos) {
-        if (!Alive(s)) continue;
+        if (!Alive(s) || s.baud != g_busBaud) continue;  // wrong speed: hears noise
         bool mine = (id == s.id || id == 0xFE);
         switch (cmd) {
             case 0x07:  // STAT
@@ -132,6 +142,10 @@ static void HandleBusPacket(const std::vector<uint8_t>& p) {
                     s.eepId = d[2];
                     Log("SERVO %d (%s) EEPROM ID <- %d (after reboot)", s.id, s.name, s.eepId);
                 }
+                if (mine && d[0] == 4 && BaudFromCode(d[2])) {
+                    s.eepBaud = BaudFromCode(d[2]);
+                    Log("SERVO %d (%s) EEPROM baud <- %d (after reboot)", s.id, s.name, s.eepBaud);
+                }
                 break;
             case 0x03:  // RAM_WRITE
                 if (!mine) break;
@@ -146,6 +160,7 @@ static void HandleBusPacket(const std::vector<uint8_t>& p) {
                 if (mine) {
                     Log("SERVO %d (%s) reboot -> ID %d", s.id, s.name, s.eepId);
                     s.id = s.eepId;
+                    s.baud = s.eepBaud;
                     s.torque = false;
                     s.bootUntil = xTaskGetTickCount() + 300;
                 }
@@ -202,6 +217,10 @@ esp_err_t uart_driver_delete(uart_port_t) { return ESP_OK; }
 esp_err_t uart_param_config(uart_port_t, const uart_config_t*) { return ESP_OK; }
 esp_err_t uart_set_pin(uart_port_t, int, int, int, int) { return ESP_OK; }
 esp_err_t uart_wait_tx_done(uart_port_t, TickType_t) { return ESP_OK; }
+esp_err_t uart_set_baudrate(uart_port_t u, uint32_t baud) {
+    if (u == UART_NUM_1) { g_busBaud = (int)baud; g_busTx.clear(); }
+    return ESP_OK;
+}
 int uart_write_bytes(uart_port_t u, const void* src, size_t size) {
     if (u == UART_NUM_0) return (int)write(g_ptyMaster, src, size);
     BusWrite((const uint8_t*)src, size);
@@ -239,6 +258,10 @@ int main() {
         SimServo s{};
         s.id = s.eepId = atoi(item.c_str());
         std::string m = item.substr(item.find(':') + 1);
+        if (m.find('@') != std::string::npos) {
+            s.baud = s.eepBaud = std::stoi(m.substr(m.find('@') + 1));
+            m = m.substr(0, m.find('@'));
+        }
         static std::deque<std::string> names;
         names.push_back("DRS-" + m);
         s.name = names.back().c_str();
@@ -257,6 +280,6 @@ int main() {
     fcntl(g_ptyMaster, F_SETFL, O_NONBLOCK);
     printf("%s\n", ttyname(slave));
     fflush(stdout);
-    for (auto& s : g_servos) Log("BUS servo %s at ID %d", s.name, s.id);
+    for (auto& s : g_servos) Log("BUS servo %s at ID %d, %d baud", s.name, s.id, s.baud);
     app_main();
 }

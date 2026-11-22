@@ -100,6 +100,33 @@ int FindAll(int* ids, int maxIds);
 // The caller must make sure newId is free first.
 bool ChangeId(int oldId, int newId);
 
+// Baud rates a Herkulex servo can be set to (manual, EEPROM "Baud Rate"),
+// with the register code for each. kBaud (115200) is the factory default
+// and what the bench always uses.
+struct BaudInfo {
+    int baud;
+    uint8_t code;
+};
+extern const BaudInfo kBauds[7];
+
+// Finds a servo that doesn't answer at kBaud because it was set to another
+// speed: pings the broadcast ID at every Herkulex baud rate. Use with ONE
+// servo on the bus (several replying to a broadcast collide). Returns the
+// baud it answered at (*id = its ID), or -1. Always leaves the bus at kBaud.
+int ScanBauds(int* id);
+
+// Sets a servo found by ScanBauds back to kBaud: talks to it at
+// currentBaud, writes the EEPROM baud setting, reboots it, and checks it
+// answers at kBaud (up to ~2s). Leaves the bus at kBaud either way.
+bool ResetBaud(int id, int currentBaud);
+
+// Debug aid for "the servo moves but never answers": listens to the
+// servo's reply line (kRxPin) for 100ms with nothing sent, to catch noise
+// (*idleBytes), then sends a STAT to `id` and records every byte that comes
+// back within 50ms -- checked or not -- into out (up to max). Returns how
+// many reply bytes arrived. A clean STAT reply is 9 bytes starting FF FF.
+int SniffStat(int id, uint8_t* out, int max, int* idleBytes);
+
 // Returns the servo's ID, or -1 if nothing answered. Tries a broadcast STAT
 // first (a lone servo usually answers it with its real ID, instantly), then
 // addresses every ID 0-253 (~10s). progress, if given, is called with each

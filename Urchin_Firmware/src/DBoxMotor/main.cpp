@@ -37,6 +37,13 @@
 //     Model <0101|0201|0601|0602>   (servo VPID only) -> OK MODEL <id> <model>
 //     SetId <new>      (servo VPID only) -> OK SETID <old> <new>
 //                         | ERR TAKEN | ERR BADID | ERR NOREPLY
+//     BaudScan         (VPID 0, ONE servo on the bus) -> OK BAUD <id> <baud>
+//                         | OK BAUD NONE      finds a servo set to another speed
+//     FixBaud <id> <baud>  (VPID 0) -> OK FIXBAUD <id> | ERR NOREPLY
+//                         sets that servo back to 115200 (EEPROM + reboot)
+//     Sniff [id]       (VPID 0; default id = broadcast) -> OK RAW idle=<n> got=<n> <hex bytes>
+//                         raw bytes on the servo reply line after a STAT,
+//                         unchecked (debug aid; Crab_API/src/servo_sniff.py)
 //   Any command on a servo VPID the board hasn't seen yet first pings that
 //   ID; if nothing answers -> ERR NOSERVO <id>.
 //   events      ESP  -> stream 'D' (unsolicited), on the servo's VPID:
@@ -269,6 +276,49 @@ static void HandleCommand(const Command& cmd) {
         } else {
             ListServos(list, sizeof(list), ' ');
             Send(v, 'E', "OK FOUND %s", list);
+        }
+        return;
+    }
+    if (StartsWith(t, "BaudScan")) {
+        StopAll();
+        int id = -1;
+        int baud = Bench::ScanBauds(&id);
+        if (baud < 0) {
+            Send(v, 'E', "OK BAUD NONE");
+        } else {
+            Send(v, 'E', "OK BAUD %d %d", id, baud);
+        }
+        return;
+    }
+    if (StartsWith(t, "Sniff")) {
+        StopAll();
+        char* end = nullptr;
+        long id = std::strtol(t + 5, &end, 10);
+        if (end == t + 5 || id < 0 || id > Bench::kBroadcastId) {
+            id = Bench::kBroadcastId;
+        }
+        uint8_t raw[32];
+        int idle = 0;
+        int got = Bench::SniffStat(static_cast<int>(id), raw, sizeof(raw), &idle);
+        char hex[sizeof(raw) * 3 + 1];
+        hex[0] = '\0';
+        for (int i = 0; i < got; ++i) {
+            snprintf(hex + i * 3, 4, " %02X", raw[i]);
+        }
+        Send(v, 'E', "OK RAW idle=%d got=%d%s", idle, got, hex);
+        return;
+    }
+    if (StartsWith(t, "FixBaud")) {
+        char* end = nullptr;
+        long id = std::strtol(t + 7, &end, 10);
+        long baud = (end && *end) ? std::strtol(end, nullptr, 10) : 0;
+        if (end == t + 7 || id < 0 || id > Bench::kMaxServoId || baud <= 0) {
+            Send(v, 'E', "ERR USAGE FixBaud <id> <baud>");
+        } else if (Bench::ResetBaud(id, baud)) {
+            Register(id);
+            Send(v, 'E', "OK FIXBAUD %ld", id);
+        } else {
+            Send(v, 'E', "ERR NOREPLY");
         }
         return;
     }

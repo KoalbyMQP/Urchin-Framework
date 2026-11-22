@@ -14,6 +14,8 @@ Menu options:
     5) Choose motor       which servo options 3/4 drive: one of them, or all at once
     6) Change motor ID    give a servo a new Herkulex ID (needed before two servos
                           with the same ID can share the bus)
+    7) Speed scan         finds a servo that doesn't answer because it was set to
+                          another baud rate, and sets it back to 115200
 
 Several servos can share the bus (daisy chain); each needs its own ID. Each
 servo is addressed by D-BOX VPID = its Herkulex ID, and VPID 0 means "all of
@@ -471,6 +473,44 @@ def change_id(bench: Bench) -> None:
         hint("Run option 2 to see which IDs answer now.")
 
 
+def baud_scan(bench: Bench) -> None:
+    say("\n[7] Speed scan: finds a servo set to a different baud rate (speed).")
+    say("    Connect ONLY the servo you're checking, power it at the right voltage,")
+    say("    and make sure its LED is not blinking red.")
+    if input("Only that one servo connected? (y/n): ").strip().lower() != 'y':
+        say("   Nothing done.")
+        return
+    say("   Trying every Herkulex speed (a few seconds)...")
+    reply = bench.request("BaudScan", timeout=10, vpid=ALL)
+    if reply is None:
+        say("FAIL: no reply from the ESP32.")
+        return
+    words = reply.text.split()
+    if reply.text == "OK BAUD NONE":
+        say("FAIL: the servo didn't answer at any speed.")
+        hint("So it's not a speed problem. Check: supply voltage (DRS-0201: 7-10 V),",
+             "   GND shared with the ESP32, and TXD/RXD crossed to the ESP32's RX/TX.")
+        return
+    if len(words) != 4 or not words[2].isdigit():
+        say(f"FAIL: unexpected reply ({reply.text}) -- re-flash DBoxMotor.")
+        return
+    servo_id, baud = int(words[2]), int(words[3])
+    if baud == BAUD:
+        say(f"PASS: motor {servo_id} answers at {BAUD} already -- speed is fine.")
+        hint("Run option 2 to add it.")
+        return
+    say(f"FOUND: motor {servo_id} is set to {baud} baud (the bench uses {BAUD}).")
+    if input(f"Set motor {servo_id} to {BAUD} so it works with the bench? (y/n): ").strip().lower() != 'y':
+        say("   Nothing changed.")
+        return
+    reply = bench.request(f"FixBaud {servo_id} {baud}", timeout=5, vpid=ALL)
+    if reply is not None and reply.text.startswith("OK FIXBAUD"):
+        say(f"PASS: motor {servo_id} now uses {BAUD} (saved in the servo).")
+        hint("Run option 2: it should show up now.")
+    else:
+        say(f"FAIL: the servo didn't switch ({reply.text if reply else 'no reply'}).")
+
+
 # --- Menu ------------------------------------------------------------------
 
 def main() -> int:
@@ -497,13 +537,14 @@ def main() -> int:
             say(" 4) Move motor to an angle" + needs)
             say(" 5) Choose motor" + multi_needs)
             say(" 6) Change a motor's ID" + multi_needs)
+            say(" 7) Speed scan (servo not found?)" + multi_needs)
             say(" q) Quit")
             choice = input("Choose: ").strip().lower()
             if choice == '1':
                 check_link(bench)
-            elif choice in ('2', '3', '4', '5', '6') and not motor_ok:
+            elif choice in ('2', '3', '4', '5', '6', '7') and not motor_ok:
                 say("   This needs DBoxMotor firmware on the ESP32 (see the note above).")
-            elif choice in ('5', '6') and not bench.multi:
+            elif choice in ('5', '6', '7') and not bench.multi:
                 say("   This needs the multi-motor (v2) DBoxMotor firmware; re-flash it.")
             elif choice == '2':
                 check_motor(bench)
@@ -515,6 +556,8 @@ def main() -> int:
                 choose_motor(bench)
             elif choice == '6':
                 change_id(bench)
+            elif choice == '7':
+                baud_scan(bench)
             elif choice in ('q', 'quit', 'exit'):
                 break
     except (KeyboardInterrupt, EOFError):
