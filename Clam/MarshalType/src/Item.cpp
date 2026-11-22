@@ -84,18 +84,26 @@ namespace MarshalType {
             offset += commandLen;
 
             // ---- values ----
-            this->values.clear();
-            this->values.reserve(valuesLen);
+            // Each value is a 1-byte type tag + its 4 data bytes.
+            constexpr size_t VALUE_BYTES = 1 + ValVariant::PACKET_SIZE;
 
+            // Parse into a temporary first, so a message that turns out to be
+            // bad leaves this Item exactly as it was.
             std::vector<ValVariant> parsedValues;
             parsedValues.reserve(valuesLen);
 
             for (uint8_t i = 0; i < valuesLen; i++) {
                 ValVariant v;
 
+                // Never trust valuesLen alone: a message that is shorter than
+                // it claims (sender bug, version mismatch, hand-made packet)
+                // used to make this read past the end of d. Reject it instead.
+                if (d.size() - offset < VALUE_BYTES)
+                    return -1;
+
                 std::vector<uint8_t> buff(
                     d.begin() + offset,
-                    d.begin() + offset + 5
+                    d.begin() + offset + VALUE_BYTES
                 );
 
                 if (0 != v.DeMarshal(buff))
@@ -129,7 +137,11 @@ namespace MarshalType {
 
 };
 
-std::ostream& operator<<(std::ostream& os, const MarshalType::Item& item) {
+// Declared inside namespace MarshalType in Item.h, so it must be defined
+// there too; at global scope it was a different, never-called function
+// and the Python module failed to load ("undefined symbol").
+namespace MarshalType {
+std::ostream& operator<<(std::ostream& os, const Item& item) {
 
     os << "Item{\n";
     os << "  joint: " << item.joint << "\n";
@@ -141,7 +153,7 @@ std::ostream& operator<<(std::ostream& os, const MarshalType::Item& item) {
         std::visit([&os](const auto& v) {
             using T = std::decay_t<decltype(v)>;
 
-            if constexpr (std::is_same_v<T, MarshalType::bool32_t>) {
+            if constexpr (std::is_same_v<T, bool32_t>) {
                 os << (bool)v;
             }
             else {
@@ -159,6 +171,4 @@ std::ostream& operator<<(std::ostream& os, const MarshalType::Item& item) {
 
     return os;
 }
-
-
-
+}  // namespace MarshalType

@@ -78,3 +78,36 @@ TEST(TestItem, MarshalAndDemarshal_2) {
     EXPECT_TRUE(Item_pre == Item_post);
 }
 
+
+// A message cut short anywhere must be rejected cleanly: DeMarshal returns an
+// error, never reads past the end of the buffer (run under AddressSanitizer
+// to check that), and leaves the Item untouched.
+TEST(TestItem, DemarshalRejectsTruncatedMessage) {
+    MarshalType::Item original("left_knee", "Move", 30.0f, 1000, true);
+    std::vector<uint8_t> full;
+    ASSERT_EQ(original.Marshal(full), 0);
+
+    for (size_t len = 0; len < full.size(); ++len) {
+        std::vector<uint8_t> cut(full.begin(), full.begin() + len);
+        MarshalType::Item target("unchanged", "Stay", 7);
+        MarshalType::Item before = target;
+
+        EXPECT_NE(target.DeMarshal(cut), 0) << "accepted a message cut to " << len << " bytes";
+        EXPECT_TRUE(target == before) << "a rejected message changed the Item (cut to " << len << " bytes)";
+    }
+
+    MarshalType::Item whole;
+    EXPECT_EQ(whole.DeMarshal(full), 0);
+    EXPECT_TRUE(whole == original);
+}
+
+// The value count says 2 but the bytes for only 1 value follow.
+TEST(TestItem, DemarshalRejectsValueCountLargerThanData) {
+    MarshalType::Item one("Arm", "moveone", 30);
+    std::vector<uint8_t> bytes;
+    ASSERT_EQ(one.Marshal(bytes), 0);
+    bytes[MarshalType::Item::MAX_JOINT_LEN + 1] = 2;   // the "number of values" byte
+
+    MarshalType::Item target;
+    EXPECT_NE(target.DeMarshal(bytes), 0);
+}

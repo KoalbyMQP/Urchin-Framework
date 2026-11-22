@@ -9,10 +9,45 @@
 #include <Item.h>
 
 #include <pybind11/stl.h>
+#include <cstdint>
 
 
 namespace py = pybind11;
 using namespace MarshalType;
+
+// Turns one Python value into a ValVariant: an existing ValVariant is kept
+// as-is, bool -> bool, int -> int32 (or uint32 if it only fits unsigned),
+// float -> float32. Anything else is rejected.
+static ValVariant ToValVariant(py::handle h) {
+    if (py::isinstance<ValVariant>(h)) {
+        return py::cast<ValVariant>(h);
+    }
+    if (py::isinstance<py::bool_>(h)) {   // check bool before int: True is an int in Python
+        return ValVariant(py::cast<bool>(h));
+    }
+    if (py::isinstance<py::int_>(h)) {
+        long long v = py::cast<long long>(h);
+        if (v >= INT32_MIN && v <= INT32_MAX) {
+            return ValVariant(static_cast<int32_t>(v));
+        }
+        if (v >= 0 && v <= static_cast<long long>(UINT32_MAX)) {
+            return ValVariant(static_cast<uint32_t>(v));
+        }
+        throw py::value_error("integer does not fit in 32 bits");
+    }
+    if (py::isinstance<py::float_>(h)) {
+        return ValVariant(py::cast<float>(h));
+    }
+    throw py::type_error("values must be bool, int, float or ValVariant");
+}
+
+static std::vector<ValVariant> ToValVariants(const py::iterable& items) {
+    std::vector<ValVariant> out;
+    for (auto h : items) {
+        out.push_back(ToValVariant(h));
+    }
+    return out;
+}
 PYBIND11_MODULE(marshaltype_py, m) {
     py::class_<ValVariant>(m, "ValVariant")
         .def(py::init<>())
@@ -25,10 +60,7 @@ PYBIND11_MODULE(marshaltype_py, m) {
         .def("set",
             [](ValVariant& self, py::object obj)
             {
-                if (py::isinstance<ValVariant>(h)) {          // ← ADD before bool check
-                    self.values.push_back(py::cast<ValVariant>(h));
-                }
-                else if (py::isinstance<py::bool_>(obj))
+                if (py::isinstance<py::bool_>(obj))
                 {
                     self.set(obj.cast<bool>());
                 }
@@ -86,19 +118,25 @@ PYBIND11_MODULE(marshaltype_py, m) {
             std::ostringstream oss;
             oss << Val;
             return oss.str();})
-        .def("__eq__", [](const ValVariant& a, const ValVariant& b) {
-            return a == b;
+        // Compare with another ValVariant or with a plain Python value
+        // (ValVariant(1) == 1), converted by the same rules as Item values.
+        .def("__eq__", [](const ValVariant& a, py::object b) {
+            try { return a == ToValVariant(b); }
+            catch (const py::error_already_set&) { throw; }
+            catch (const std::exception&) { return false; }
             })
-        .def("__ne__", [](const ValVariant& a, const ValVariant& b) {
-        return !(a == b);
+        .def("__ne__", [](const ValVariant& a, py::object b) {
+            try { return !(a == ToValVariant(b)); }
+            catch (const py::error_already_set&) { throw; }
+            catch (const std::exception&) { return true; }
             });
 
     py::class_<Item>(m, "Item")
-        .def(py::init<
-        const std::string&,
-        const std::string&,
-        const std::vector<ValVariant>&
-        >())
+        // values may be plain Python numbers/bools or ValVariants:
+        // Item("left_knee", "Move", [30.0, 1000])
+        .def(py::init([](const std::string& joint, const std::string& command, py::iterable values) {
+            return Item(joint, command, ToValVariants(values));
+        }), py::arg("joint"), py::arg("command"), py::arg("values"))
         .def(py::init<>())
 
         .def_readwrite("joint", &Item::joint)
@@ -113,26 +151,8 @@ PYBIND11_MODULE(marshaltype_py, m) {
         return self.values;
     },
 
-    [](Item& self, py::list lst) {
-        self.values.clear();
-        self.values.reserve(py::len(lst));
-
-        for (auto obj : lst) {
-            py::handle h = obj;
-
-            if (py::isinstance<py::bool_>(h)) {
-                self.values.emplace_back(ValVariant(py::cast<bool>(h)));
-            }
-            else if (py::isinstance<py::int_>(h)) {
-                self.values.emplace_back(ValVariant(py::cast<int32_t>(h)));
-            }
-            else if (py::isinstance<py::float_>(h)) {
-                self.values.emplace_back(ValVariant(py::cast<float>(h)));
-            }
-            else {
-                throw std::runtime_error("values must be bool, int, or float");
-            }
-        }
+    [](Item& self, py::iterable lst) {
+        self.values = ToValVariants(lst);
     }
 )
 
