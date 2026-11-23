@@ -11,6 +11,7 @@ DBOXpy built as in Clam/D-BOX/tools/README.md):
 
     sudo env PYTHONPATH=$HOME/dbox python3 src/servo_sniff.py
     sudo env PYTHONPATH=$HOME/dbox python3 src/servo_sniff.py --id 253
+    sudo env PYTHONPATH=$HOME/dbox python3 src/servo_sniff.py --bus 2   (servos on GPIO26/27)
     sudo env PYTHONPATH=$HOME/dbox python3 src/servo_sniff.py /dev/ttyUSB1
 
 Connect ONLY the servo you are checking: by default it pings the broadcast
@@ -26,18 +27,20 @@ BROADCAST = 0xFE
 ATTEMPTS = 3
 
 
-def parse_args(argv: List[str]) -> Tuple[Optional[str], int]:
-    port, servo_id = None, BROADCAST
+def parse_args(argv: List[str]) -> Tuple[Optional[str], int, int]:
+    port, servo_id, bus = None, BROADCAST, 1
     args = list(argv)
     while args:
         arg = args.pop(0)
         if arg == "--id" and args and args[0].isdigit() and int(args[0]) <= 253:
             servo_id = int(args.pop(0))
+        elif arg == "--bus" and args and args[0] in ("1", "2"):
+            bus = int(args.pop(0))
         elif arg.startswith("/dev/") or arg.upper().startswith("COM"):
             port = arg
         else:
             sys.exit(__doc__)
-    return port, servo_id
+    return port, servo_id, bus
 
 
 def clean_reply(raw: List[int]) -> Optional[int]:
@@ -50,8 +53,8 @@ def clean_reply(raw: List[int]) -> Optional[int]:
     return raw[3]
 
 
-def sniff_once(bench, servo_id: int) -> Optional[Tuple[int, List[int]]]:
-    reply = bench.request(f"Sniff {servo_id}", timeout=2, vpid=ALL)
+def sniff_once(bench, servo_id: int, bus: int) -> Optional[Tuple[int, List[int]]]:
+    reply = bench.request(f"Sniff {servo_id} {bus}", timeout=2, vpid=ALL)
     if reply is None:
         say("FAIL: the ESP32 stopped answering.")
         return None
@@ -66,16 +69,17 @@ def sniff_once(bench, servo_id: int) -> Optional[Tuple[int, List[int]]]:
 
 
 def main() -> int:
-    port, servo_id = parse_args(sys.argv[1:])
+    port, servo_id, bus = parse_args(sys.argv[1:])
     bench = connect(port)
     if bench is None:
         return 1
     target = "broadcast (any servo)" if servo_id == BROADCAST else f"ID {servo_id}"
+    target += f" on bus {bus}"
     say(f"\nPinging {target} {ATTEMPTS} times and recording the raw reply line...\n")
 
     results = []
     for attempt in range(1, ATTEMPTS + 1):
-        got = sniff_once(bench, servo_id)
+        got = sniff_once(bench, servo_id, bus)
         if got is None:
             return 1
         idle, raw = got

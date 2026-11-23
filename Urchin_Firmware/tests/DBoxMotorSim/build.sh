@@ -12,5 +12,7 @@ g++ -std=gnu++20 -O1 -g -w -include limits -I"$HERE/include" \
   "$F/src/BenchShared/ComsStub.cpp" "$F/src/Herkulex/Herkulex.cpp" \
   "$F/src/DBoxEcho/Esp32UartPort.cpp" \
   "$F/lib/D-BOX-vendored/src/DBOXprotocol.cpp" "$F/lib/D-BOX-vendored/src/IPort.cpp" \
+  -I"$F/../Clam/MarshalType/include" \
+  "$F/../Clam/MarshalType/src/ValList.cpp" "$F/../Clam/MarshalType/src/Item.cpp" \
   -o "$HERE/dboxmotor_sim" -lutil -lpthread
 echo "built $HERE/dboxmotor_sim"

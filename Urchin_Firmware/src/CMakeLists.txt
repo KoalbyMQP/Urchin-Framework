@@ -21,6 +21,12 @@ elseif(DEFINED ENV{DBOX_MOTOR_ONLY})
         ${CMAKE_SOURCE_DIR}/src/BenchShared/*.*
         ${CMAKE_SOURCE_DIR}/src/DBoxMotor/*.*)
     list(APPEND app_sources ${CMAKE_SOURCE_DIR}/src/DBoxEcho/Esp32UartPort.cpp)
+    # MarshalType (the team's binary command format) is built straight from
+    # Clam/MarshalType -- the one shared copy, not a vendored duplicate.
+    set(MARSHALTYPE_DIR ${CMAKE_SOURCE_DIR}/../Clam/MarshalType)
+    list(APPEND app_sources
+        ${MARSHALTYPE_DIR}/src/ValList.cpp
+        ${MARSHALTYPE_DIR}/src/Item.cpp)
 else()
     foreach(bench_dir DBoxEcho HerkulexTest DBoxMotor BenchShared)
         FILE(GLOB_RECURSE bench_sources ${CMAKE_SOURCE_DIR}/src/${bench_dir}/*.*)
@@ -31,3 +37,7 @@ else()
 endif()
 
 idf_component_register(SRCS ${app_sources})
+
+if(DEFINED ENV{DBOX_MOTOR_ONLY})
+    target_include_directories(${COMPONENT_LIB} PRIVATE ${MARSHALTYPE_DIR}/include)
+endif()

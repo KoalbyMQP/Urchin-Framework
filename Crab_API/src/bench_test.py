@@ -16,10 +16,14 @@ Menu options:
                           with the same ID can share the bus)
     7) Speed scan         finds a servo that doesn't answer because it was set to
                           another baud rate, and sets it back to 115200
+    8) Synchronized move  several motors, each to its own angle, all starting on
+                          the same instant (one Herkulex packet: S_JOG or I_JOG)
 
 Several servos can share the bus (daisy chain); each needs its own ID. Each
 servo is addressed by D-BOX VPID = its Herkulex ID, and VPID 0 means "all of
 them" (provisional, see DBoxMotor/main.cpp). Works with one servo too.
+Servos can also be split over two buses (bus 2 = GPIO26/27, for servo models
+that can't share a wire); option 2 shows each servo's bus.
 
 D-BOX comes from DBOXpy, the Python bindings of the team's C++ D-BOX code
 (Clam/D-BOX): the same framing, receive and discovery code that runs on the
@@ -220,9 +224,13 @@ def parse_servo_list(text: str) -> dict:
 
 
 def motor_name(servo_id: int, model: str) -> str:
+    # model as the firmware reports it: "0601", "0201?" (guessed), "0601@2" (bus 2)
+    model, _, bus = model.partition("@")
     guessed = model.endswith("?")
     model = model.rstrip("?")
     text = f"motor {servo_id} (DRS-{model}" if model else f"motor {servo_id} ("
+    if bus:
+        text += f", bus {bus}"
     return text + (", model not confirmed)" if guessed else ")")
 
 
@@ -331,8 +339,8 @@ def describe_status(bench: Bench, reply_text: str) -> None:
 
 
 def check_motor(bench: Bench) -> None:
-    say("\n[2] Motors: looking for every servo on the bus (takes about 10 seconds)...")
-    reply = bench.request("Find", timeout=20, vpid=ALL)
+    say("\n[2] Motors: looking for every servo on both buses (takes about 20 seconds)...")
+    reply = bench.request("Find", timeout=35, vpid=ALL)
     if reply is None:
         say("FAIL: the ESP32 stopped answering.")
         hint("Check the USB cable; press EN/RST on the ESP32 and run this again.")
@@ -491,10 +499,11 @@ def baud_scan(bench: Bench) -> None:
         hint("So it's not a speed problem. Check: supply voltage (DRS-0201: 7-10 V),",
              "   GND shared with the ESP32, and TXD/RXD crossed to the ESP32's RX/TX.")
         return
-    if len(words) != 4 or not words[2].isdigit():
+    if len(words) not in (4, 5) or not words[2].isdigit():
         say(f"FAIL: unexpected reply ({reply.text}) -- re-flash DBoxMotor.")
         return
     servo_id, baud = int(words[2]), int(words[3])
+    bus = int(words[4]) if len(words) == 5 else 1
     if baud == BAUD:
         say(f"PASS: motor {servo_id} answers at {BAUD} already -- speed is fine.")
         hint("Run option 2 to add it.")
@@ -503,12 +512,63 @@ def baud_scan(bench: Bench) -> None:
     if input(f"Set motor {servo_id} to {BAUD} so it works with the bench? (y/n): ").strip().lower() != 'y':
         say("   Nothing changed.")
         return
-    reply = bench.request(f"FixBaud {servo_id} {baud}", timeout=5, vpid=ALL)
+    reply = bench.request(f"FixBaud {servo_id} {baud} {bus}", timeout=5, vpid=ALL)
     if reply is not None and reply.text.startswith("OK FIXBAUD"):
         say(f"PASS: motor {servo_id} now uses {BAUD} (saved in the servo).")
         hint("Run option 2: it should show up now.")
     else:
         say(f"FAIL: the servo didn't switch ({reply.text if reply else 'no reply'}).")
+
+
+def sync_move(bench: Bench) -> None:
+    say("\n[8] Synchronized move: give each motor its own angle; they all start")
+    say("    on the same instant. Leave an angle blank to keep that motor still.")
+    if not bench.servos:
+        say("   No motors known yet -- run option 2 first.")
+        return
+    reply = bench.request("Clear", vpid=ALL)
+    if reply is None or not reply.text.startswith("OK"):
+        say("FAIL: this firmware has no synchronized moves -- re-flash DBoxMotor.")
+        return
+    queued, own_times, need_shared = 0, False, False
+    for servo_id, model in bench.servos.items():
+        raw = input(f"  {motor_name(servo_id, model)}: angle (-{MAX_ANGLE} to {MAX_ANGLE}, "
+                    "blank = stay): ").strip()
+        if not raw:
+            continue
+        try:
+            angle = float(raw)
+        except ValueError:
+            say("   Not a number; skipping this motor.")
+            continue
+        own = input("    its own travel time in ms (blank = same as the others): ").strip()
+        if own and not own.isdigit():
+            say("   Time must be a whole number; using the shared time.")
+            own = ""
+        own_times = own_times or bool(own)
+        need_shared = need_shared or not own
+        reply = bench.request(f"Queue {angle}" + (f" {own}" if own else ""), vpid=servo_id)
+        if reply is None or not reply.text.startswith("OK QUEUED"):
+            say(f"   FAIL: motor {servo_id} refused it ({reply.text if reply else 'no reply'}).")
+            bench.request("Clear", vpid=ALL)
+            return
+        queued += 1
+    if queued == 0:
+        say("   Nothing queued; no motor moves.")
+        return
+    go = "Go"  # every motor has its own time: no shared time to ask for
+    if need_shared:
+        shared = input("Shared travel time in ms [1000]: ").strip() or "1000"
+        go = f"Go {shared if shared.isdigit() else '1000'}"
+    reply = bench.request(go, vpid=ALL, timeout=2)
+    if reply is not None and reply.text.startswith("OK GO"):
+        _, _, count, kind = reply.text.split()
+        how = ("each arriving on its own time" if kind == "IJOG"
+               else "all arriving together")
+        say(f"PASS: {count} motor{'s' if count != '1' else ''} started on the same instant, "
+            f"{how} ({kind} packet)")
+    else:
+        say(f"FAIL: {reply.text if reply else 'no reply from the ESP32'}")
 
 
 # --- Menu ------------------------------------------------------------------
@@ -538,13 +598,14 @@ def main() -> int:
             say(" 5) Choose motor" + multi_needs)
             say(" 6) Change a motor's ID" + multi_needs)
             say(" 7) Speed scan (servo not found?)" + multi_needs)
+            say(" 8) Synchronized move" + multi_needs)
             say(" q) Quit")
             choice = input("Choose: ").strip().lower()
             if choice == '1':
                 check_link(bench)
-            elif choice in ('2', '3', '4', '5', '6', '7') and not motor_ok:
+            elif choice in ('2', '3', '4', '5', '6', '7', '8') and not motor_ok:
                 say("   This needs DBoxMotor firmware on the ESP32 (see the note above).")
-            elif choice in ('5', '6', '7') and not bench.multi:
+            elif choice in ('5', '6', '7', '8') and not bench.multi:
                 say("   This needs the multi-motor (v2) DBoxMotor firmware; re-flash it.")
             elif choice == '2':
                 check_motor(bench)
@@ -558,6 +619,8 @@ def main() -> int:
                 change_id(bench)
             elif choice == '7':
                 baud_scan(bench)
+            elif choice == '8':
+                sync_move(bench)
             elif choice in ('q', 'quit', 'exit'):
                 break
     except (KeyboardInterrupt, EOFError):

@@ -2,8 +2,9 @@
 // Linux, with
 //   UART0 -> a pty (the bench test opens its slave end like a /dev/ttyUSB0)
 //   UART1 -> simulated Herkulex servos on one daisy-chained bus.
-// SIM_SERVOS="219:0601,253:0201@57600" picks the servos (optional
-// @baud: a servo set to another speed only hears/answers at that speed); SIM_LOG=<file> records
+// SIM_SERVOS="219:0601,253:0201@57600" picks the servos on bus 1 (UART1)
+// and SIM_SERVOS2 the ones on bus 2 (UART2) (optional @baud: a servo set to
+// another speed only hears/answers at that speed); SIM_LOG=<file> records
 // what each servo was told to do.
 #include <driver/uart.h>
 #include <freertos/FreeRTOS.h>
@@ -72,7 +73,6 @@ struct SimServo {
     unsigned long bootUntil = 0;
     int baud = 115200, eepBaud = 115200;
 };
-static int g_busBaud = 115200;
 static int BaudFromCode(uint8_t code) {
     switch (code) {
         case 0x02: return 666666; case 0x03: return 500000; case 0x04: return 400000;
@@ -80,11 +80,19 @@ static int BaudFromCode(uint8_t code) {
         case 0x22: return 57600; default: return 0;
     }
 }
-static std::vector<SimServo> g_servos;
-static std::mutex g_busMutex;
-static std::condition_variable g_busCv;
-static std::deque<uint8_t> g_busRx;   // servo -> ESP32
-static std::vector<uint8_t> g_busTx;  // ESP32 -> servos, not yet parsed
+// One simulated Herkulex bus per servo UART: index 1 = UART_NUM_1, 2 = UART_NUM_2.
+struct SimBus {
+    std::vector<SimServo> servos;
+    std::mutex mutex;
+    std::condition_variable cv;
+    std::deque<uint8_t> rx;    // servo -> ESP32
+    std::vector<uint8_t> tx;   // ESP32 -> servos, not yet parsed
+    int baud = 115200;
+};
+static SimBus g_buses[3];
+static SimBus* BusFor(uart_port_t u) {
+    return (u == UART_NUM_1 || u == UART_NUM_2) ? &g_buses[u] : nullptr;
+}
 static FILE* g_log = nullptr;
 
 static void Log(const char* fmt, ...) {
@@ -109,7 +117,7 @@ static std::vector<uint8_t> Packet(uint8_t id, uint8_t cmd, std::vector<uint8_t>
 
 static bool Alive(const SimServo& s) { return xTaskGetTickCount() >= s.bootUntil; }
 
-static void HandleBusPacket(const std::vector<uint8_t>& p) {
+static void HandleBusPacket(SimBus& bus, const std::vector<uint8_t>& p) {
     uint8_t size = p[2], id = p[3], cmd = p[4];
     uint8_t x = size ^ id ^ cmd;
     for (size_t i = 7; i < size; ++i) x ^= p[i];
@@ -120,8 +128,8 @@ static void HandleBusPacket(const std::vector<uint8_t>& p) {
     const uint8_t* d = p.data() + 7;
     int n = size - 7;
     std::vector<std::vector<uint8_t>> replies;
-    for (SimServo& s : g_servos) {
-        if (!Alive(s) || s.baud != g_busBaud) continue;  // wrong speed: hears noise
+    for (SimServo& s : bus.servos) {
+        if (!Alive(s) || s.baud != bus.baud) continue;  // wrong speed: hears noise
         bool mine = (id == s.id || id == 0xFE);
         switch (cmd) {
             case 0x07:  // STAT
@@ -176,9 +184,22 @@ static void HandleBusPacket(const std::vector<uint8_t>& p) {
                             speed == 0 ? "STOP" : (std::string("SPIN ") + std::to_string(speed) +
                                                    (s.torque ? "" : " (torque OFF: no motion)")).c_str());
                     } else {
-                        Log("SERVO %d (%s) MOVE to position %d%s", s.id, s.name, raw,
+                        int targets = (n - 1) / 4;
+                        Log("SERVO %d (%s) MOVE to position %d over %d ms%s%s", s.id, s.name, raw,
+                            (int)(d[0] * 11.2), targets > 1 ? " [S_JOG, shared packet]" : "",
                             s.torque ? "" : " (torque OFF: no motion)");
                     }
+                }
+                break;
+            }
+            case 0x05: {  // I_JOG: (LSB MSB SET ID playtime) per servo
+                int targets = n / 5;
+                for (int i = 0; i + 4 < n + 0 && i + 4 <= n - 1; i += 5) {
+                    if (d[i + 3] != s.id && d[i + 3] != 0xFE) continue;
+                    int raw = d[i] | (d[i + 1] << 8);
+                    Log("SERVO %d (%s) MOVE to position %d over %d ms%s%s", s.id, s.name, raw,
+                        (int)(d[i + 4] * 11.2), targets > 1 ? " [I_JOG, shared packet]" : "",
+                        s.torque ? "" : " (torque OFF: no motion)");
                 }
                 break;
             }
@@ -191,22 +212,23 @@ static void HandleBusPacket(const std::vector<uint8_t>& p) {
             for (size_t i = 0; i < out.size() && i < replies[r].size(); ++i) out[i] &= replies[r][i];
         Log("BUS %zu servos answered at once -> collision", replies.size());
     }
-    std::lock_guard<std::mutex> l(g_busMutex);
-    g_busRx.insert(g_busRx.end(), out.begin(), out.end());
-    g_busCv.notify_all();
+    std::lock_guard<std::mutex> l(bus.mutex);
+    bus.rx.insert(bus.rx.end(), out.begin(), out.end());
+    bus.cv.notify_all();
 }
 
-static void BusWrite(const uint8_t* b, size_t n) {
-    g_busTx.insert(g_busTx.end(), b, b + n);
+static void BusWrite(SimBus& bus, const uint8_t* b, size_t n) {
+    std::vector<uint8_t>& tx = bus.tx;
+    tx.insert(tx.end(), b, b + n);
     while (true) {
         size_t i = 0;
-        while (i + 1 < g_busTx.size() && !(g_busTx[i] == 0xFF && g_busTx[i + 1] == 0xFF)) ++i;
-        g_busTx.erase(g_busTx.begin(), g_busTx.begin() + i);
-        if (g_busTx.size() < 3 || g_busTx.size() < g_busTx[2]) return;
-        if (g_busTx[2] < 7) { g_busTx.erase(g_busTx.begin()); continue; }
-        std::vector<uint8_t> p(g_busTx.begin(), g_busTx.begin() + g_busTx[2]);
-        g_busTx.erase(g_busTx.begin(), g_busTx.begin() + p[2]);
-        HandleBusPacket(p);
+        while (i + 1 < tx.size() && !(tx[i] == 0xFF && tx[i + 1] == 0xFF)) ++i;
+        tx.erase(tx.begin(), tx.begin() + i);
+        if (tx.size() < 3 || tx.size() < tx[2]) return;
+        if (tx[2] < 7) { tx.erase(tx.begin()); continue; }
+        std::vector<uint8_t> p(tx.begin(), tx.begin() + tx[2]);
+        tx.erase(tx.begin(), tx.begin() + p[2]);
+        HandleBusPacket(bus, p);
     }
 }
 
@@ -218,12 +240,12 @@ esp_err_t uart_param_config(uart_port_t, const uart_config_t*) { return ESP_OK; 
 esp_err_t uart_set_pin(uart_port_t, int, int, int, int) { return ESP_OK; }
 esp_err_t uart_wait_tx_done(uart_port_t, TickType_t) { return ESP_OK; }
 esp_err_t uart_set_baudrate(uart_port_t u, uint32_t baud) {
-    if (u == UART_NUM_1) { g_busBaud = (int)baud; g_busTx.clear(); }
+    if (SimBus* b = BusFor(u)) { b->baud = (int)baud; b->tx.clear(); }
     return ESP_OK;
 }
 int uart_write_bytes(uart_port_t u, const void* src, size_t size) {
     if (u == UART_NUM_0) return (int)write(g_ptyMaster, src, size);
-    BusWrite((const uint8_t*)src, size);
+    if (SimBus* b = BusFor(u)) BusWrite(*b, (const uint8_t*)src, size);
     return (int)size;
 }
 int uart_read_bytes(uart_port_t u, void* buf, uint32_t length, TickType_t wait) {
@@ -232,14 +254,16 @@ int uart_read_bytes(uart_port_t u, void* buf, uint32_t length, TickType_t wait) 
         if (r <= 0 && wait) vTaskDelay(1);
         return r < 0 ? 0 : (int)r;
     }
-    std::unique_lock<std::mutex> l(g_busMutex);
-    g_busCv.wait_for(l, std::chrono::milliseconds(wait), [&] { return g_busRx.size() >= length; });
-    size_t n = std::min<size_t>(length, g_busRx.size());
-    for (size_t i = 0; i < n; ++i) { ((uint8_t*)buf)[i] = g_busRx.front(); g_busRx.pop_front(); }
+    SimBus* b = BusFor(u);
+    if (!b) return 0;
+    std::unique_lock<std::mutex> l(b->mutex);
+    b->cv.wait_for(l, std::chrono::milliseconds(wait), [&] { return b->rx.size() >= length; });
+    size_t n = std::min<size_t>(length, b->rx.size());
+    for (size_t i = 0; i < n; ++i) { ((uint8_t*)buf)[i] = b->rx.front(); b->rx.pop_front(); }
     return (int)n;
 }
 esp_err_t uart_flush_input(uart_port_t u) {
-    if (u == UART_NUM_1) { std::lock_guard<std::mutex> l(g_busMutex); g_busRx.clear(); }
+    if (SimBus* b = BusFor(u)) { std::lock_guard<std::mutex> l(b->mutex); b->rx.clear(); }
     return ESP_OK;
 }
 esp_err_t uart_flush(uart_port_t u) { return uart_flush_input(u); }
@@ -247,9 +271,7 @@ esp_err_t uart_flush(uart_port_t u) { return uart_flush_input(u); }
 // --- main -------------------------------------------------------------------------
 extern "C" void app_main();
 
-int main() {
-    const char* spec = getenv("SIM_SERVOS");
-    std::string list = spec ? spec : "219:0601";
+static void AddServos(SimBus& bus, int busNo, const std::string& list) {
     for (size_t pos = 0; pos < list.size();) {
         size_t comma = list.find(',', pos);
         std::string item = list.substr(pos, comma == std::string::npos ? std::string::npos : comma - pos);
@@ -263,12 +285,18 @@ int main() {
             m = m.substr(0, m.find('@'));
         }
         static std::deque<std::string> names;
-        names.push_back("DRS-" + m);
+        names.push_back("DRS-" + m + (busNo == 2 ? ", bus 2" : ""));
         s.name = names.back().c_str();
         s.model[0] = (uint8_t)std::stoi(m.substr(0, 2), nullptr, 16);  // "06" -> 0x06
         s.model[1] = (uint8_t)std::stoi(m.substr(2, 2), nullptr, 16);  // "01" -> 0x01
-        g_servos.push_back(s);
+        bus.servos.push_back(s);
     }
+}
+
+int main() {
+    const char* spec = getenv("SIM_SERVOS");
+    AddServos(g_buses[1], 1, spec ? spec : "219:0601");
+    if (const char* spec2 = getenv("SIM_SERVOS2")) AddServos(g_buses[2], 2, spec2);
     if (const char* lf = getenv("SIM_LOG")) g_log = fopen(lf, "w");
 
     int slave;
@@ -280,6 +308,7 @@ int main() {
     fcntl(g_ptyMaster, F_SETFL, O_NONBLOCK);
     printf("%s\n", ttyname(slave));
     fflush(stdout);
-    for (auto& s : g_servos) Log("BUS servo %s at ID %d, %d baud", s.name, s.id, s.baud);
+    for (int b = 1; b <= 2; ++b)
+        for (auto& s : g_buses[b].servos) Log("BUS %d: servo %s at ID %d, %d baud", b, s.name, s.id, s.baud);
     app_main();
 }

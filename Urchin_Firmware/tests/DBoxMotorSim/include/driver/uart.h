@@ -1,5 +1,5 @@
 // Host stand-in for ESP-IDF's UART driver. UART0 = a pty (the USB link to
-// the host), UART1 = a simulated Herkulex bus (sim.cpp).
+// the host), UART1 and UART2 = simulated Herkulex buses (sim.cpp).
 #pragma once
 #include "../esp_err.h"
 #include "../freertos/FreeRTOS.h"
@@ -7,6 +7,7 @@
 typedef int uart_port_t;
 #define UART_NUM_0 0
 #define UART_NUM_1 1
+#define UART_NUM_2 2
 #define UART_PIN_NO_CHANGE (-1)
 typedef enum { UART_DATA_8_BITS = 3 } uart_word_length_t;
 typedef enum { UART_PARITY_DISABLE = 0 } uart_parity_t;

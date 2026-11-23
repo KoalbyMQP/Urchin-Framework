@@ -47,6 +47,31 @@ bool ParseModel(const char* text, HerkulexModel* out) {
     return false;
 }
 
+// Bus 2's driver instance (bus 1 is the global Herkulex above).
+static HerkulexClass Herkulex2;
+static int g_bus = 1;
+
+static uart_port_t CurUart() {
+    return g_bus == 2 ? kUart2 : kUart;
+}
+
+static HerkulexClass& Cur() {
+    return g_bus == 2 ? Herkulex2 : Herkulex;
+}
+
+void SelectBus(int bus) {
+    g_bus = (bus == 2) ? 2 : 1;
+}
+
+int SelectedBus() {
+    return g_bus;
+}
+
+void BeginBus2() {
+    Herkulex2.begin(kUart2, kBaud, kRxPin2, kTxPin2);
+    gpio_set_pull_mode(static_cast<gpio_num_t>(kRxPin2), GPIO_PULLUP_ONLY);
+}
+
 void Begin() {
     Herkulex.begin(kUart, kBaud, kRxPin, kTxPin);
     // Keep RX from floating (and reading noise) while the servo is
@@ -71,16 +96,16 @@ static void SendPacket(uint8_t id, uint8_t cmd, const uint8_t* data, int len) {
     for (int i = 0; i < len; ++i) {
         pkt[7 + i] = data[i];
     }
-    uart_write_bytes(kUart, pkt, size);
-    uart_wait_tx_done(kUart, pdMS_TO_TICKS(20));
+    uart_write_bytes(CurUart(), pkt, size);
+    uart_wait_tx_done(CurUart(), pdMS_TO_TICKS(20));
 }
 
 bool Ping(int id, ServoStatus* out, int* replyId) {
-    uart_flush_input(kUart);  // drop noise / stale replies
+    uart_flush_input(CurUart());  // drop noise / stale replies
     SendPacket(static_cast<uint8_t>(id), HSTAT, nullptr, 0);
 
     uint8_t r[9];
-    if (uart_read_bytes(kUart, r, sizeof(r), kReplyTimeout) != static_cast<int>(sizeof(r))) {
+    if (uart_read_bytes(CurUart(), r, sizeof(r), kReplyTimeout) != static_cast<int>(sizeof(r))) {
         return false;
     }
     if (r[0] != 0xFF || r[1] != 0xFF || r[2] != 9 || r[4] != (HSTAT | 0x40)) {
@@ -105,14 +130,14 @@ bool ReadEep(int id, uint8_t addr, uint8_t len, uint8_t* out) {
     if (len > 8) {
         return false;
     }
-    uart_flush_input(kUart);
+    uart_flush_input(CurUart());
     const uint8_t data[] = {addr, len};
     SendPacket(static_cast<uint8_t>(id), HEEPREAD, data, sizeof(data));
 
     // Reply: FF FF size id 0x42 ck1 ck2 addr len data[len] error detail
     uint8_t r[11 + 8];
     int want = 11 + len;
-    if (uart_read_bytes(kUart, r, want, kReplyTimeout) != want) {
+    if (uart_read_bytes(CurUart(), r, want, kReplyTimeout) != want) {
         return false;
     }
     if (r[0] != 0xFF || r[1] != 0xFF || r[2] != want || r[3] != id ||
@@ -180,8 +205,8 @@ const BaudInfo kBauds[7] = {
 };
 
 static void SetBusBaud(int baud) {
-    uart_set_baudrate(kUart, baud);
-    uart_flush_input(kUart);
+    uart_set_baudrate(CurUart(), baud);
+    uart_flush_input(CurUart());
 }
 
 int ScanBauds(int* id) {
@@ -232,12 +257,87 @@ bool ResetBaud(int id, int currentBaud) {
 
 int SniffStat(int id, uint8_t* out, int max, int* idleBytes) {
     uint8_t junk[64];
-    uart_flush_input(kUart);
-    *idleBytes = uart_read_bytes(kUart, junk, sizeof(junk), pdMS_TO_TICKS(100));
-    uart_flush_input(kUart);
+    uart_flush_input(CurUart());
+    *idleBytes = uart_read_bytes(CurUart(), junk, sizeof(junk), pdMS_TO_TICKS(100));
+    uart_flush_input(CurUart());
     SendPacket(static_cast<uint8_t>(id), HSTAT, nullptr, 0);
-    int got = uart_read_bytes(kUart, out, max, pdMS_TO_TICKS(50));
+    int got = uart_read_bytes(CurUart(), out, max, pdMS_TO_TICKS(50));
     return got < 0 ? 0 : got;
+}
+
+bool PositionFor(float degrees, HerkulexModel model, int* position) {
+    const ModelInfo& m = InfoFor(model);
+    int p = static_cast<int>(degrees / m.degPerUnit) + m.centerPos;
+    if (p < 0 || p > m.maxPos) {
+        return false;
+    }
+    *position = p;
+    return true;
+}
+
+// Herkulex play time is in units of 11.2ms, 0..255 (0..2856ms).
+static uint8_t PlayTime(int timeMs) {
+    int units = static_cast<int>(static_cast<float>(timeMs) / 11.2f);
+    return static_cast<uint8_t>(units < 0 ? 0 : (units > 255 ? 255 : units));
+}
+
+// SET byte for "position control, green LED" (manual: bit1 = mode 0 for
+// position, bits 2-4 = green/blue/red LED).
+static constexpr uint8_t kSetPositionGreen = 0x04;
+
+static void SendLongPacket(uint8_t cmd, const uint8_t* data, int len) {
+    uint8_t pkt[7 + 5 * kMaxJogTargets];
+    uint8_t size = static_cast<uint8_t>(7 + len);
+    uint8_t x = size ^ kBroadcastId ^ cmd;
+    for (int i = 0; i < len; ++i) {
+        x ^= data[i];
+    }
+    pkt[0] = 0xFF;
+    pkt[1] = 0xFF;
+    pkt[2] = size;
+    pkt[3] = kBroadcastId;
+    pkt[4] = cmd;
+    pkt[5] = x & 0xFE;
+    pkt[6] = (~x) & 0xFE;
+    for (int i = 0; i < len; ++i) {
+        pkt[7 + i] = data[i];
+    }
+    uart_write_bytes(CurUart(), pkt, size);
+    uart_wait_tx_done(CurUart(), pdMS_TO_TICKS(30));
+}
+
+bool SyncMove(const JogTarget* targets, int count, int timeMs) {
+    if (count < 1 || count > kMaxJogTargets) {
+        return false;
+    }
+    uint8_t data[1 + 4 * kMaxJogTargets];
+    int len = 0;
+    data[len++] = PlayTime(timeMs);
+    for (int i = 0; i < count; ++i) {
+        data[len++] = static_cast<uint8_t>(targets[i].position & 0xFF);
+        data[len++] = static_cast<uint8_t>((targets[i].position >> 8) & 0x7F);
+        data[len++] = kSetPositionGreen;
+        data[len++] = static_cast<uint8_t>(targets[i].id);
+    }
+    SendLongPacket(HSIMULJOG, data, len);
+    return true;
+}
+
+bool SyncMoveEach(const JogTarget* targets, int count) {
+    if (count < 1 || count > kMaxJogTargets) {
+        return false;
+    }
+    uint8_t data[5 * kMaxJogTargets];
+    int len = 0;
+    for (int i = 0; i < count; ++i) {
+        data[len++] = static_cast<uint8_t>(targets[i].position & 0xFF);
+        data[len++] = static_cast<uint8_t>((targets[i].position >> 8) & 0x7F);
+        data[len++] = kSetPositionGreen;
+        data[len++] = static_cast<uint8_t>(targets[i].id);
+        data[len++] = PlayTime(targets[i].timeMs);
+    }
+    SendLongPacket(HINDEJOG, data, len);
+    return true;
 }
 
 void ClearErrors(int id) {
@@ -247,7 +347,7 @@ void ClearErrors(int id) {
 
 void Arm(int id) {
     ClearErrors(id);
-    Herkulex.torqueON(id);
+    Cur().torqueON(id);
 }
 
 int FindServo(void (*progress)(int id)) {
@@ -279,11 +379,11 @@ void SpinAt(int id, int speed, HerkulexModel model) {
     int lsb = magnitude & 0x00FF;
     int msb = (magnitude & 0xFF00) >> 8;
     JogLedColor led = speed < 0 ? LED_RED : LED_BLUE;
-    Herkulex.sendSJog(id, speed, kSpinCommandMs, led, model, /*Mode=*/true, lsb, msb);
+    Cur().sendSJog(id, speed, kSpinCommandMs, led, model, /*Mode=*/true, lsb, msb);
 }
 
 void Stop(int id) {
-    Herkulex.motor_stop(id);
+    Cur().motor_stop(id);
 }
 
 bool MoveToAngle(int id, float degrees, int timeMs) {
@@ -296,7 +396,7 @@ bool MoveToAngle(int id, float degrees, int timeMs, HerkulexModel model) {
     if (position < 0 || position > m.maxPos) {
         return false;
     }
-    Herkulex.moveOne(id, position, timeMs, LED_GREEN, model);
+    Cur().moveOne(id, position, timeMs, LED_GREEN, model);
     return true;
 }
 

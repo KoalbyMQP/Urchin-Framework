@@ -33,6 +33,17 @@ constexpr int kBaud = 115200;  // Herkulex factory default
 constexpr int kTxPin = 17;     // ESP32 TX -> servo RX
 constexpr int kRxPin = 16;     // ESP32 RX <- servo TX
 
+// Second servo bus, used by env:DBoxMotor only: its own UART and pins, so
+// servo families that can't share one reply line (on our bench a DRS-0601
+// together with a DRS-0201/0101: each works alone, neither answers when
+// both are wired to the same RX pin) each get their own wire. Bus 1 is the
+// one above. GPIO26/27 are free on ESP32-WROOM-32 dev boards (labelled
+// D26/D27).
+constexpr uart_port_t kUart2 = UART_NUM_2;
+constexpr int kTxPin2 = 26;    // ESP32 TX -> bus-2 servo RX
+constexpr int kRxPin2 = 27;    // ESP32 RX <- bus-2 servo TX
+constexpr int kBusCount = 2;
+
 constexpr int kBroadcastId = 0xFE;
 constexpr int kMaxServoId = 253;  // valid servo IDs are 0..253
 // Default model, used when a servo's model is unknown (and by the
@@ -64,6 +75,13 @@ struct ServoStatus {
 
 // Opens UART1 for the servo bus.
 void Begin();
+// Sets up bus 2 (kUart2 on kTxPin2/kRxPin2). Bus 1 is set up by Begin().
+void BeginBus2();
+// Which bus every function below talks to: 1 (the default, kUart) or 2.
+// Callers on more than one task would need a lock; DBoxMotor and
+// HerkulexTest only use the servos from one task.
+void SelectBus(int bus);
+int SelectedBus();
 
 // Returns true and fills *out (and *replyId, if given) only for a
 // well-formed STAT reply. Use kBroadcastId to ask "whoever is out there".
@@ -126,6 +144,31 @@ bool ResetBaud(int id, int currentBaud);
 // back within 50ms -- checked or not -- into out (up to max). Returns how
 // many reply bytes arrived. A clean STAT reply is 9 bytes starting FF FF.
 int SniffStat(int id, uint8_t* out, int max, int* idleBytes);
+
+// --- Synchronized moves -----------------------------------------------------
+// One Herkulex packet carries every servo's target, so they all start on
+// the same tick (instead of one packet per servo, ~10ms apart). Built
+// straight from the manual (DRS-0201 manual 6-5/6-6), like the raw STAT
+// above; the driver's moveAll()/actionAll() are not used because actionAll
+// blocks polling positions and moveAll doesn't bounds-check its buffer.
+// Targets must be on the currently selected bus; torque must already be on.
+struct JogTarget {
+    int id;
+    int position;  // raw servo units (use PositionFor)
+    int timeMs;    // own travel time (SyncMoveEach only)
+};
+constexpr int kMaxJogTargets = 40;  // keeps both packet kinds under 223 bytes
+
+// degrees -> raw position for this model; false if out of range.
+bool PositionFor(float degrees, HerkulexModel model, int* position);
+
+// S_JOG (0x06): every target, one shared travel time; all start and arrive
+// together.
+bool SyncMove(const JogTarget* targets, int count, int timeMs);
+
+// I_JOG (0x05): every target with its own travel time; all start together,
+// each arrives on its own schedule.
+bool SyncMoveEach(const JogTarget* targets, int count);
 
 // Returns the servo's ID, or -1 if nothing answered. Tries a broadcast STAT
 // first (a lone servo usually answers it with its real ID, instantly), then
